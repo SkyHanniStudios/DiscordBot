@@ -5,7 +5,6 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.requests.GatewayIntent
 
-
 class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
     override fun onMessageReceived(event: MessageReceivedEvent) {
         val message = event.message.contentRaw.trim()
@@ -29,11 +28,12 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
                 }
                 return
             }
-            args[0] == "!add" && args.size == 3 -> {
+
+            args[0] == "!edit" && args.size == 3 -> {
                 val keyword = args[1]
                 val response = args[2]
                 if (!Database.listKeywords().contains(keyword.lowercase())) {
-                    event.channel.sendMessage("❌ Keyword does not exist!`!add` instead.").queue()
+                    event.channel.sendMessage("❌ Keyword does not exist! Use `!add` instead.").queue()
                     return
                 }
                 if (Database.addKeyword(keyword, response)) {
@@ -62,7 +62,7 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
             }
 
             message == "!help" -> {
-                val commands = listOf("add", "remove", "list")
+                val commands = listOf("add", "remove", "list", "edit")
                 val response = "The bot currently supports those commands: ${commands.joinToString(", ")}"
                 event.channel.sendMessage(response).queue()
                 return
@@ -74,8 +74,7 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
                 if (response != null) {
                     event.channel.sendMessage(response).queue()
                 } else {
-                    event.channel.sendMessage("Unknown command \uD83E\uDD7A Type `!help` for help.")
-                        .queue()
+                    event.channel.sendMessage("Unknown command \uD83E\uDD7A Type `!help` for help.").queue()
                 }
             }
         }
@@ -85,9 +84,8 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
 fun main() {
     val config = ConfigLoader.load("config.json")
     val token = config.token
-    val jda =
-        JDABuilder.createDefault(token).addEventListeners(DiscordBot(config)).enableIntents(GatewayIntent.MESSAGE_CONTENT)
-            .build()
+    val jda = JDABuilder.createDefault(token).addEventListeners(DiscordBot(config))
+        .enableIntents(GatewayIntent.MESSAGE_CONTENT).build()
     jda.awaitReady()
     // TODO does not work, find out why
     jda.getPrivateChannelById(config.botCommandChannelId)?.sendMessage("I'm Back!")?.queue()
