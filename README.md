@@ -1,0 +1,1 @@
+This is the bot source code for [SkyHanni Discord Server](https://discord.gg/skyhanni-997079228510117908).
