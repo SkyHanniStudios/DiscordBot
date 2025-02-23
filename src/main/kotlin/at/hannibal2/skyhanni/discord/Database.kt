@@ -12,7 +12,7 @@ object Database {
         stmt.execute(
             "CREATE TABLE IF NOT EXISTS keywords (id INTEGER PRIMARY KEY AUTOINCREMENT, keyword TEXT UNIQUE, response TEXT)"
         )
-        loadCache() // Load existing keywords into cache
+        loadCache()
     }
 
     private fun loadCache() {
@@ -28,19 +28,17 @@ object Database {
         stmt.setString(1, keyword.lowercase())
         stmt.setString(2, response)
         val updated = stmt.executeUpdate() > 0
-        if (updated) keywordCache[keyword.lowercase()] = response // Update cache
+        if (updated) keywordCache[keyword.lowercase()] = response
         return updated
     }
 
-    fun getResponse(keyword: String): String? {
-        return keywordCache[keyword.lowercase()] // Fast lookup from cache
-    }
+    fun getResponse(keyword: String): String? = keywordCache[keyword.lowercase()]
 
     fun deleteKeyword(keyword: String): Boolean {
         val stmt = connection.prepareStatement("DELETE FROM keywords WHERE keyword = ?")
         stmt.setString(1, keyword.lowercase())
         val updated = stmt.executeUpdate() > 0
-        if (updated) keywordCache.remove(keyword.lowercase()) // Remove from cache
+        if (updated) keywordCache.remove(keyword.lowercase())
         return updated
     }
 
