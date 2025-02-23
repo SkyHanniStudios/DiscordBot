@@ -1,4 +1,4 @@
-package org.example.at.lorenz.skyhanni.discord
+package at.hannibal2.skyhanni.discord
 import com.google.gson.Gson
 import java.io.File
 

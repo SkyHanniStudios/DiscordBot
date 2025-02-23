@@ -1,4 +1,4 @@
-package org.example.at.lorenz.skyhanni.discord
+package at.hannibal2.skyhanni.discord
 
 import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
