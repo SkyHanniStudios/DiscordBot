@@ -5,15 +5,14 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.requests.GatewayIntent
 
-val botCommandChannelId = "1343359770920222872"
 
-class DiscordBot : ListenerAdapter() {
+class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
     override fun onMessageReceived(event: MessageReceivedEvent) {
         val message = event.message.contentRaw.trim()
         val args = message.split(" ", limit = 3)
 
         if (event.author.isBot) return
-        if (event.channel.id != botCommandChannelId) return
+        if (event.channel.id != config.botCommandChannelId) return
 
         when {
             args[0] == "!add" && args.size == 3 -> {
@@ -87,8 +86,9 @@ fun main() {
     val config = ConfigLoader.load("config.json")
     val token = config.token
     val jda =
-        JDABuilder.createDefault(token).addEventListeners(DiscordBot()).enableIntents(GatewayIntent.MESSAGE_CONTENT)
+        JDABuilder.createDefault(token).addEventListeners(DiscordBot(config)).enableIntents(GatewayIntent.MESSAGE_CONTENT)
             .build()
     jda.awaitReady()
-    jda.getPrivateChannelById(botCommandChannelId)?.sendMessage("I'm Back!")?.queue()
+    // TODO does not work, find out why
+    jda.getPrivateChannelById(config.botCommandChannelId)?.sendMessage("I'm Back!")?.queue()
 }

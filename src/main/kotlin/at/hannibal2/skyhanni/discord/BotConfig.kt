@@ -2,7 +2,10 @@ package at.hannibal2.skyhanni.discord
 import com.google.gson.Gson
 import java.io.File
 
-data class BotConfig(val token: String)
+data class BotConfig(
+    val token: String,
+    val botCommandChannelId: String,
+    )
 
 object ConfigLoader {
     private val gson = Gson()
