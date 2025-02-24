@@ -12,6 +12,7 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
         if (event.guild.id != config.allowedServerId) return
 
         val message = event.message.contentRaw.trim()
+        if (!message.startsWith("!")) return
         val args = message.split(" ", limit = 3)
 
         if (event.author.isBot) return
@@ -28,41 +29,46 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
             event.message.reply(message).queue()
         }
 
-        if (message.startsWith("!")) {
-            var keyword = message.substring(1)
-            var silent = false
-            if (keyword.endsWith(" -s")) {
-                keyword = keyword.dropLast(3)
-                silent = true
-            }
-            val response = Database.getResponse(keyword)
-            if (response != null) {
-                if (silent) {
-                    logAction("used silent keyword '$keyword'")
-                    event.message.delete().queue {
-                        event.channel.sendMessage(response).queue()
-                    }
-                } else {
-                    event.message.referencedMessage?.let {
-                        it.reply(response).queue()
-                        event.message.delete().queue()
-                    } ?: run {
-                        reply(response)
-                    }
+        var keyword = message.substring(1)
+        var silent = false
+        if (keyword.endsWith(" -s")) {
+            keyword = keyword.dropLast(3)
+            silent = true
+        }
+        val response = Database.getResponse(keyword)
+        if (response != null) {
+            if (silent) {
+                logAction("used silent keyword '$keyword'")
+                event.message.delete().queue {
+                    event.channel.sendMessage(response).queue()
                 }
-                return
+            } else {
+                event.message.referencedMessage?.let {
+                    event.message.delete().queue()
+                    it.reply(response).queue()
+                } ?: run {
+                    reply(response)
+                }
             }
+            return
         }
 
         if (message == "!taglist" || message == "!list") {
             val keywords = Database.listKeywords().joinToString(", ")
-            val response = if (keywords.isNotEmpty()) "📌 Keywords: $keywords" else "No keywords set."
-            reply(response)
+            reply(if (keywords.isNotEmpty()) "📌 Keywords: $keywords" else "No keywords set.")
             return
         }
 
         // checking that only staff can change tags
         if (event.channel.id != config.botCommandChannelId) return
+
+        val member = event.member ?: return
+        val allowedRoleIds = config.editPermissionRoleIds.values
+        if (!member.roles.any { it.id in allowedRoleIds }) {
+            reply("No perms \uD83E\uDD7A")
+            // User doesn't have an allowed role; you can ignore or send a warning.
+            return
+        }
 
         when {
             args[0] == "!add" && args.size == 3 -> {
@@ -109,17 +115,13 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
             }
 
             message == "!help" -> {
-                val commands = listOf("add", "remove", "taglist", "edit")
-                val response = "The bot currently supports these commands: ${commands.joinToString(", ", prefix = "!")}"
-                reply(response)
+                val commands = listOf("add", "remove", "list", "edit")
+                reply("The bot currently supports these commands: ${commands.joinToString(", ", prefix = "!")}")
                 return
             }
         }
 
-        if (message.startsWith("!")) {
-            val s = "Unknown command \uD83E\uDD7A Type `!help` for help."
-            reply(s)
-        }
+        reply("Unknown command \uD83E\uDD7A Type `!help` for help.")
     }
 }
 

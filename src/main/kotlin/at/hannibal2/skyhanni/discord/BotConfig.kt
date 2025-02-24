@@ -6,6 +6,7 @@ data class BotConfig(
     val token: String,
     val botCommandChannelId: String,
     val allowedServerId: String,
+    val editPermissionRoleIds: Map<String, String>,
 )
 
 object ConfigLoader {
