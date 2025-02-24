@@ -43,7 +43,12 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
                         event.channel.sendMessage(response).queue()
                     }
                 } else {
-                    reply(response)
+                    event.message.referencedMessage?.let {
+                        it.reply(response).queue()
+                        event.message.delete().queue()
+                    } ?: run {
+                        reply(response)
+                    }
                 }
                 return
             }
