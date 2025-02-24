@@ -24,6 +24,13 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
             }
         }
 
+        fun MessageReceivedEvent.logAction(action: String) {
+            val name = author.name
+            val effectiveName = author.effectiveName
+            val globalName = author.globalName
+            println("$effectiveName ($name/$globalName) $action")
+        }
+
         // checking that only staff can change tags
         if (event.channel.id != config.botCommandChannelId) return
 
@@ -37,6 +44,7 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
                 }
                 if (Database.addKeyword(keyword, response)) {
                     event.channel.sendMessage("✅ Keyword '$keyword' added!").queue()
+                    event.logAction("added '$keyword' with response `$response`")
                 } else {
                     event.channel.sendMessage("❌ Failed to add keyword.").queue()
                 }
@@ -52,6 +60,7 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
                 }
                 if (Database.addKeyword(keyword, response)) {
                     event.channel.sendMessage("✅ Keyword '$keyword' edited!").queue()
+                    event.logAction("edited '$keyword' with response `$response`")
                 } else {
                     event.channel.sendMessage("❌ Failed to edit keyword.").queue()
                 }
@@ -62,6 +71,7 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
                 val keyword = args[1]
                 if (Database.deleteKeyword(keyword)) {
                     event.channel.sendMessage("🗑️ Keyword '$keyword' deleted!").queue()
+                    event.logAction("deleted '$keyword'")
                 } else {
                     event.channel.sendMessage("❌ Keyword '$keyword' not found.").queue()
                 }
