@@ -11,6 +11,17 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
         val args = message.split(" ", limit = 3)
 
         if (event.author.isBot) return
+
+        if (message.startsWith("!")) {
+            val keyword = message.substring(1)
+            val response = Database.getResponse(keyword)
+            if (response != null) {
+                event.channel.sendMessage(response).queue()
+                return
+            }
+        }
+
+        // checking that only staff can change tags
         if (event.channel.id != config.botCommandChannelId) return
 
         when {
@@ -67,16 +78,10 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
                 event.channel.sendMessage(response).queue()
                 return
             }
+        }
 
-            message.startsWith("!") -> {
-                val keyword = message.substring(1)
-                val response = Database.getResponse(keyword)
-                if (response != null) {
-                    event.channel.sendMessage(response).queue()
-                } else {
-                    event.channel.sendMessage("Unknown command \uD83E\uDD7A Type `!help` for help.").queue()
-                }
-            }
+        if (message.startsWith("!")) {
+            event.channel.sendMessage("Unknown command \uD83E\uDD7A Type `!help` for help.").queue()
         }
     }
 }
