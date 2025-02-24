@@ -5,7 +5,8 @@ import java.io.File
 data class BotConfig(
     val token: String,
     val botCommandChannelId: String,
-    )
+    val allowedServerId: String,
+)
 
 object ConfigLoader {
     private val gson = Gson()

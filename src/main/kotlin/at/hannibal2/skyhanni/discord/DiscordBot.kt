@@ -7,6 +7,9 @@ import net.dv8tion.jda.api.requests.GatewayIntent
 
 class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
     override fun onMessageReceived(event: MessageReceivedEvent) {
+        // fix working on other servers
+        if (event.guild.id != config.allowedServerId) return
+
         val message = event.message.contentRaw.trim()
         val args = message.split(" ", limit = 3)
 
