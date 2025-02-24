@@ -48,9 +48,9 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
                     return
                 }
                 if (Database.addKeyword(keyword, response)) {
-                    event.channel.sendMessage("✅ Keyword '$keyword' added!").queue()
+                    event.channel.sendMessage("✅ Keyword '$keyword' edited!").queue()
                 } else {
-                    event.channel.sendMessage("❌ Failed to add keyword.").queue()
+                    event.channel.sendMessage("❌ Failed to edit keyword.").queue()
                 }
                 return
             }
