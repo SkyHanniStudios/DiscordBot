@@ -33,10 +33,10 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
         }
 
         var keyword = message.substring(1)
-        var silent = false
-        if (keyword.endsWith(" -s")) {
+        var deleting = false
+        if (keyword.endsWith(" -d")) {
             keyword = keyword.dropLast(3)
-            silent = true
+            deleting = true
         }
         val response = Database.getResponse(keyword)
         if (response != null) {
@@ -46,8 +46,8 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
                 event.message.delete().queue()
                 it.reply(response).queue()
             } ?: run {
-                if (silent) {
-                    logAction("used silent keyword '$keyword' in channel '$channelName'")
+                if (deleting) {
+                    logAction("used keyword with delete '$keyword' in channel '$channelName'")
                     event.message.delete().queue {
                         event.channel.sendMessage(response).queue()
                     }
