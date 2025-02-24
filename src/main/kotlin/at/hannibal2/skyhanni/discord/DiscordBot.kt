@@ -16,7 +16,8 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
 
         if (event.author.isBot) return
 
-        fun MessageReceivedEvent.logAction(action: String) {
+        fun logAction(action: String) {
+            val author = event.author
             val name = author.name
             val effectiveName = author.effectiveName
             val globalName = author.globalName
@@ -33,7 +34,7 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
             val response = Database.getResponse(keyword)
             if (response != null) {
                 if (silent) {
-                    event.logAction("used silent keyword '$keyword'")
+                    logAction("used silent keyword '$keyword'")
                     event.message.delete().queue {
                         event.channel.sendMessage(response).queue()
                     }
@@ -61,7 +62,7 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
                 }
                 if (Database.addKeyword(keyword, response)) {
                     reply("✅ Keyword '$keyword' added!")
-                    event.logAction("added '$keyword' with response `$response`")
+                    logAction("added '$keyword' with response `$response`")
                 } else {
                     reply("❌ Failed to add keyword.")
                 }
@@ -77,7 +78,7 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
                 }
                 if (Database.addKeyword(keyword, response)) {
                     reply("✅ Keyword '$keyword' edited!")
-                    event.logAction("edited '$keyword' with response `$response`")
+                    logAction("edited '$keyword' with response `$response`")
                 } else {
                     reply("❌ Failed to edit keyword.")
                 }
@@ -88,7 +89,7 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
                 val keyword = args[1]
                 if (Database.deleteKeyword(keyword)) {
                     reply("🗑️ Keyword '$keyword' deleted!")
-                    event.logAction("deleted '$keyword'")
+                    logAction("deleted '$keyword'")
                 } else {
                     reply("❌ Keyword '$keyword' not found.")
                 }
