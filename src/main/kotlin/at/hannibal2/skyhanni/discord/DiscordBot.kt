@@ -16,24 +16,36 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
 
         if (event.author.isBot) return
 
+        fun MessageReceivedEvent.logAction(action: String) {
+            val name = author.name
+            val effectiveName = author.effectiveName
+            val globalName = author.globalName
+            println("$effectiveName ($name/$globalName) $action")
+        }
+
         if (message.startsWith("!")) {
-            val keyword = message.substring(1)
+            var keyword = message.substring(1)
+            var silent = false
+            if (keyword.endsWith(" -s")) {
+                keyword = keyword.dropLast(3)
+                silent = true
+            }
             val response = Database.getResponse(keyword)
             if (response != null) {
-                event.message.reply(response).queue()
+                if (silent) {
+                    event.logAction("used silent keyword '$keyword'")
+                    event.message.delete().queue {
+                        event.channel.sendMessage(response).queue()
+                    }
+                } else {
+                    event.message.reply(response).queue()
+                }
                 return
             }
         }
 
         fun reply(message: String) {
             event.message.reply(message).queue()
-        }
-
-        fun MessageReceivedEvent.logAction(action: String) {
-            val name = author.name
-            val effectiveName = author.effectiveName
-            val globalName = author.globalName
-            println("$effectiveName ($name/$globalName) $action")
         }
 
         // checking that only staff can change tags
