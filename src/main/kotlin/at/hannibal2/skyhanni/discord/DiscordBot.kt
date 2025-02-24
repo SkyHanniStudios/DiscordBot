@@ -78,7 +78,7 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
                 return
             }
 
-            message == "!list" -> {
+            message == "!taglist" -> {
                 val keywords = Database.listKeywords().joinToString(", ")
                 val response = if (keywords.isNotEmpty()) "📌 Keywords: $keywords" else "No keywords set."
                 event.channel.sendMessage(response).queue()
@@ -86,8 +86,8 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
             }
 
             message == "!help" -> {
-                val commands = listOf("add", "remove", "list", "edit")
-                val response = "The bot currently supports those commands: ${commands.joinToString(", ")}"
+                val commands = listOf("add", "remove", "taglist", "edit")
+                val response = "The bot currently supports those commands: ${commands.joinToString(", ", prefix = "!")}"
                 event.channel.sendMessage(response).queue()
                 return
             }
