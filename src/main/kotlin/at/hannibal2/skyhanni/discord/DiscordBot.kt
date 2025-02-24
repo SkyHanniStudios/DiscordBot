@@ -100,10 +100,7 @@ fun main() {
         jda.getTextChannelById(config.botCommandChannelId)?.sendMessage(message)?.queue()
     }
 
-    Thread {
-        Thread.sleep(2_000)
-        sendMessageToBotChannel("I'm awake \uD83D\uDE42")
-    }.start()
+    sendMessageToBotChannel("I'm awake \uD83D\uDE42")
 
     Runtime.getRuntime().addShutdownHook(Thread {
         sendMessageToBotChannel("I'm tired, see you later \uD83D\uDE26")
