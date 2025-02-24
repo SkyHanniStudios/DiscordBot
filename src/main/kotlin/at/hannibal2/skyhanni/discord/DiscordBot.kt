@@ -20,9 +20,13 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
             val keyword = message.substring(1)
             val response = Database.getResponse(keyword)
             if (response != null) {
-                event.channel.sendMessage(response).queue()
+                event.message.reply(response).queue()
                 return
             }
+        }
+
+        fun reply(message: String) {
+            event.message.reply(message).queue()
         }
 
         fun MessageReceivedEvent.logAction(action: String) {
@@ -40,14 +44,14 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
                 val keyword = args[1]
                 val response = args[2]
                 if (Database.listKeywords().contains(keyword.lowercase())) {
-                    event.channel.sendMessage("❌ Already exists use `!edit` instead.").queue()
+                    reply("❌ Already exists use `!edit` instead.")
                     return
                 }
                 if (Database.addKeyword(keyword, response)) {
-                    event.channel.sendMessage("✅ Keyword '$keyword' added!").queue()
+                    reply("✅ Keyword '$keyword' added!")
                     event.logAction("added '$keyword' with response `$response`")
                 } else {
-                    event.channel.sendMessage("❌ Failed to add keyword.").queue()
+                    reply("❌ Failed to add keyword.")
                 }
                 return
             }
@@ -56,14 +60,14 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
                 val keyword = args[1]
                 val response = args[2]
                 if (!Database.listKeywords().contains(keyword.lowercase())) {
-                    event.channel.sendMessage("❌ Keyword does not exist! Use `!add` instead.").queue()
+                    reply("❌ Keyword does not exist! Use `!add` instead.")
                     return
                 }
                 if (Database.addKeyword(keyword, response)) {
-                    event.channel.sendMessage("✅ Keyword '$keyword' edited!").queue()
+                    reply("✅ Keyword '$keyword' edited!")
                     event.logAction("edited '$keyword' with response `$response`")
                 } else {
-                    event.channel.sendMessage("❌ Failed to edit keyword.").queue()
+                    reply("❌ Failed to edit keyword.")
                 }
                 return
             }
@@ -71,10 +75,10 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
             args[0] == "!delete" && args.size == 2 -> {
                 val keyword = args[1]
                 if (Database.deleteKeyword(keyword)) {
-                    event.channel.sendMessage("🗑️ Keyword '$keyword' deleted!").queue()
+                    reply("🗑️ Keyword '$keyword' deleted!")
                     event.logAction("deleted '$keyword'")
                 } else {
-                    event.channel.sendMessage("❌ Keyword '$keyword' not found.").queue()
+                    reply("❌ Keyword '$keyword' not found.")
                 }
                 return
             }
@@ -82,20 +86,21 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
             message == "!taglist" -> {
                 val keywords = Database.listKeywords().joinToString(", ")
                 val response = if (keywords.isNotEmpty()) "📌 Keywords: $keywords" else "No keywords set."
-                event.channel.sendMessage(response).queue()
+                reply(response)
                 return
             }
 
             message == "!help" -> {
                 val commands = listOf("add", "remove", "taglist", "edit")
                 val response = "The bot currently supports these commands: ${commands.joinToString(", ", prefix = "!")}"
-                event.channel.sendMessage(response).queue()
+                reply(response)
                 return
             }
         }
 
         if (message.startsWith("!")) {
-            event.channel.sendMessage("Unknown command \uD83E\uDD7A Type `!help` for help.").queue()
+            val s = "Unknown command \uD83E\uDD7A Type `!help` for help."
+            reply(s)
         }
     }
 }
