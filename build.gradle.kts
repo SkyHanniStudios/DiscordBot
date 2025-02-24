@@ -1,5 +1,7 @@
 plugins {
+    application
     kotlin("jvm") version "2.0.0"
+    id("com.github.johnrengelman.shadow") version "8.1.1"
 }
 
 group = "org.example"
@@ -21,5 +23,15 @@ tasks.test {
     useJUnitPlatform()
 }
 kotlin {
-    jvmToolchain(17)
+    jvmToolchain(21)
+}
+
+application {
+    mainClass.set("at.hannibal2.skyhanni.discord.DiscordBot")
+}
+
+tasks.jar {
+    manifest {
+        attributes("Main-Class" to "at.hannibal2.skyhanni.discord.DiscordBot")
+    }
 }
