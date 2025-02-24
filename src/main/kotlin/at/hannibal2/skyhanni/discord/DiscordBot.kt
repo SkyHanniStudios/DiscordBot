@@ -24,6 +24,10 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
             println("$effectiveName ($name/$globalName) $action")
         }
 
+        fun reply(message: String) {
+            event.message.reply(message).queue()
+        }
+
         if (message.startsWith("!")) {
             var keyword = message.substring(1)
             var silent = false
@@ -39,14 +43,10 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
                         event.channel.sendMessage(response).queue()
                     }
                 } else {
-                    event.message.reply(response).queue()
+                    reply(response)
                 }
                 return
             }
-        }
-
-        fun reply(message: String) {
-            event.message.reply(message).queue()
         }
 
         // checking that only staff can change tags
