@@ -85,7 +85,8 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
                 }
                 if (Database.addKeyword(keyword, response)) {
                     reply("✅ Keyword '$keyword' added!")
-                    logAction("added '$keyword' with response `$response`")
+                    logAction("added keyword '$keyword'")
+                    logAction("response: '$response'")
                 } else {
                     reply("❌ Failed to add keyword.")
                 }
@@ -95,13 +96,16 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
             args[0] == "!edit" && args.size == 3 -> {
                 val keyword = args[1]
                 val response = args[2]
-                if (!Database.listKeywords().contains(keyword.lowercase())) {
+                val oldResponse = Database.getResponse(keyword)
+                if (oldResponse == null) {
                     reply("❌ Keyword does not exist! Use `!add` instead.")
                     return
                 }
                 if (Database.addKeyword(keyword, response)) {
                     reply("✅ Keyword '$keyword' edited!")
-                    logAction("edited '$keyword' with response `$response`")
+                    logAction("edited keyword '$keyword'")
+                    logAction("old response: '$oldResponse'")
+                    logAction("new response: '$response'")
                 } else {
                     reply("❌ Failed to edit keyword.")
                 }
@@ -110,9 +114,11 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
 
             args[0] == "!delete" && args.size == 2 -> {
                 val keyword = args[1]
+                val oldResponse = Database.getResponse(keyword)
                 if (Database.deleteKeyword(keyword)) {
                     reply("🗑️ Keyword '$keyword' deleted!")
-                    logAction("deleted '$keyword'")
+                    logAction("deleted keyword '$keyword'")
+                    logAction("response was: '$oldResponse'")
                 } else {
                     reply("❌ Keyword '$keyword' not found.")
                 }
