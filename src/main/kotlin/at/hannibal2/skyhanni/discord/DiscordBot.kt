@@ -4,6 +4,7 @@ import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.requests.GatewayIntent
+import java.util.Scanner
 
 class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
     override fun onMessageReceived(event: MessageReceivedEvent) {
@@ -87,7 +88,7 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
 
             message == "!help" -> {
                 val commands = listOf("add", "remove", "taglist", "edit")
-                val response = "The bot currently supports those commands: ${commands.joinToString(", ", prefix = "!")}"
+                val response = "The bot currently supports these commands: ${commands.joinToString(", ", prefix = "!")}"
                 event.channel.sendMessage(response).queue()
                 return
             }
@@ -115,7 +116,19 @@ fun main() {
 
     sendMessageToBotChannel("I'm awake \uD83D\uDE42")
 
+    Thread {
+        val scanner = Scanner(System.`in`)
+        while (scanner.hasNextLine()) {
+            val input = scanner.nextLine().trim().lowercase()
+            if (input in listOf("close", "stop", "exit", "end")) {
+                sendMessageToBotChannel("Manually shutting down \uD83D\uDC4B")
+                jda.shutdown()
+                break
+            }
+        }
+    }.start()
+
     Runtime.getRuntime().addShutdownHook(Thread {
-        sendMessageToBotChannel("I'm tired, see you later \uD83D\uDE26")
+        sendMessageToBotChannel("I am the shutdown hook and I say bye \uD83D\uDC4B")
     })
 }
