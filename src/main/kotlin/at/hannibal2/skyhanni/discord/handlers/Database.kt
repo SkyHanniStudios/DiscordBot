@@ -1,4 +1,4 @@
-package at.hannibal2.skyhanni.discord
+package at.hannibal2.skyhanni.discord.handlers
 
 import java.sql.Connection
 import java.sql.DriverManager

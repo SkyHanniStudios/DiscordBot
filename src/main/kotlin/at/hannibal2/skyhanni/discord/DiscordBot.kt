@@ -1,144 +1,69 @@
 package at.hannibal2.skyhanni.discord
 
+import at.hannibal2.skyhanni.discord.handlers.Commands
+import at.hannibal2.skyhanni.discord.handlers.Commands.commands
+import at.hannibal2.skyhanni.discord.handlers.Database
+import at.hannibal2.skyhanni.discord.util.EventUtil.logAction
+import at.hannibal2.skyhanni.discord.util.EventUtil.reply
+import at.hannibal2.skyhanni.discord.util.Util.hasPermissions
 import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.requests.GatewayIntent
 import org.slf4j.LoggerFactory
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import java.util.Scanner
 
 class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
 	val logger = LoggerFactory.getLogger(DiscordBot::class.java)
     override fun onMessageReceived(event: MessageReceivedEvent) {
         // fix working on other servers
-        if (event.guild.id != config.allowedServerId) return
+        if (event.guild.id != config.allowedServerId || event.author.isBot) return
 
         val message = event.message.contentRaw.trim()
         if (!message.startsWith("!")) return
         val args = message.split(" ", limit = 3)
 
-        if (event.author.isBot) return
+        if (commands.contains(args[0].substring(1))) {
+            if (event.channel.id != config.botCommandChannelId) return
 
-        fun logAction(action: String) {
-            val author = event.author
-            val name = author.name
-            val effectiveName = author.effectiveName
-            val globalName = author.globalName
-	        logger.info("$effectiveName ($name/$globalName) $action")
-        }
+            val command = commands[args[0].substring(1)] ?: return
+            if (command.permissions == "Staff" && !event.hasPermissions()) return
 
-        fun reply(message: String) {
-            event.message.reply(message).queue()
-        }
-
-        var keyword = message.substring(1)
-        var deleting = false
-        if (keyword.endsWith(" -d")) {
-            keyword = keyword.dropLast(3)
-            deleting = true
-        }
-        val response = Database.getResponse(keyword)
-        if (response != null) {
-            val channelName = event.channel.name
-            event.message.referencedMessage?.let {
-                logAction("used reply keyword '$keyword' in channel '$channelName'")
-                event.message.delete().queue()
-                it.reply(response).queue()
-            } ?: run {
-                if (deleting) {
-                    logAction("used keyword with delete '$keyword' in channel '$channelName'")
-                    event.message.delete().queue {
-                        event.channel.sendMessage(response).queue()
+            command.execute(event, args.subList(1, args.size))
+        } else {
+            var keyword = message.substring(1)
+            var deleting = false
+            if (keyword.endsWith(" -d")) {
+                keyword = keyword.dropLast(3)
+                deleting = true
+            }
+            val response = Database.getResponse(keyword)
+            if (response != null) {
+                val channelName = event.channel.name
+                event.message.referencedMessage?.let {
+                    event.logAction("used reply keyword '$keyword' in channel '$channelName'")
+                    event.message.delete().queue()
+                    it.reply(response).queue()
+                } ?: run {
+                    if (deleting) {
+                        event.logAction("used keyword with delete '$keyword' in channel '$channelName'")
+                        event.message.delete().queue {
+                            event.channel.sendMessage(response).queue()
+                        }
+                    } else {
+                        event.reply(response)
                     }
-                } else {
-                    reply(response)
-                }
-            }
-            return
-        }
-
-        if (message == "!taglist" || message == "!list") {
-            val keywords = Database.listKeywords().joinToString(", ")
-            reply(if (keywords.isNotEmpty()) "📌 Keywords: $keywords" else "No keywords set.")
-            return
-        }
-
-        // checking that only staff can change tags
-        if (event.channel.id != config.botCommandChannelId) return
-
-        val member = event.member ?: return
-        val allowedRoleIds = config.editPermissionRoleIds.values
-        if (!member.roles.any { it.id in allowedRoleIds }) {
-            reply("No perms \uD83E\uDD7A")
-            // User doesn't have an allowed role; you can ignore or send a warning.
-            return
-        }
-
-        when {
-            args[0] == "!add" && args.size == 3 -> {
-                val keyword = args[1]
-                val response = args[2]
-                if (Database.listKeywords().contains(keyword.lowercase())) {
-                    reply("❌ Already exists use `!edit` instead.")
-                    return
-                }
-                if (Database.addKeyword(keyword, response)) {
-                    reply("✅ Keyword '$keyword' added!")
-                    logAction("added keyword '$keyword'")
-                    logAction("response: '$response'")
-                } else {
-                    reply("❌ Failed to add keyword.")
                 }
                 return
-            }
-
-            args[0] == "!edit" && args.size == 3 -> {
-                val keyword = args[1]
-                val response = args[2]
-                val oldResponse = Database.getResponse(keyword)
-                if (oldResponse == null) {
-                    reply("❌ Keyword does not exist! Use `!add` instead.")
-                    return
-                }
-                if (Database.addKeyword(keyword, response)) {
-                    reply("✅ Keyword '$keyword' edited!")
-                    logAction("edited keyword '$keyword'")
-                    logAction("old response: '$oldResponse'")
-                    logAction("new response: '$response'")
-                } else {
-                    reply("❌ Failed to edit keyword.")
-                }
-                return
-            }
-
-            args[0] == "!delete" && args.size == 2 -> {
-                val keyword = args[1]
-                val oldResponse = Database.getResponse(keyword)
-                if (Database.deleteKeyword(keyword)) {
-                    reply("🗑️ Keyword '$keyword' deleted!")
-                    logAction("deleted keyword '$keyword'")
-                    logAction("response was: '$oldResponse'")
-                } else {
-                    reply("❌ Keyword '$keyword' not found.")
-                }
-                return
-            }
-
-            message == "!help" -> {
-                val commands = listOf("add", "remove", "list", "edit")
-                reply("The bot currently supports these commands: ${commands.joinToString(", ", prefix = "!")}")
-                return
+            } else {
+                event.reply("Unknown command \uD83E\uDD7A Type `!help` for help.")
             }
         }
-
-        reply("Unknown command \uD83E\uDD7A Type `!help` for help.")
     }
 }
 
 fun main() {
-    val config = ConfigLoader.load("config.json")
+    val config = ConfigLoader.load("src/main/kotlin/at/hannibal2/skyhanni/discord/config.json")
     val token = config.token
 
     val jda = with(JDABuilder.createDefault(token)) {
@@ -146,6 +71,8 @@ fun main() {
         enableIntents(GatewayIntent.MESSAGE_CONTENT)
     }.build()
     jda.awaitReady()
+
+    Commands.registerCommands()
 
     fun sendMessageToBotChannel(message: String) {
         jda.getTextChannelById(config.botCommandChannelId)?.sendMessage(message)?.queue()

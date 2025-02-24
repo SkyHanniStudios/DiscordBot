@@ -1,5 +1,6 @@
 package at.hannibal2.skyhanni.discord
 import com.google.gson.Gson
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import com.google.gson.GsonBuilder
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -33,3 +34,23 @@ object ConfigLoader {
 		}
     }
 }
+
+interface Command {
+    val category: String
+    val permissions: String
+    val info: CommandInfo
+    fun execute(event: MessageReceivedEvent, args: List<String>)
+}
+
+data class CommandInfo(
+    val name: String,
+    val description: String,
+    val options: List<CommandOption> = emptyList(),
+    val aliases: List<String> = emptyList(),
+)
+
+data class CommandOption(
+    val name: String,
+    val description: String,
+    val required: Boolean,
+)
