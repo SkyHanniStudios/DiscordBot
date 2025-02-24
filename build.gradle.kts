@@ -4,7 +4,7 @@ plugins {
     id("com.gradleup.shadow") version "8.3.6"
 }
 
-group = "org.example"
+group = "at.hannibal.skyhannibot"
 version = "1.0-SNAPSHOT"
 
 repositories {
