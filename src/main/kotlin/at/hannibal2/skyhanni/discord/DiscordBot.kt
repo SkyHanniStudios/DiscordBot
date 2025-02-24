@@ -96,6 +96,16 @@ fun main() {
     }.build()
     jda.awaitReady()
 
-    // TODO does not work, find out why
-    jda.getPrivateChannelById(config.botCommandChannelId)?.sendMessage("I'm Back!")?.queue()
+    fun sendMessageToBotChannel(message: String) {
+        jda.getTextChannelById(config.botCommandChannelId)?.sendMessage(message)?.queue()
+    }
+
+    Thread {
+        Thread.sleep(2_000)
+        sendMessageToBotChannel("I'm awake \uD83D\uDE42")
+    }.start()
+
+    Runtime.getRuntime().addShutdownHook(Thread {
+        sendMessageToBotChannel("I'm tired, see you later \uD83D\uDE26")
+    })
 }
