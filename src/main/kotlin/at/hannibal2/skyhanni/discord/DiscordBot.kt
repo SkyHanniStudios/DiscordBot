@@ -41,17 +41,17 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
         val response = Database.getResponse(keyword)
         if (response != null) {
             val channelName = event.channel.name
-            if (silent) {
-                logAction("used silent keyword '$keyword' in channel '$channelName'")
-                event.message.delete().queue {
-                    event.channel.sendMessage(response).queue()
-                }
-            } else {
-                event.message.referencedMessage?.let {
-                    logAction("used reply keyword '$keyword' in channel '$channelName'")
-                    event.message.delete().queue()
-                    it.reply(response).queue()
-                } ?: run {
+            event.message.referencedMessage?.let {
+                logAction("used reply keyword '$keyword' in channel '$channelName'")
+                event.message.delete().queue()
+                it.reply(response).queue()
+            } ?: run {
+                if (silent) {
+                    logAction("used silent keyword '$keyword' in channel '$channelName'")
+                    event.message.delete().queue {
+                        event.channel.sendMessage(response).queue()
+                    }
+                } else {
                     reply(response)
                 }
             }
