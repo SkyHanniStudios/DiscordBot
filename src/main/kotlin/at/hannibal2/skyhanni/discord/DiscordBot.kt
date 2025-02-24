@@ -84,9 +84,13 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
 fun main() {
     val config = ConfigLoader.load("config.json")
     val token = config.token
-    val jda = JDABuilder.createDefault(token).addEventListeners(DiscordBot(config))
-        .enableIntents(GatewayIntent.MESSAGE_CONTENT).build()
+
+    val jda = with(JDABuilder.createDefault(token)) {
+        addEventListeners(DiscordBot(config))
+        enableIntents(GatewayIntent.MESSAGE_CONTENT)
+    }.build()
     jda.awaitReady()
+
     // TODO does not work, find out why
     jda.getPrivateChannelById(config.botCommandChannelId)?.sendMessage("I'm Back!")?.queue()
 }
