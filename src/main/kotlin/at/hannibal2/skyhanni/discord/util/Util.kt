@@ -6,7 +6,7 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
 object Util {
 
-    private val config = ConfigLoader.load("config.json")
+    private val config = ConfigLoader.load("src/main/kotlin/at/hannibal2/skyhanni/discord/config.json")
 
     fun MessageReceivedEvent.hasPermissions(): Boolean {
         val member = this.member ?: return false
