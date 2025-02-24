@@ -4,6 +4,8 @@ import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.requests.GatewayIntent
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.Scanner
 
 class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
@@ -22,7 +24,8 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
             val name = author.name
             val effectiveName = author.effectiveName
             val globalName = author.globalName
-            println("$effectiveName ($name/$globalName) $action")
+            val time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+            println("$time $effectiveName ($name/$globalName) $action")
         }
 
         fun reply(message: String) {
@@ -38,8 +41,10 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
         val response = Database.getResponse(keyword)
         if (response != null) {
             if (silent) {
-                logAction("used silent keyword '$keyword'")
+                val channelName = event.channel.name
+                logAction("used silent keyword '$keyword' in channel '$channelName'")
                 event.message.delete().queue {
+                    logAction("used reply keyword '$keyword' in channel '$channelName'")
                     event.channel.sendMessage(response).queue()
                 }
             } else {
