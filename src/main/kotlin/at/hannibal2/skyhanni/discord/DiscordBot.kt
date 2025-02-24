@@ -49,6 +49,13 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
             }
         }
 
+        if (message == "!taglist" || message == "!list") {
+            val keywords = Database.listKeywords().joinToString(", ")
+            val response = if (keywords.isNotEmpty()) "📌 Keywords: $keywords" else "No keywords set."
+            reply(response)
+            return
+        }
+
         // checking that only staff can change tags
         if (event.channel.id != config.botCommandChannelId) return
 
@@ -93,13 +100,6 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
                 } else {
                     reply("❌ Keyword '$keyword' not found.")
                 }
-                return
-            }
-
-            message == "!taglist" -> {
-                val keywords = Database.listKeywords().joinToString(", ")
-                val response = if (keywords.isNotEmpty()) "📌 Keywords: $keywords" else "No keywords set."
-                reply(response)
                 return
             }
 
