@@ -5,12 +5,12 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.requests.GatewayIntent
 import org.slf4j.LoggerFactory
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import java.util.Scanner
 
 class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
-	val logger = LoggerFactory.getLogger(DiscordBot::class.java)
+
+    private val logger = LoggerFactory.getLogger(DiscordBot::class.java)
+
     override fun onMessageReceived(event: MessageReceivedEvent) {
         // fix working on other servers
         if (event.guild.id != config.allowedServerId) return
@@ -26,7 +26,7 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
             val name = author.name
             val effectiveName = author.effectiveName
             val globalName = author.globalName
-	        logger.info("$effectiveName ($name/$globalName) $action")
+            logger.info("$effectiveName ($name/$globalName) $action")
         }
 
         fun reply(message: String) {
