@@ -112,7 +112,7 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
                 return
             }
 
-            args[0] == "!delete" && args.size == 2 -> {
+            (args[0] == "!delete" || args[0] == "!remove") && args.size == 2 -> {
                 val keyword = args[1]
                 val oldResponse = Database.getResponse(keyword)
                 if (Database.deleteKeyword(keyword)) {
@@ -126,7 +126,7 @@ class DiscordBot(private val config: BotConfig) : ListenerAdapter() {
             }
 
             message == "!help" -> {
-                val commands = listOf("add", "remove", "list", "edit")
+                val commands = listOf("add", "delete", "list", "edit")
                 reply("The bot currently supports these commands: ${commands.joinToString(", ", prefix = "!")}")
                 return
             }
