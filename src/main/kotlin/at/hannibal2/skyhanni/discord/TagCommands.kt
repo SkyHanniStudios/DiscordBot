@@ -92,7 +92,6 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
         val author = event.author.id
         removeLastTagCommand[author]?.let {
             for (message in it) {
-                println("trying to delete ${message.contentRaw}")
                 message.delete().queue()
             }
             event.message.delete().queue()
