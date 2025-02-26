@@ -101,6 +101,7 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
         val author = event.author.id
         val message = event.message
         if (undo(author)) {
+            event.logAction("undid last tag.")
             message.delete().queue()
         } else {
             addLastMessage(author, message)

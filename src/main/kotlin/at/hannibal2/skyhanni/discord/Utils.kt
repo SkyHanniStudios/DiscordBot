@@ -33,6 +33,7 @@ object Utils {
         val name = author.name
         val effectiveName = author.effectiveName
         val globalName = author.globalName
-        logger.info("$effectiveName ($name/$globalName) $action")
+        val id = author.id
+        logger.info("$effectiveName ($name/$globalName/$id) $action")
     }
 }
