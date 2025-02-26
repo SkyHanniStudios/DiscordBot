@@ -99,12 +99,28 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
 
     private fun undoCommand(event: MessageReceivedEvent, args: List<String>) {
         val author = event.author.id
-        removeLastTagCommand[author]?.let {
+        if (undo(author)) {
+            event.message.delete().queue()
+        } else {
+            removeLastTagCommand.getOrPut(author) { mutableListOf() }.add(event.message)
+            event.message.replyWithConsumer("No last tag to undo found!") { consumer ->
+                removeLastTagCommand.getOrPut(author) { mutableListOf() }.add(consumer.message)
+            }
+            Thread {
+                Thread.sleep(2_000)
+                undo(author)
+            }.start()
+        }
+    }
+
+    private fun undo(author: String): Boolean {
+        return removeLastTagCommand[author]?.let {
             for (message in it) {
                 message.delete().queue()
             }
-            event.message.delete().queue()
-        }
+            removeLastTagCommand.remove(author)
+            true
+        } ?: false
     }
 
     fun handleTag(event: MessageReceivedEvent): Boolean {
