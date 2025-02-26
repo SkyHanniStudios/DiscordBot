@@ -43,7 +43,8 @@ class Commands(config: BotConfig) {
     }
 
     private fun MessageReceivedEvent.helpCommand(args: List<String>) {
-        reply("Supported commands: !help, !add, !edit, !delete/!remove, !list/!taglist")
+        val list = commands.joinToString(", !", prefix = "!") { it.name }
+        reply("Supported commands: $list")
     }
 }
 
