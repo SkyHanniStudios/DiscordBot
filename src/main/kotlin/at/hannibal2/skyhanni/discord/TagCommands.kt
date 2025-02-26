@@ -99,12 +99,13 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
 
     private fun undoCommand(event: MessageReceivedEvent, args: List<String>) {
         val author = event.author.id
+        val message = event.message
         if (undo(author)) {
-            event.message.delete().queue()
+            message.delete().queue()
         } else {
-            removeLastTagCommand.getOrPut(author) { mutableListOf() }.add(event.message)
-            event.message.replyWithConsumer("No last tag to undo found!") { consumer ->
-                removeLastTagCommand.getOrPut(author) { mutableListOf() }.add(consumer.message)
+            addLastMessage(author, message)
+            message.replyWithConsumer("No last tag to undo found!") { consumer ->
+                addLastMessage(author, consumer.message)
             }
             Thread {
                 Thread.sleep(2_000)
@@ -146,24 +147,28 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
             event.logAction("used reply keyword '$keyword' in channel '$channelName'")
             message.delete().queue()
             it.replyWithConsumer(response) { consumer ->
-                removeLastTagCommand.getOrPut(author) { mutableListOf() }.add(consumer.message)
+                addLastMessage(author, consumer.message)
             }
         } ?: run {
             if (deleting) {
                 event.logAction("used keyword with delete '$keyword' in channel '$channelName'")
                 message.delete().queue {
                     event.channel.sendMessageWithConsumer(response) { consumer ->
-                        removeLastTagCommand.getOrPut(author) { mutableListOf() }.add(consumer.message)
+                        addLastMessage(author, consumer.message)
                     }
                 }
             } else {
-                removeLastTagCommand.getOrPut(author) { mutableListOf() }.add(message)
+                addLastMessage(author, message)
                 message.replyWithConsumer(response) { consumer ->
-                    removeLastTagCommand.getOrPut(author) { mutableListOf() }.add(consumer.message)
+                    addLastMessage(author, consumer.message)
                 }
             }
         }
         return true
+    }
+
+    private fun addLastMessage(author: String, message: Message) {
+        removeLastTagCommand.getOrPut(author) { mutableListOf() }.add(message)
     }
 
     private fun hasEditPermission(event: MessageReceivedEvent): Boolean {
