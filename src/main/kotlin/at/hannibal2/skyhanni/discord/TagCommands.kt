@@ -31,8 +31,7 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
 
     private fun MessageReceivedEvent.listCommand(args: List<String>) {
         val keywords = Database.listKeywords().joinToString(", !", prefix = "!")
-        val replyMsg = if (keywords.isNotEmpty()) "📌 Keywords: $keywords" else "No keywords set."
-        reply(replyMsg)
+        reply(if (keywords.isNotEmpty()) "📌 Keywords: $keywords" else "No keywords set.")
     }
 
     private fun MessageReceivedEvent.addCommand(args: List<String>) {
