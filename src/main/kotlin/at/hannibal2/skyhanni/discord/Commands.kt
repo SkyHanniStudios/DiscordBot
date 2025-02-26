@@ -23,12 +23,14 @@ class Commands(val config: BotConfig) {
     fun onMessage(bot: DiscordBot, event: MessageReceivedEvent) {
         if (event.guild.id != bot.config.allowedServerId) return
 
-        if (event.author.isBot) {
-            if (event.author.id == botId) {
+        val autor = event.author
+        if (autor.isBot) {
+            if (autor.id == botId) {
                 BotMessageHandler.handle(event)
             }
             return
         }
+        tagCommands.lastMessages.remove(autor.id)
 
         val content = event.message.contentRaw.trim()
         if (!content.startsWith("!")) return
@@ -65,5 +67,5 @@ class Commands(val config: BotConfig) {
 class Command(
     val name: String,
     val adminOnly: Boolean = false,
-    val consumer: (MessageReceivedEvent, List<String>) -> Unit
+    val consumer: (MessageReceivedEvent, List<String>) -> Unit,
 )

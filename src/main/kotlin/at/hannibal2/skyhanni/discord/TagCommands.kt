@@ -12,7 +12,7 @@ import kotlin.time.Duration.Companion.seconds
 
 @Suppress("UNUSED_PARAMETER")
 class TagCommands(private val config: BotConfig, commands: Commands) {
-    private val lastMessages = mutableMapOf<String, MutableList<Message>>()
+    val lastMessages = mutableMapOf<String, MutableList<Message>>()
 
     init {
         commands.add(Command("list") { event, args -> event.listCommand(args) })
@@ -142,7 +142,6 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
 
         val author = message.author.id
         val channelName = event.channel.name
-        lastMessages.remove(author)
         message.referencedMessage?.let {
             event.logAction("used reply keyword '$keyword' in channel '$channelName'")
             message.messageDelete()
