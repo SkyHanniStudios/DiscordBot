@@ -9,7 +9,7 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
 @Suppress("UNUSED_PARAMETER")
 class TagCommands(private val config: BotConfig, commands: Commands) {
-    private val removeLastTagCommand = mutableMapOf<String, MutableList<Message>>()
+    private val lastMessages = mutableMapOf<String, MutableList<Message>>()
 
     init {
         commands.add(Command("list", ::listCommand))
@@ -115,11 +115,11 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
     }
 
     private fun undo(author: String): Boolean {
-        return removeLastTagCommand[author]?.let {
+        return lastMessages[author]?.let {
             for (message in it) {
                 message.delete().queue()
             }
-            removeLastTagCommand.remove(author)
+            lastMessages.remove(author)
             true
         } ?: false
     }
@@ -142,7 +142,7 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
 
         val author = message.author.id
         val channelName = event.channel.name
-        removeLastTagCommand.remove(author)
+        lastMessages.remove(author)
         message.referencedMessage?.let {
             event.logAction("used reply keyword '$keyword' in channel '$channelName'")
             message.delete().queue()
@@ -168,7 +168,7 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
     }
 
     private fun addLastMessage(author: String, message: Message) {
-        removeLastTagCommand.getOrPut(author) { mutableListOf() }.add(message)
+        lastMessages.getOrPut(author) { mutableListOf() }.add(message)
     }
 
     private fun hasEditPermission(event: MessageReceivedEvent): Boolean {
