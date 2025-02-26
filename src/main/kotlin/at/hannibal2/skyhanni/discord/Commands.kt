@@ -4,7 +4,7 @@ import at.hannibal2.skyhanni.discord.Utils.reply
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
 @Suppress("UNUSED_PARAMETER")
-class Commands(config: BotConfig) {
+class Commands(val config: BotConfig) {
 
     private val botId = "1343351725381128193"
 
@@ -36,16 +36,34 @@ class Commands(config: BotConfig) {
         val args = content.substring(1).split(" ", limit = 3)
         val literal = args[0].lowercase()
 
-        (commands.find { it.name == literal } ?: run {
+        val command = commands.find { it.name == literal } ?: run {
             tagCommands.handleTag(event)
             return
-        }).consumer(event, args)
+        }
+        if (command.adminOnly) {
+            if (!event.hasAdminPermissions()) {
+                event.reply("No permissions \uD83E\uDD7A")
+                return
+            }
+        }
+        command.consumer(event, args)
     }
 
     private fun MessageReceivedEvent.helpCommand(args: List<String>) {
-        val list = commands.joinToString(", !", prefix = "!") { it.name }
+        val hasAdminPerms = hasAdminPermissions()
+        val list = commands.filter { !it.adminOnly || hasAdminPerms }.joinToString(", !", prefix = "!") { it.name }
         reply("Supported commands: $list")
+    }
+
+    private fun MessageReceivedEvent.hasAdminPermissions(): Boolean {
+        val member = member ?: return false
+        val allowedRoleIds = config.editPermissionRoleIds.values
+        return !member.roles.none { it.id in allowedRoleIds }
     }
 }
 
-class Command(val name: String, val consumer: (MessageReceivedEvent, List<String>) -> Unit)
+class Command(
+    val name: String,
+    val adminOnly: Boolean = false,
+    val consumer: (MessageReceivedEvent, List<String>) -> Unit
+)

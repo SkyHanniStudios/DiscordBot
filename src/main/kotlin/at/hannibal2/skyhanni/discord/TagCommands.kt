@@ -18,12 +18,12 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
         commands.add(Command("list") { event, args -> event.listCommand(args) })
         commands.add(Command("taglist") { event, args -> event.listCommand(args) })
 
-        commands.add(Command("edit") { event, args -> event.editCommand(args) })
-        commands.add(Command("change") { event, args -> event.editCommand(args) })
+        commands.add(Command("edit", adminOnly = true) { event, args -> event.editCommand(args) })
+        commands.add(Command("change", adminOnly = true) { event, args -> event.editCommand(args) })
 
-        commands.add(Command("add") { event, args -> event.addCommand(args) })
-        commands.add(Command("delete") { event, args -> event.deleteCommand(args) })
-        commands.add(Command("remove") { event, args -> event.deleteCommand(args) })
+        commands.add(Command("add", adminOnly = true) { event, args -> event.addCommand(args) })
+        commands.add(Command("delete", adminOnly = true) { event, args -> event.deleteCommand(args) })
+        commands.add(Command("remove", adminOnly = true) { event, args -> event.deleteCommand(args) })
 
         // removes the last !tag action
         commands.add(Command("undo") { event, args -> event.undoCommand(args) })
@@ -31,11 +31,11 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
 
     private fun MessageReceivedEvent.listCommand(args: List<String>) {
         val keywords = Database.listKeywords().joinToString(", !", prefix = "!")
-        reply(if (keywords.isNotEmpty()) "📌 Keywords: $keywords" else "No keywords set.")
+        reply(if (keywords.isNotEmpty()) "📌 All ${keywords.length} keywords: $keywords" else "No keywords set.")
     }
 
     private fun MessageReceivedEvent.addCommand(args: List<String>) {
-        if (!hasEditPermission(this)) return
+        if (!isEditTagChannel()) return
 
         if (args.size < 3) return
         val keyword = args[1]
@@ -58,8 +58,7 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
     }
 
     private fun MessageReceivedEvent.editCommand(args: List<String>) {
-        if (channel.id != config.botCommandChannelId) return
-        if (!hasEditPermission(this)) return
+        if (!isEditTagChannel()) return
 
         if (args.size < 3) return
         val keyword = args[1]
@@ -84,8 +83,7 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
     }
 
     private fun MessageReceivedEvent.deleteCommand(args: List<String>) {
-        if (channel.id != config.botCommandChannelId) return
-        if (!hasEditPermission(this)) return
+        if (!isEditTagChannel()) return
 
         if (args.size < 2) return
         val keyword = args[1]
@@ -135,10 +133,10 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
             deleting = true
         }
         val response = Database.getResponse(keyword) ?: run {
-            if (hasEditPermission(event)) {
-                val s = "Unknown command \uD83E\uDD7A Type `!help` for help."
-                event.reply(s)
-            }
+//            if (event.hasEditPermission()) {
+            val s = "Unknown command \uD83E\uDD7A Type `!help` for help."
+            event.reply(s)
+//            }
             return false
         }
 
@@ -173,15 +171,11 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
         lastMessages.getOrPut(author) { mutableListOf() }.add(message)
     }
 
-    private fun hasEditPermission(event: MessageReceivedEvent): Boolean {
-        if (event.channel.id != config.botCommandChannelId) return false
-        val member = event.member ?: return false
-        val allowedRoleIds = config.editPermissionRoleIds.values
-        if (member.roles.none { it.id in allowedRoleIds }) {
-            event.reply("No perms \uD83E\uDD7A")
+    private fun MessageReceivedEvent.isEditTagChannel(): Boolean {
+        if (channel.id != config.botCommandChannelId) {
+            reply("Wrong channel \uD83E\uDD7A")
             return false
         }
         return true
     }
-
 }
