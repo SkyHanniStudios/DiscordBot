@@ -15,96 +15,96 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
     private val lastMessages = mutableMapOf<String, MutableList<Message>>()
 
     init {
-        commands.add(Command("list", ::listCommand))
-        commands.add(Command("taglist", ::listCommand))
+        commands.add(Command("list") { event, args -> event.listCommand(args) })
+        commands.add(Command("taglist") { event, args -> event.listCommand(args) })
 
-        commands.add(Command("edit", ::editCommand))
-        commands.add(Command("change", ::editCommand))
+        commands.add(Command("edit") { event, args -> event.editCommand(args) })
+        commands.add(Command("change") { event, args -> event.editCommand(args) })
 
-        commands.add(Command("add", ::addCommand))
-        commands.add(Command("delete", ::deleteCommand))
-        commands.add(Command("remove", ::deleteCommand))
+        commands.add(Command("add") { event, args -> event.addCommand(args) })
+        commands.add(Command("delete") { event, args -> event.deleteCommand(args) })
+        commands.add(Command("remove") { event, args -> event.deleteCommand(args) })
 
         // removes the last !tag action
-        commands.add(Command("undo", ::undoCommand))
+        commands.add(Command("undo") { event, args -> event.undoCommand(args) })
     }
 
-    private fun listCommand(event: MessageReceivedEvent, args: List<String>) {
+    private fun MessageReceivedEvent.listCommand(args: List<String>) {
         val keywords = Database.listKeywords().joinToString(", ")
         val replyMsg = if (keywords.isNotEmpty()) "📌 Keywords: $keywords" else "No keywords set."
-        event.reply(replyMsg)
+        reply(replyMsg)
     }
 
-    private fun addCommand(event: MessageReceivedEvent, args: List<String>) {
-        if (!hasEditPermission(event)) return
+    private fun MessageReceivedEvent.addCommand(args: List<String>) {
+        if (!hasEditPermission(this)) return
 
         if (args.size < 3) return
         val keyword = args[1]
         val response = args[2]
         if (Database.listKeywords().contains(keyword.lowercase())) {
-            event.reply("❌ Already exists. Use `!edit` instead.")
+            reply("❌ Already exists. Use `!edit` instead.")
             return
         }
         if (Database.addKeyword(keyword, response)) {
-            event.message.messageDeleteAndThen {
-                val id = event.author.id
-                event.reply("✅ Keyword '$keyword' added by <@$id>:")
-                event.reply(response)
-                event.logAction("added keyword '$keyword'")
-                event.logAction("response: '$response'")
+            message.messageDeleteAndThen {
+                val id = author.id
+                reply("✅ Keyword '$keyword' added by <@$id>:")
+                reply(response)
+                logAction("added keyword '$keyword'")
+                logAction("response: '$response'")
             }
         } else {
-            event.reply("❌ Failed to add keyword.")
+            reply("❌ Failed to add keyword.")
         }
     }
 
-    private fun editCommand(event: MessageReceivedEvent, args: List<String>) {
-        if (event.channel.id != config.botCommandChannelId) return
-        if (!hasEditPermission(event)) return
+    private fun MessageReceivedEvent.editCommand(args: List<String>) {
+        if (channel.id != config.botCommandChannelId) return
+        if (!hasEditPermission(this)) return
 
         if (args.size < 3) return
         val keyword = args[1]
         val response = args[2]
         val oldResponse = Database.getResponse(keyword)
         if (oldResponse == null) {
-            event.reply("❌ Keyword doesn't exist! Use `!add` instead.")
+            reply("❌ Keyword doesn't exist! Use `!add` instead.")
             return
         }
         if (Database.addKeyword(keyword, response)) {
-            event.message.messageDeleteAndThen {
-                val id = event.author.id
-                event.reply("✅ Keyword '$keyword' edited by <@$id>:")
-                event.reply(response)
-                event.logAction("edited keyword '$keyword'")
-                event.logAction("old response: '$oldResponse'")
-                event.logAction("new response: '$response'")
+            message.messageDeleteAndThen {
+                val id = author.id
+                reply("✅ Keyword '$keyword' edited by <@$id>:")
+                reply(response)
+                logAction("edited keyword '$keyword'")
+                logAction("old response: '$oldResponse'")
+                logAction("new response: '$response'")
             }
         } else {
-            event.reply("❌ Failed to edit keyword.")
+            reply("❌ Failed to edit keyword.")
         }
     }
 
-    private fun deleteCommand(event: MessageReceivedEvent, args: List<String>) {
-        if (event.channel.id != config.botCommandChannelId) return
-        if (!hasEditPermission(event)) return
+    private fun MessageReceivedEvent.deleteCommand(args: List<String>) {
+        if (channel.id != config.botCommandChannelId) return
+        if (!hasEditPermission(this)) return
 
         if (args.size < 2) return
         val keyword = args[1]
         val oldResponse = Database.getResponse(keyword)
         if (Database.deleteKeyword(keyword)) {
-            event.reply("🗑️ Keyword '$keyword' deleted!")
-            event.logAction("deleted keyword '$keyword'")
-            event.logAction("response was: '$oldResponse'")
+            reply("🗑️ Keyword '$keyword' deleted!")
+            logAction("deleted keyword '$keyword'")
+            logAction("response was: '$oldResponse'")
         } else {
-            event.reply("❌ Keyword '$keyword' not found.")
+            reply("❌ Keyword '$keyword' not found.")
         }
     }
 
-    private fun undoCommand(event: MessageReceivedEvent, args: List<String>) {
-        val author = event.author.id
-        val message = event.message
+    private fun MessageReceivedEvent.undoCommand(args: List<String>) {
+        val author = author.id
+        val message = message
         if (undo(author)) {
-            event.logAction("undid last send tag.")
+            logAction("undid last send tag.")
             message.messageDelete()
         } else {
             addLastMessage(author, message)

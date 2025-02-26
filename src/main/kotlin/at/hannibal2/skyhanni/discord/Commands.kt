@@ -13,7 +13,7 @@ class Commands(config: BotConfig) {
     private var tagCommands = TagCommands(config, this)
 
     init {
-        add(Command("help", ::helpCommand))
+        add(Command("help") { event, args -> event.helpCommand(args) })
     }
 
     fun add(element: Command) {
@@ -42,8 +42,8 @@ class Commands(config: BotConfig) {
         }).consumer(event, args)
     }
 
-    private fun helpCommand(event: MessageReceivedEvent, args: List<String>) {
-        event.reply("Supported commands: !help, !add, !edit, !delete/!remove, !list/!taglist")
+    private fun MessageReceivedEvent.helpCommand(args: List<String>) {
+        reply("Supported commands: !help, !add, !edit, !delete/!remove, !list/!taglist")
     }
 }
 
