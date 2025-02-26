@@ -2,6 +2,7 @@ package at.hannibal2.skyhanni.discord
 
 import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.messageDelete
+import at.hannibal2.skyhanni.discord.Utils.messageDeleteAndThen
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.Utils.replyWithConsumer
 import at.hannibal2.skyhanni.discord.Utils.sendMessageWithConsumer
@@ -44,7 +45,7 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
             return
         }
         if (Database.addKeyword(keyword, response)) {
-            event.message.delete().queue {
+            event.message.messageDeleteAndThen {
                 val id = event.author.id
                 event.reply("✅ Keyword '$keyword' added by <@$id>:")
                 event.reply(response)
@@ -69,7 +70,7 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
             return
         }
         if (Database.addKeyword(keyword, response)) {
-            event.message.delete().queue {
+            event.message.messageDeleteAndThen {
                 val id = event.author.id
                 event.reply("✅ Keyword '$keyword' edited by <@$id>:")
                 event.reply(response)
@@ -154,7 +155,7 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
         } ?: run {
             if (deleting) {
                 event.logAction("used keyword with delete '$keyword' in channel '$channelName'")
-                message.delete().queue {
+                message.messageDeleteAndThen {
                     event.channel.sendMessageWithConsumer(response) { consumer ->
                         addLastMessage(author, consumer.message)
                     }

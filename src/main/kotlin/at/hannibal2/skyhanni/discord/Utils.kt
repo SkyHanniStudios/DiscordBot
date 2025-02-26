@@ -5,6 +5,7 @@ import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.slf4j.LoggerFactory
 
+@Suppress("MemberVisibilityCanBePrivate")
 object Utils {
 
     private val logger = LoggerFactory.getLogger(DiscordBot::class.java)
@@ -20,6 +21,12 @@ object Utils {
 
     fun Message.messageDelete() {
         delete().queue()
+    }
+
+    fun Message.messageDeleteAndThen(consumer: () -> Unit) {
+        delete().queue {
+            consumer()
+        }
     }
 
     fun Message.messageReply(text: String) {
