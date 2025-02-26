@@ -1,5 +1,6 @@
 package at.hannibal2.skyhanni.discord
 
+import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.Utils.replyWithConsumer
 import at.hannibal2.skyhanni.discord.Utils.sendMessageWithConsumer
@@ -46,6 +47,8 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
                 val id = event.author.id
                 event.reply("✅ Keyword '$keyword' added by <@$id>:")
                 event.reply(response)
+                event.logAction("added keyword '$keyword'")
+                event.logAction("response: '$response'")
             }
         } else {
             event.reply("❌ Failed to add keyword.")
@@ -69,6 +72,9 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
                 val id = event.author.id
                 event.reply("✅ Keyword '$keyword' edited by <@$id>:")
                 event.reply(response)
+                event.logAction("edited keyword '$keyword'")
+                event.logAction("old response: '$oldResponse'")
+                event.logAction("new response: '$response'")
             }
         } else {
             event.reply("❌ Failed to edit keyword.")
@@ -81,8 +87,11 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
 
         if (args.size < 2) return
         val keyword = args[1]
+        val oldResponse = Database.getResponse(keyword)
         if (Database.deleteKeyword(keyword)) {
             event.reply("🗑️ Keyword '$keyword' deleted!")
+            event.logAction("deleted keyword '$keyword'")
+            event.logAction("response was: '$oldResponse'")
         } else {
             event.reply("❌ Keyword '$keyword' not found.")
         }
@@ -115,14 +124,17 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
         }
 
         val author = message.author.id
+        val channelName = event.channel.name
         removeLastTagCommand.remove(author)
         message.referencedMessage?.let {
+            event.logAction("used reply keyword '$keyword' in channel '$channelName'")
             message.delete().queue()
             it.replyWithConsumer(response) { consumer ->
                 removeLastTagCommand.getOrPut(author) { mutableListOf() }.add(consumer.message)
             }
         } ?: run {
             if (deleting) {
+                event.logAction("used keyword with delete '$keyword' in channel '$channelName'")
                 message.delete().queue {
                     event.channel.sendMessageWithConsumer(response) { consumer ->
                         removeLastTagCommand.getOrPut(author) { mutableListOf() }.add(consumer.message)
