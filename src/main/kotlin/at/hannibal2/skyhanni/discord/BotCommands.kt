@@ -1,10 +1,12 @@
 package at.hannibal2.skyhanni.discord
 
 import at.hannibal2.skyhanni.discord.Utils.reply
+import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.interactions.commands.build.Commands
 
 @Suppress("UNUSED_PARAMETER")
-class Commands(config: BotConfig) {
+class BotCommands(config: BotConfig) {
 
     private val botId = "1343351725381128193"
 
@@ -18,6 +20,7 @@ class Commands(config: BotConfig) {
 
     fun add(element: Command) {
         commands.add(element)
+
     }
 
     fun onMessage(bot: DiscordBot, event: MessageReceivedEvent) {
@@ -44,6 +47,12 @@ class Commands(config: BotConfig) {
 
     private fun MessageReceivedEvent.helpCommand(args: List<String>) {
         reply("Supported commands: !help, !add, !edit, !delete/!remove, !list/!taglist")
+    }
+
+    fun initSlashCommands(jda: JDA) {
+        jda.updateCommands().addCommands(commands.map {
+            Commands.slash(it.name, "desc not avaliable")
+        }).queue()
     }
 }
 

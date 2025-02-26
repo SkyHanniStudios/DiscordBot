@@ -11,7 +11,7 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import kotlin.time.Duration.Companion.seconds
 
 @Suppress("UNUSED_PARAMETER")
-class TagCommands(private val config: BotConfig, commands: Commands) {
+class TagCommands(private val config: BotConfig, commands: BotCommands) {
     private val lastMessages = mutableMapOf<String, MutableList<Message>>()
 
     init {
