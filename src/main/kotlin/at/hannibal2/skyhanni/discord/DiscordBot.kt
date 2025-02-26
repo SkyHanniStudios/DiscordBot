@@ -1,5 +1,6 @@
 package at.hannibal2.skyhanni.discord
 
+import at.hannibal2.skyhanni.discord.Utils.messageSend
 import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
@@ -24,7 +25,7 @@ fun main() {
     jda.awaitReady()
 
     fun sendMessageToBotChannel(message: String) {
-        jda.getTextChannelById(config.botCommandChannelId)?.sendMessage(message)?.queue()
+        jda.getTextChannelById(config.botCommandChannelId)?.messageSend(message)
     }
 
     sendMessageToBotChannel("I'm awake \uD83D\uDE42")

@@ -10,7 +10,7 @@ object Utils {
     private val logger = LoggerFactory.getLogger(DiscordBot::class.java)
 
     fun MessageReceivedEvent.reply(text: String) {
-        message.reply(text).queue()
+        message.messageReply(text)
     }
 
     fun MessageReceivedEvent.replyWithConsumer(text: String, consumer: (MessageReceivedEvent) -> Unit) {
@@ -18,17 +18,26 @@ object Utils {
         reply(text)
     }
 
-    fun Message.deleteMessage() {
+    fun Message.messageDelete() {
         delete().queue()
     }
+
+    fun Message.messageReply(text: String) {
+        reply(text).queue()
+    }
+
+    fun MessageChannel.messageSend(text: String) {
+        sendMessage(text).queue()
+    }
+
     fun Message.replyWithConsumer(text: String, consumer: (MessageReceivedEvent) -> Unit) {
         BotMessageHandler.log(text, consumer)
-        reply(text).queue()
+        messageReply(text)
     }
 
     fun MessageChannel.sendMessageWithConsumer(text: String, consumer: (MessageReceivedEvent) -> Unit) {
         BotMessageHandler.log(text, consumer)
-        sendMessage(text).queue()
+        messageSend(text)
     }
 
     fun MessageReceivedEvent.logAction(action: String) {
