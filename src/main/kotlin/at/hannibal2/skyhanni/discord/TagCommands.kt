@@ -35,7 +35,11 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
             return
         }
         if (Database.addKeyword(keyword, response)) {
-            event.reply("✅ Keyword '$keyword' added!")
+            event.message.delete().queue {
+                val id = event.author.id
+                event.reply("✅ Keyword '$keyword' added by <@$id>:")
+                event.reply(response)
+            }
         } else {
             event.reply("❌ Failed to add keyword.")
         }
@@ -54,7 +58,11 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
             return
         }
         if (Database.addKeyword(keyword, response)) {
-            event.reply("✅ Keyword '$keyword' edited!")
+            event.message.delete().queue {
+                val id = event.author.id
+                event.reply("✅ Keyword '$keyword' edited by <@$id>:")
+                event.reply(response)
+            }
         } else {
             event.reply("❌ Failed to edit keyword.")
         }
