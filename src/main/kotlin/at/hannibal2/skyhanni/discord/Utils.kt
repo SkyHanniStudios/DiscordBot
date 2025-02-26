@@ -4,6 +4,7 @@ import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.slf4j.LoggerFactory
+import kotlin.time.Duration
 
 @Suppress("MemberVisibilityCanBePrivate")
 object Utils {
@@ -54,5 +55,12 @@ object Utils {
         val globalName = author.globalName
         val id = author.id
         logger.info("$effectiveName ($name/$globalName/$id) $action")
+    }
+
+    fun runDelayed(duration: Duration, consumer: () -> Unit) {
+        Thread {
+            Thread.sleep(duration.inWholeMilliseconds)
+            consumer()
+        }.start()
     }
 }

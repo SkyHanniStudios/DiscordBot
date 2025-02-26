@@ -8,6 +8,7 @@ import at.hannibal2.skyhanni.discord.Utils.replyWithConsumer
 import at.hannibal2.skyhanni.discord.Utils.sendMessageWithConsumer
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import kotlin.time.Duration.Companion.seconds
 
 @Suppress("UNUSED_PARAMETER")
 class TagCommands(private val config: BotConfig, commands: Commands) {
@@ -110,10 +111,9 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
             message.replyWithConsumer("No last tag to undo found!") { consumer ->
                 addLastMessage(author, consumer.message)
             }
-            Thread {
-                Thread.sleep(2_000)
+            Utils.runDelayed(2.seconds) {
                 undo(author)
-            }.start()
+            }
         }
     }
 
