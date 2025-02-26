@@ -1,5 +1,6 @@
 package at.hannibal2.skyhanni.discord
 
+import at.hannibal2.skyhanni.discord.Utils.deleteMessage
 import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.Utils.replyWithConsumer
@@ -102,7 +103,7 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
         val message = event.message
         if (undo(author)) {
             event.logAction("undid last send tag.")
-            message.delete().queue()
+            message.deleteMessage()
         } else {
             addLastMessage(author, message)
             message.replyWithConsumer("No last tag to undo found!") { consumer ->
@@ -118,7 +119,7 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
     private fun undo(author: String): Boolean {
         return lastMessages[author]?.let {
             for (message in it) {
-                message.delete().queue()
+                message.deleteMessage()
             }
             lastMessages.remove(author)
             true
@@ -146,7 +147,7 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
         lastMessages.remove(author)
         message.referencedMessage?.let {
             event.logAction("used reply keyword '$keyword' in channel '$channelName'")
-            message.delete().queue()
+            message.deleteMessage()
             it.replyWithConsumer(response) { consumer ->
                 addLastMessage(author, consumer.message)
             }

@@ -18,6 +18,9 @@ object Utils {
         reply(text)
     }
 
+    fun Message.deleteMessage() {
+        delete().queue()
+    }
     fun Message.replyWithConsumer(text: String, consumer: (MessageReceivedEvent) -> Unit) {
         BotMessageHandler.log(text, consumer)
         reply(text).queue()
