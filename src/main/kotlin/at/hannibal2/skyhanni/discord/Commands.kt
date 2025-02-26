@@ -6,6 +6,8 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 @Suppress("UNUSED_PARAMETER")
 class Commands(config: BotConfig) {
 
+    private val botId = "1343351725381128193"
+
     private val commands = mutableSetOf<Command>()
 
     private var tagCommands = TagCommands(config, this)
@@ -18,8 +20,15 @@ class Commands(config: BotConfig) {
         commands.add(element)
     }
 
-    fun onCommand(bot: DiscordBot, event: MessageReceivedEvent) {
-        if (event.guild.id != bot.config.allowedServerId || event.author.isBot) return
+    fun onMessage(bot: DiscordBot, event: MessageReceivedEvent) {
+        if (event.guild.id != bot.config.allowedServerId) return
+
+        if (event.author.isBot) {
+            if (event.author.id == botId) {
+                BotMessageHandler.handle(event)
+            }
+            return
+        }
 
         val content = event.message.contentRaw.trim()
         if (!content.startsWith("!")) return

@@ -1,10 +1,14 @@
 package at.hannibal2.skyhanni.discord
 
 import at.hannibal2.skyhanni.discord.Utils.reply
+import at.hannibal2.skyhanni.discord.Utils.replyWithConsumer
+import at.hannibal2.skyhanni.discord.Utils.sendMessageWithConsumer
+import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
 @Suppress("UNUSED_PARAMETER")
 class TagCommands(private val config: BotConfig, commands: Commands) {
+    private val removeLastTagCommand = mutableMapOf<String, MutableList<Message>>()
 
     init {
         commands.add(Command("list", ::listCommand))
@@ -16,6 +20,9 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
         commands.add(Command("add", ::addCommand))
         commands.add(Command("delete", ::deleteCommand))
         commands.add(Command("remove", ::deleteCommand))
+
+        // removes the last !tag action
+        commands.add(Command("undo", ::undoCommand))
     }
 
     private fun listCommand(event: MessageReceivedEvent, args: List<String>) {
@@ -81,6 +88,17 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
         }
     }
 
+    private fun undoCommand(event: MessageReceivedEvent, args: List<String>) {
+        val author = event.author.id
+        removeLastTagCommand[author]?.let {
+            for (message in it) {
+                println("trying to delete ${message.contentRaw}")
+                message.delete().queue()
+            }
+            event.message.delete().queue()
+        }
+    }
+
     fun handleTag(event: MessageReceivedEvent): Boolean {
         val message = event.message
         var keyword = message.contentRaw.substring(1)
@@ -97,14 +115,25 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
             return false
         }
 
+        val author = message.author.id
+        removeLastTagCommand.remove(author)
         message.referencedMessage?.let {
             message.delete().queue()
-            it.reply(response).queue()
+            it.replyWithConsumer(response) { consumer ->
+                removeLastTagCommand.getOrPut(author) { mutableListOf() }.add(consumer.message)
+            }
         } ?: run {
             if (deleting) {
-                message.delete().queue { event.channel.sendMessage(response).queue() }
+                message.delete().queue {
+                    event.channel.sendMessageWithConsumer(response) { consumer ->
+                        removeLastTagCommand.getOrPut(author) { mutableListOf() }.add(consumer.message)
+                    }
+                }
             } else {
-                message.reply(response).queue()
+                removeLastTagCommand.getOrPut(author) { mutableListOf() }.add(message)
+                message.replyWithConsumer(response) { consumer ->
+                    removeLastTagCommand.getOrPut(author) { mutableListOf() }.add(consumer.message)
+                }
             }
         }
         return true

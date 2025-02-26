@@ -8,7 +8,7 @@ import java.util.Scanner
 
 class DiscordBot(val config: BotConfig, private val commands: Commands) : ListenerAdapter() {
     override fun onMessageReceived(event: MessageReceivedEvent) {
-        commands.onCommand(this, event)
+        commands.onMessage(this, event)
     }
 }
 
