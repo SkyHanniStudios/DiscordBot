@@ -10,6 +10,7 @@ class ServerCommands(private val config: BotConfig, commands: Commands) {
     init {
         commands.add(Command("server", userCommand = true) { event, args -> event.serverCommand(args) })
         commands.add(Command("serverlist") { event, args -> event.serverList(args) })
+        commands.add(Command("servers") { event, args -> event.serverList(args) })
         commands.add(Command("serveradd") { event, args -> event.serverAdd(args) })
         commands.add(Command("serveredit") { event, args -> event.serverEdit(args) })
         commands.add(Command("serveraddalias") { event, args -> event.serverAddAlias(args) })

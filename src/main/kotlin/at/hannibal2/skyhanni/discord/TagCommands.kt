@@ -16,6 +16,7 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
 
     init {
         commands.add(Command("taglist", userCommand = true) { event, args -> event.listCommand(args) })
+        commands.add(Command("tags", userCommand = true) { event, args -> event.listCommand(args) })
 
         commands.add(Command("tagedit") { event, args -> event.editCommand(args) })
         commands.add(Command("tagchange") { event, args -> event.editCommand(args) })
