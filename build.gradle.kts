@@ -18,6 +18,7 @@ dependencies {
 	implementation("org.slf4j:slf4j-api:2.0.16")
 	// This could be replaced with another logging api to automatically generate log files
 	runtimeOnly("org.slf4j:slf4j-simple:2.0.16")
+	implementation("org.jetbrains.exposed:exposed-jdbc:0.41.1")
 }
 
 tasks.test {
