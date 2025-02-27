@@ -4,11 +4,7 @@ import java.sql.Connection
 import java.sql.DriverManager
 
 data class Server(
-    val id: Int? = null,
-    val keyword: String,
-    val displayName: String,
-    val inviteLink: String,
-    val description: String
+    val id: Int? = null, val keyword: String, val displayName: String, val inviteLink: String, val description: String
 )
 
 object Database {
@@ -106,6 +102,7 @@ object Database {
                     serverCache[entry.key] = server
                 }
             }
+            serverCache[server.keyword] = server
         }
         return updated
     }
@@ -139,7 +136,8 @@ object Database {
 
     fun addServerAlias(serverKeyword: String, alias: String): Boolean {
         val server = getServer(serverKeyword) ?: return false
-        val stmt = connection.prepareStatement("INSERT OR REPLACE INTO server_aliases (alias, server_keyword) VALUES (?, ?)")
+        val stmt =
+            connection.prepareStatement("INSERT OR REPLACE INTO server_aliases (alias, server_keyword) VALUES (?, ?)")
         stmt.setString(1, alias)
         stmt.setString(2, serverKeyword)
         val updated = stmt.executeUpdate() > 0
