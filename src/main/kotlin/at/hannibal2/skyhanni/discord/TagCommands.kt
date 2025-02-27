@@ -38,7 +38,7 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
         val keyword = args[1]
         val response = args.drop(2).joinToString(" ")
         if (Database.listKeywords().contains(keyword.lowercase())) {
-            reply("❌ Already exists. Use `!tagedit` instead.")
+            reply("❌ Keyword already exists. Use `!tagedit` instead.")
             return
         }
         if (Database.addKeyword(keyword, response)) {
