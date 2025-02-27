@@ -15,17 +15,15 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
     val lastMessages = mutableMapOf<String, MutableList<Message>>()
 
     init {
-        commands.add(Command("list") { event, args -> event.listCommand(args) })
-        commands.add(Command("taglist") { event, args -> event.listCommand(args) })
+        commands.add(Command("taglist", userCommand = true) { event, args -> event.listCommand(args) })
 
-        commands.add(Command("edit", adminOnly = true) { event, args -> event.editCommand(args) })
-        commands.add(Command("change", adminOnly = true) { event, args -> event.editCommand(args) })
+        commands.add(Command("tagedit") { event, args -> event.editCommand(args) })
+        commands.add(Command("tagchange") { event, args -> event.editCommand(args) })
 
-        commands.add(Command("add", adminOnly = true) { event, args -> event.addCommand(args) })
-        commands.add(Command("delete", adminOnly = true) { event, args -> event.deleteCommand(args) })
-        commands.add(Command("remove", adminOnly = true) { event, args -> event.deleteCommand(args) })
+        commands.add(Command("tagadd") { event, args -> event.addCommand(args) })
+        commands.add(Command("tagdelete") { event, args -> event.deleteCommand(args) })
+        commands.add(Command("tagremove") { event, args -> event.deleteCommand(args) })
 
-        // removes the last !tag action
         commands.add(Command("undo") { event, args -> event.undoCommand(args) })
     }
 
@@ -36,13 +34,11 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
     }
 
     private fun MessageReceivedEvent.addCommand(args: List<String>) {
-        if (!isEditTagChannel()) return
-
         if (args.size < 3) return
         val keyword = args[1]
-        val response = args[2]
+        val response = args.drop(2).joinToString(" ")
         if (Database.listKeywords().contains(keyword.lowercase())) {
-            reply("❌ Already exists. Use `!edit` instead.")
+            reply("❌ Already exists. Use `!tagedit` instead.")
             return
         }
         if (Database.addKeyword(keyword, response)) {
@@ -59,14 +55,12 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
     }
 
     private fun MessageReceivedEvent.editCommand(args: List<String>) {
-        if (!isEditTagChannel()) return
-
         if (args.size < 3) return
         val keyword = args[1]
-        val response = args[2]
+        val response = args.drop(2).joinToString(" ")
         val oldResponse = Database.getResponse(keyword)
         if (oldResponse == null) {
-            reply("❌ Keyword doesn't exist! Use `!add` instead.")
+            reply("❌ Keyword doesn't exist! Use `!tagadd` instead.")
             return
         }
         if (Database.addKeyword(keyword, response)) {
@@ -84,8 +78,6 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
     }
 
     private fun MessageReceivedEvent.deleteCommand(args: List<String>) {
-        if (!isEditTagChannel()) return
-
         if (args.size < 2) return
         val keyword = args[1]
         val oldResponse = Database.getResponse(keyword)
@@ -134,10 +126,7 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
             deleting = true
         }
         val response = Database.getResponse(keyword) ?: run {
-//            if (event.hasEditPermission()) {
-            val s = "Unknown command \uD83E\uDD7A Type `!help` for help."
-            event.reply(s)
-//            }
+            event.reply("Unknown command \uD83E\uDD7A Type `!help` for help.")
             return false
         }
 
@@ -169,13 +158,5 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
 
     private fun addLastMessage(author: String, message: Message) {
         lastMessages.getOrPut(author) { mutableListOf() }.add(message)
-    }
-
-    private fun MessageReceivedEvent.isEditTagChannel(): Boolean {
-        if (channel.id != config.botCommandChannelId) {
-            reply("Wrong channel \uD83E\uDD7A")
-            return false
-        }
-        return true
     }
 }
