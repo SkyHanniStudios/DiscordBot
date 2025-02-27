@@ -71,7 +71,7 @@ class ServerCommands(private val config: BotConfig, commands: Commands) {
             reply("❌ Server already exists. Use `!serveredit` instead.")
             return
         }
-        val server = createServer(keyword, args)
+        val server = createServer(keyword, args) ?: return
         if (Database.addServer(server)) {
             message.messageDeleteAndThen {
                 val id = author.id
@@ -94,7 +94,7 @@ class ServerCommands(private val config: BotConfig, commands: Commands) {
             reply("❌ Server does not exist. Use `!serveradd` instead.")
             return
         }
-        val server = createServer(keyword, args)
+        val server = createServer(keyword, args) ?: return
         if (Database.addServer(server)) {
             message.messageDeleteAndThen {
                 val id = author.id
@@ -107,10 +107,20 @@ class ServerCommands(private val config: BotConfig, commands: Commands) {
         }
     }
 
-    private fun createServer(keyword: String, args: List<String>): Server {
-        val displayName = args[2].replace("_", " ")
-        val inviteLink = args[3]
-        val description = args.drop(4).joinToString(" ")
+    private fun MessageReceivedEvent.createServer(keyword: String, args: List<String>): Server? {
+        val inviteIndex = args.indexOfFirst { it.startsWith("https:") }
+        if (inviteIndex == -1) {
+            reply("url not found!")
+            return null
+        }
+        require(inviteIndex != -1) { "Invite link not found" }
+
+        val displayName = args.subList(2, inviteIndex).joinToString(" ")
+
+        val inviteLink = args[inviteIndex]
+        val description = if (inviteIndex + 1 < args.size) args.subList(inviteIndex + 1, args.size).joinToString(" ")
+        else ""
+
         return Server(keyword = keyword, displayName = displayName, inviteLink = inviteLink, description = description)
     }
 
@@ -163,10 +173,8 @@ class ServerCommands(private val config: BotConfig, commands: Commands) {
         }
         val keyword = args[1]
         if (Database.deleteServer(keyword)) {
-            message.messageDeleteAndThen {
-                reply("✅ Server '$keyword' deleted!")
-                logAction("deleted server '$keyword'")
-            }
+            reply("✅ Server '$keyword' deleted!")
+            logAction("deleted server '$keyword'")
         } else {
             reply("❌ Server with keyword '$keyword' not found or deletion failed.")
         }
@@ -180,10 +188,8 @@ class ServerCommands(private val config: BotConfig, commands: Commands) {
         }
         val list = servers.joinToString("\n") { server ->
             val aliases = Database.getServerAliases(server.keyword)
-            if (aliases.isNotEmpty())
-                "${server.keyword} [${aliases.joinToString(", ")}]"
-            else
-                server.keyword
+            if (aliases.isNotEmpty()) "${server.keyword} [${aliases.joinToString(", ")}]"
+            else server.keyword
         }
         reply("Server list:\n$list")
     }
