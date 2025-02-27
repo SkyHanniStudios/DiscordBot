@@ -35,9 +35,11 @@ class Commands(private val config: BotConfig) {
             }
             return
         }
-        tagCommands.lastMessages.remove(autor.id)
-
         val content = event.message.contentRaw.trim()
+        if (content != "!undo") {
+            tagCommands.lastMessages.remove(autor.id)
+        }
+
         if (!content.startsWith("!")) return
 
         val args = content.substring(1).split(" ")

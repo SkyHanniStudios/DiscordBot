@@ -25,7 +25,7 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
         commands.add(Command("tagdelete") { event, args -> event.deleteCommand(args) })
         commands.add(Command("tagremove") { event, args -> event.deleteCommand(args) })
 
-        commands.add(Command("undo") { event, args -> event.undoCommand(args) })
+        commands.add(Command("undo", userCommand = true) { event, args -> event.undoCommand(args) })
     }
 
     private fun MessageReceivedEvent.listCommand(args: List<String>) {
