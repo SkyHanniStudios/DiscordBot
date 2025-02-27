@@ -44,7 +44,6 @@ class ServerCommands(private val config: BotConfig, commands: Commands) {
                 append(description)
                 append("\n")
             }
-            append("\n")
             append(inviteLink)
         }
     }
@@ -75,7 +74,8 @@ class ServerCommands(private val config: BotConfig, commands: Commands) {
         val server = createServer(keyword, args)
         if (Database.addServer(server)) {
             message.messageDeleteAndThen {
-                reply("✅ Server '$keyword' added!")
+                val id = author.id
+                reply("✅ Server '$keyword' added by <@$id>:")
                 reply(server.print())
                 logAction("added server '$keyword'")
             }
@@ -97,7 +97,8 @@ class ServerCommands(private val config: BotConfig, commands: Commands) {
         val server = createServer(keyword, args)
         if (Database.addServer(server)) {
             message.messageDeleteAndThen {
-                reply("✅ Server '$keyword' edited!")
+                val id = author.id
+                reply("✅ Server '$keyword' edited by <@$id>:")
                 reply(server.print())
                 logAction("edited server '$keyword'")
             }
