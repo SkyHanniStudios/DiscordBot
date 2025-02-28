@@ -93,6 +93,8 @@ class Commands(private val config: BotConfig) {
         val allowedRoleIds = config.editPermissionRoleIds.values
         return !member.roles.none { it.id in allowedRoleIds }
     }
+
+    fun existCommand(text: String): Boolean = commands.find { it.name.equals(text, ignoreCase = true) } != null
 }
 
 class Command(

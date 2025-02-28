@@ -11,7 +11,7 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import kotlin.time.Duration.Companion.seconds
 
 @Suppress("UNUSED_PARAMETER")
-class TagCommands(private val config: BotConfig, commands: Commands) {
+class TagCommands(private val config: BotConfig, val commands: Commands) {
     val lastMessages = mutableMapOf<String, MutableList<Message>>()
 
     init {
@@ -22,6 +22,8 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
         commands.add(Command("tagchange") { event, args -> event.editCommand(args) })
 
         commands.add(Command("tagadd") { event, args -> event.addCommand(args) })
+        commands.add(Command("tagcreate") { event, args -> event.addCommand(args) })
+
         commands.add(Command("tagdelete") { event, args -> event.deleteCommand(args) })
         commands.add(Command("tagremove") { event, args -> event.deleteCommand(args) })
 
@@ -37,6 +39,10 @@ class TagCommands(private val config: BotConfig, commands: Commands) {
     private fun MessageReceivedEvent.addCommand(args: List<String>) {
         if (args.size < 3) return
         val keyword = args[1]
+        if (commands.existCommand(keyword)) {
+            reply("❌ Can not create keyword `!$keyword`. There is already a command with that name")
+            return
+        }
         val response = args.drop(2).joinToString(" ")
         if (Database.listKeywords().contains(keyword.lowercase())) {
             reply("❌ Keyword already exists. Use `!tagedit` instead.")
