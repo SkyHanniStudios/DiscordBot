@@ -14,12 +14,16 @@ import kotlin.time.Duration.Companion.seconds
 class TagCommands(private val config: BotConfig, val commands: Commands) {
     val lastMessages = mutableMapOf<String, MutableList<Message>>()
 
+    // user id -> tag keyword
+    val lastTouchedTag = mutableMapOf<String, String>()
+
     init {
         commands.add(Command("taglist", userCommand = true) { event, args -> event.listCommand(args) })
         commands.add(Command("tags", userCommand = true) { event, args -> event.listCommand(args) })
 
         commands.add(Command("tagedit") { event, args -> event.editCommand(args) })
         commands.add(Command("tagchange") { event, args -> event.editCommand(args) })
+        commands.add(Command("tageditlast") { event, args -> event.editLastCommand(args) })
 
         commands.add(Command("tagadd") { event, args -> event.addCommand(args) })
         commands.add(Command("tagcreate") { event, args -> event.addCommand(args) })
@@ -55,6 +59,7 @@ class TagCommands(private val config: BotConfig, val commands: Commands) {
                 reply(response)
                 logAction("added keyword '$keyword'")
                 logAction("response: '$response'")
+                lastTouchedTag[id] = keyword
             }
         } else {
             reply("❌ Failed to add keyword.")
@@ -62,12 +67,20 @@ class TagCommands(private val config: BotConfig, val commands: Commands) {
     }
 
     private fun MessageReceivedEvent.editCommand(args: List<String>) {
-        if (args.size < 3) return
+        if (args.size < 2) {
+            reply("Usage: `!tagedit <tag> <response>`")
+            return
+        }
         val keyword = args[1]
         val response = args.drop(2).joinToString(" ")
         val oldResponse = Database.getResponse(keyword)
         if (oldResponse == null) {
             reply("❌ Keyword doesn't exist! Use `!tagadd` instead.")
+            return
+        }
+
+        if (args.size < 3) {
+            reply("Usage: `!tagedit <tag> <response>`\n```!tagedit $keyword $oldResponse```")
             return
         }
         if (Database.addKeyword(keyword, response)) {
@@ -78,10 +91,24 @@ class TagCommands(private val config: BotConfig, val commands: Commands) {
                 logAction("edited keyword '$keyword'")
                 logAction("old response: '$oldResponse'")
                 logAction("new response: '$response'")
+                lastTouchedTag[id] = keyword
             }
         } else {
             reply("❌ Failed to edit keyword.")
         }
+    }
+
+    private fun MessageReceivedEvent.editLastCommand(args: List<String>) {
+        val id = author.id
+        val lastTag = lastTouchedTag[id] ?: run {
+            reply("No last tag found \uD83E\uDD7A")
+            return
+        }
+        val response = Database.getResponse(lastTag) ?: run {
+            reply("Last tag `$lastTag` got deleted, this should not happen, therefore we ping <@239858538959077376>")
+            return
+        }
+        reply("```!tagedit $lastTag $response```")
     }
 
     private fun MessageReceivedEvent.deleteCommand(args: List<String>) {
@@ -92,6 +119,8 @@ class TagCommands(private val config: BotConfig, val commands: Commands) {
             reply("🗑️ Keyword '$keyword' deleted!")
             logAction("deleted keyword '$keyword'")
             logAction("response was: '$oldResponse'")
+            val id = author.id
+            lastTouchedTag.remove(id)
         } else {
             reply("❌ Keyword '$keyword' not found.")
         }
@@ -102,6 +131,7 @@ class TagCommands(private val config: BotConfig, val commands: Commands) {
         val message = message
         if (undo(author)) {
             logAction("undid last send tag.")
+            lastTouchedTag.remove(author)
             message.messageDelete()
         } else {
             addLastMessage(author, message)
@@ -139,6 +169,7 @@ class TagCommands(private val config: BotConfig, val commands: Commands) {
 
         val author = message.author.id
         val channelName = event.channel.name
+        lastTouchedTag[author] = keyword
         message.referencedMessage?.let {
             event.logAction("used reply keyword '$keyword' in channel '$channelName'")
             message.messageDelete()
