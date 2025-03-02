@@ -40,7 +40,7 @@ class Commands(private val config: BotConfig) {
             tagCommands.lastMessages.remove(autor.id)
         }
 
-        if (!content.startsWith("!")) return
+        if (!isCommand(content)) return
 
         val args = content.substring(1).split(" ")
         val literal = args[0].lowercase()
@@ -63,6 +63,13 @@ class Commands(private val config: BotConfig) {
         }
 
         command.consumer(event, args)
+    }
+
+    private val commandPattern = "^!(?!!).+".toPattern()
+
+    // ensures the command starts with ! while ignoring !!
+    private fun isCommand(message: String): Boolean {
+        return commandPattern.matcher(message).matches()
     }
 
     private fun MessageReceivedEvent.inBotCommandChannel() = channel.id == config.botCommandChannelId
