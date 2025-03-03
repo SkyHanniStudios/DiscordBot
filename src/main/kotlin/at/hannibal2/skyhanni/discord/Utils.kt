@@ -169,7 +169,7 @@ object Utils {
     Add spacer like field
     Arg: inline mode true / false
  */
-        eb.addBlankField(false)
+//        eb.addBlankField(false)
 
         /*
     Add embed author:
