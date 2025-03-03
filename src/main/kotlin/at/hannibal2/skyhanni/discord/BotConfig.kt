@@ -15,7 +15,7 @@ data class BotConfig(
 object ConfigLoader {
     private val gson = GsonBuilder().setPrettyPrinting().create()
 	private val logger = LoggerFactory.getLogger(ConfigLoader::class.java)
-    val exampleConfig = BotConfig(
+    private val exampleConfig = BotConfig(
 		"TODO: discord token",
 		"TODO: github token token",
 		"TODO: staff channel id",

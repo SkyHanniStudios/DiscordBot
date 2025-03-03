@@ -11,11 +11,11 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import kotlin.time.Duration.Companion.seconds
 
 @Suppress("UNUSED_PARAMETER")
-class TagCommands(private val config: BotConfig, val commands: Commands) {
+class TagCommands(private val config: BotConfig, private val commands: Commands) {
     val lastMessages = mutableMapOf<String, MutableList<Message>>()
 
     // user id -> tag keyword
-    val lastTouchedTag = mutableMapOf<String, String>()
+    private val lastTouchedTag = mutableMapOf<String, String>()
 
     init {
         commands.add(Command("taglist", userCommand = true) { event, args -> event.listCommand(args) })
