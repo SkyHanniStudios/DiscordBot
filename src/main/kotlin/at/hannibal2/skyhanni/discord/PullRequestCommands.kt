@@ -82,7 +82,7 @@ class PullRequestCommands(config: BotConfig, commands: Commands) {
 
         val lastCommit = head.sha
         val artifact = github.findArtifact(lastCommit) ?: run {
-            val text = "${title}${time}Latest artifact could not be found \uD83E\uDD7A (expired or still compiling)"
+            val text = "${title}${time} \nLatest artifact could not be found \uD83E\uDD7A (expired or still compiling)"
             reply(embed(embedTitle, text, readColor(pr)))
             return
         }
