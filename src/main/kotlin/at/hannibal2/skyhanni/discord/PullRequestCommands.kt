@@ -63,10 +63,6 @@ class PullRequestCommands(config: BotConfig, commands: Commands) {
         val userNameDisplay = userName.linkTo(userProfile)
         val embedTitle = pr.title
         val title = buildString {
-//            append("\u200B") // zero-width space to create a empty first line
-//            append("\n")
-//            append("# ${pr.title}")
-//            append("\n")
             append("> $prNumberDisplay by $userNameDisplay")
             append("\n")
         }
