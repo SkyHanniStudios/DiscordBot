@@ -5,13 +5,13 @@ import at.hannibal2.skyhanni.discord.Utils.format
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.Utils.timeExecution
 import at.hannibal2.skyhanni.discord.Utils.uploadFile
-import at.hannibal2.skyhanni.discord.utils.GithubUtils
+import at.hannibal2.skyhanni.discord.github.GitHubClient
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import java.io.File
 
 class PullRequestCommands(private val config: BotConfig, commands: Commands) {
 
-    private val token get() = config.githubToken
+    private val github = GitHubClient("hannibal002", "SkyHanni", config.githubToken)
 
     init {
         commands.add(Command("pr") { event, args -> event.pullRequestCommand(args) })
@@ -30,7 +30,7 @@ class PullRequestCommands(private val config: BotConfig, commands: Commands) {
         val prLink = "https://github.com/hannibal002/SkyHanni/pull/$prNumber"
         reply("Looking for pr <$prLink> ..")
 
-        val pr = GithubUtils.findPullRequest("hannibal002", "SkyHanni", prNumber = prNumber, token) ?: run {
+        val pr = github.findPullRequest(prNumber) ?: run {
             reply("pr is null!")
             return
         }
@@ -43,7 +43,7 @@ class PullRequestCommands(private val config: BotConfig, commands: Commands) {
         reply("found pr `$title` (from `$author`)")
 
         reply("looking for artifact ..")
-        val artifact = GithubUtils.findArtifact("hannibal002", "SkyHanni", lastCommit, token) ?: run {
+        val artifact = github.findArtifact(lastCommit) ?: run {
             reply("artifact is null!")
             return
         }
@@ -56,9 +56,7 @@ class PullRequestCommands(private val config: BotConfig, commands: Commands) {
         reply("Downloading artifact ..")
         val (_, downloadTime) = timeExecution {
             try {
-                GithubUtils.downloadArtifact(
-                    "hannibal002", "Skyhanni", artifactId, fileRaw, token
-                )
+                github.downloadArtifact(artifactId, fileRaw)
             } catch (e: Throwable) {
                 e.printStackTrace()
                 reply("error while downloading artifact: ${e.message}")
