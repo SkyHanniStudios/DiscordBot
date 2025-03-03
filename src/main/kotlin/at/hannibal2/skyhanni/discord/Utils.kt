@@ -66,12 +66,10 @@ object Utils {
     }
 
     fun MessageReceivedEvent.logAction(action: String) {
-        val author = author
         val name = author.name
-        val effectiveName = author.effectiveName
-        val globalName = author.globalName
         val id = author.id
-        logger.info("$effectiveName ($name/$globalName/$id) $action")
+        val nick = member?.nickname
+        logger.info("$id/$name (`$nick`) $action")
     }
 
     fun runDelayed(duration: Duration, consumer: () -> Unit) {
