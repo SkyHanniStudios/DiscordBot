@@ -17,9 +17,15 @@ dependencies {
     implementation("net.dv8tion:JDA:5.3.0") // JDA Library
     implementation("org.xerial:sqlite-jdbc:3.49.1.0") // SQLite Driver
     implementation("com.google.code.gson:gson:2.12.1") // Gson
+
+    // Logging
     implementation("org.slf4j:slf4j-api:2.0.16")
     // This could be replaced with another logging api to automatically generate log files
     runtimeOnly("org.slf4j:slf4j-simple:2.0.16")
+
+
+    runtimeOnly("com.squareup.okhttp3:okhttp:4.3.1") // Http Client
+    runtimeOnly("com.google.code.gson:gson:2.11.0") // Json
 }
 
 tasks.test {
