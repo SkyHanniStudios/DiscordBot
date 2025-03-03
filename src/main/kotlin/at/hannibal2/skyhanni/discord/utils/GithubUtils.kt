@@ -20,7 +20,7 @@ object GithubUtils {
 
         client.newCall(request).execute().use { response ->
             val gson = Gson()
-            if (!response.isSuccessful) throw Exception("GitHub API error: ${response.code}")
+            if (!response.isSuccessful) error("GitHub API error: ${response.code}")
             val json = response.body?.string() ?: return null
             return gson.fromJson(json, PullRequestJson::class.java)
         }
@@ -31,10 +31,12 @@ object GithubUtils {
         val artifactsRequest = Request.Builder().url(url).header("Authorization", "token $token").build()
 
         client.newCall(artifactsRequest).execute().use { artifactsResponse ->
-            if (!artifactsResponse.isSuccessful) throw Exception("Error fetching artifacts: ${artifactsResponse.code}")
+            if (!artifactsResponse.isSuccessful) error("Error fetching artifacts: ${artifactsResponse.code}")
             val json = artifactsResponse.body?.string() ?: return null
             val response = gson.fromJson(json, ArtifactResponse::class.java)
-            return response.artifacts.firstOrNull { it.workflowRun.headSha == commitSha && it.name == "Development Build" }
+            return response.artifacts.firstOrNull {
+                it.workflowRun.headSha == commitSha && it.name == "Development Build"
+            }
         }
     }
 
@@ -44,7 +46,7 @@ object GithubUtils {
         val artifactsRequest = Request.Builder().url(url).header("Authorization", "token $token").build()
 
         client.newCall(artifactsRequest).execute().use { artifactsResponse ->
-            if (!artifactsResponse.isSuccessful) throw Exception("Error fetching jobs: ${artifactsResponse.code}")
+            if (!artifactsResponse.isSuccessful) error("Error fetching jobs: ${artifactsResponse.code}")
             val json = artifactsResponse.body?.string() ?: return null
             val response = gson.fromJson(json, JobsResponse::class.java)
             return response.jobs.firstOrNull { it.name == "Build and test" }
@@ -55,7 +57,7 @@ object GithubUtils {
         val url = "https://api.github.com/repos/$owner/$repo/actions/artifacts/$artifactId/zip"
         val request = Request.Builder().url(url).header("Authorization", "token $token").build()
         client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) throw Exception("Artifact download error: ${response.code} - ${response.message}")
+            if (!response.isSuccessful) error("Artifact download error: ${response.code} - ${response.message}")
             outputFile.writeBytes(response.body?.bytes() ?: ByteArray(0))
         }
     }

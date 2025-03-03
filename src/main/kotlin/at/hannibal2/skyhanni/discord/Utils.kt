@@ -12,7 +12,7 @@ import java.util.zip.ZipFile
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.nanoseconds
 
-@Suppress("MemberVisibilityCanBePrivate")
+@Suppress("MemberVisibilityCanBePrivate", "TooManyFunctions")
 object Utils {
 
     private val logger = LoggerFactory.getLogger(DiscordBot::class.java)
@@ -104,9 +104,7 @@ object Utils {
     }
 
     fun File.createParentDirIfNotExist() {
-        parentFile?.let {
-            it.mkdirs()
-        }
+        parentFile?.mkdirs()
     }
 
     fun MessageChannelUnion.uploadFile(jarFile: File, comment: String) {

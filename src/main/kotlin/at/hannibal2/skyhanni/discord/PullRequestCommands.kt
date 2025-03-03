@@ -9,7 +9,7 @@ import at.hannibal2.skyhanni.discord.github.GitHubClient
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import java.io.File
 
-class PullRequestCommands(private val config: BotConfig, commands: Commands) {
+class PullRequestCommands(config: BotConfig, commands: Commands) {
 
     private val github = GitHubClient("hannibal002", "SkyHanni", config.githubToken)
 
@@ -35,14 +35,10 @@ class PullRequestCommands(private val config: BotConfig, commands: Commands) {
             return
         }
         val head = pr.head
-        val title = pr.title
-        val author = head.user.login
-
-        val lastCommit = head.sha
-
-        reply("found pr `$title` (from `$author`)")
+        reply("found pr `${pr.title}` (from `${head.user.login}`)")
 
         reply("looking for artifact ..")
+        val lastCommit = head.sha
         val artifact = github.findArtifact(lastCommit) ?: run {
             reply("artifact is null!")
             return
@@ -52,18 +48,12 @@ class PullRequestCommands(private val config: BotConfig, commands: Commands) {
         val artifactId = artifact.id
         val fileRaw = File("temp/downloads/artifact-$artifactId-raw")
         fileRaw.createParentDirIfNotExist()
-        val fileUnzipped = File("temp/downloads/artifact-$artifactId")
+        val fileUnzipped = File("temp/downloads/artifact-$artifactId-unzipped")
         reply("Downloading artifact ..")
         val (_, downloadTime) = timeExecution {
-            try {
-                github.downloadArtifact(artifactId, fileRaw)
-            } catch (e: Throwable) {
-                e.printStackTrace()
-                reply("error while downloading artifact: ${e.message}")
-                return
-            }
+            github.downloadArtifact(artifactId, fileRaw)
         }
-        reply("artifact fully downnloaded, took ${downloadTime.format()}")
+        reply("artifact downnloaded in ${downloadTime.format()}")
 
         Utils.unzipFile(fileRaw, fileUnzipped)
         fileRaw.delete()
@@ -79,10 +69,10 @@ class PullRequestCommands(private val config: BotConfig, commands: Commands) {
         val (_, uploadTime) = timeExecution {
             channel.uploadFile(modJar, "here is the jar from <$displayUrl>")
         }
-        reply("artifact fully downnloaded, took ${uploadTime.format()}")
+        reply("Mod jar uploaded in ${uploadTime.format()}")
     }
 
-    fun findJarFile(directory: File): File? {
+    private fun findJarFile(directory: File): File? {
         return directory.walkTopDown().firstOrNull { it.isFile && it.name.startsWith("SkyHanni-") }
     }
 }
