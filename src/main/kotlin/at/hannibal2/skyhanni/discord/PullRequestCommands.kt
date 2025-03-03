@@ -2,6 +2,7 @@ package at.hannibal2.skyhanni.discord
 
 import at.hannibal2.skyhanni.discord.SimpleTimeMark.Companion.asTimeMark
 import at.hannibal2.skyhanni.discord.Utils.createParentDirIfNotExist
+import at.hannibal2.skyhanni.discord.Utils.embed
 import at.hannibal2.skyhanni.discord.Utils.format
 import at.hannibal2.skyhanni.discord.Utils.linkTo
 import at.hannibal2.skyhanni.discord.Utils.logAction
@@ -10,6 +11,7 @@ import at.hannibal2.skyhanni.discord.Utils.timeExecution
 import at.hannibal2.skyhanni.discord.Utils.uploadFile
 import at.hannibal2.skyhanni.discord.github.GitHubClient
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import java.awt.Color
 import java.io.File
 import java.time.Instant
 import java.time.format.DateTimeFormatter
@@ -45,7 +47,8 @@ class PullRequestCommands(config: BotConfig, commands: Commands) {
             if (e.message == "GitHub API error: 404") {
                 val issueUrl = "https://github.com/hannibal002/SkyHanni/issues/$prNumber"
                 val issue = "issue".linkTo(issueUrl)
-                reply("This pull request does not yet exist or is an $issue \uD83E\uDD7A")
+                val text = "This pull request does not yet exist or is an $issue"
+                reply(embed("Not found \uD83E\uDD7A", text, Color.red))
                 return
             }
             reply("error while finding pull request: ${e.message}")
@@ -56,11 +59,12 @@ class PullRequestCommands(config: BotConfig, commands: Commands) {
         val userProfile = "https://github.com/$userName"
         val prNumberDisplay = "#$prNumber".linkTo(prLink)
         val userNameDisplay = userName.linkTo(userProfile)
+        val embedTitle = pr.title
         val title = buildString {
-            append("\u200B") // zero-width space to create a empty first line
-            append("\n")
-            append("# ${pr.title}")
-            append("\n")
+//            append("\u200B") // zero-width space to create a empty first line
+//            append("\n")
+//            append("# ${pr.title}")
+//            append("\n")
             append("> $prNumberDisplay by $userNameDisplay")
             append("\n")
         }
@@ -76,7 +80,8 @@ class PullRequestCommands(config: BotConfig, commands: Commands) {
 
         val lastCommit = head.sha
         val artifact = github.findArtifact(lastCommit) ?: run {
-            reply("${title}${time}Latest artifact could not be found \uD83E\uDD7A (expired or not yet compiled)")
+            val text = "${title}${time}Latest artifact could not be found \uD83E\uDD7A (expired or still compiling)"
+            reply(embed(embedTitle, text, Color.yellow))
             return
         }
 
@@ -88,16 +93,26 @@ class PullRequestCommands(config: BotConfig, commands: Commands) {
 
         val artifactDisplay = buildString {
             append(" \n")
-            append("Download the latest developement build of this pr!")
+            append("Download the latest development build of this pr!")
             append("\n")
-            append("> From $artifactLine (requries an GitHub Account)")
+            append("> From $artifactLine (requires an GitHub Account)")
             append("\n")
             append("> From $nightlyLine (unofficial)")
+//            append("\n")
+//            append("spam message\n")
+//            append("spam message\n")
+//            append("spam message\n")
+//            append("spam message\n")
+//            append("spam message\n")
+//            append("spam message\n")
+//            append("spam message\n")
+//            append("spam message\n")
             append("\n")
             append("> (updated ${passedSince(artifact.updatedAt)})")
         }
 
-        reply("$title$time$artifactDisplay")
+        reply(embed(embedTitle, "$title$time$artifactDisplay", Color.green))
+//        reply("$title$time$artifactDisplay")
     }
 
     private fun parseToUnixTime(isoTimestamp: String): Long =
