@@ -98,9 +98,17 @@ object Utils {
     }
 
     fun Duration.format(): String {
-        val s = inWholeSeconds
-        val m = inWholeMinutes
-        return "${m}m ${s}s"
+        val days = inWholeDays
+        val hours = inWholeHours % 24
+        val minutes = inWholeMinutes % 60
+        val seconds = inWholeSeconds % 60
+
+        val parts = mutableListOf<String>()
+        if (days > 0) parts.add("${days}d")
+        if (hours > 0) parts.add("${hours}h")
+        if (minutes > 0) parts.add("${minutes}m")
+        if (seconds > 0 || parts.isEmpty()) parts.add("${seconds}s")
+        return parts.joinToString(" ")
     }
 
     fun File.createParentDirIfNotExist() {
