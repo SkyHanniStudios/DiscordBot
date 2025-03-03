@@ -2,6 +2,7 @@ package at.hannibal2.skyhanni.discord
 
 import at.hannibal2.skyhanni.discord.Utils.createParentDirIfNotExist
 import at.hannibal2.skyhanni.discord.Utils.format
+import at.hannibal2.skyhanni.discord.Utils.linkTo
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.Utils.timeExecution
 import at.hannibal2.skyhanni.discord.Utils.uploadFile
@@ -29,7 +30,6 @@ class PullRequestCommands(config: BotConfig, commands: Commands) {
         }
 
         val prLink = "https://github.com/hannibal002/SkyHanni/pull/$prNumber"
-        fun String.linkTo(link: String): String = "[$this](<$link>)"
 
         val pr = try {
             github.findPullRequest(prNumber) ?: run {
@@ -52,7 +52,7 @@ class PullRequestCommands(config: BotConfig, commands: Commands) {
         val userProfile = "https://github.com/$userName"
         val prNumberDisplay = "#$prNumber".linkTo(prLink)
         val userNameDisplay = userName.linkTo(userProfile)
-        val title = "`${pr.title}` $prNumberDisplay by $userNameDisplay\n" + "updatedAt=$updatedAt"
+        val title = "`${pr.title}` ($prNumberDisplay by $userNameDisplay)\n" + "updatedAt=$updatedAt"
 
         val lastCommit = head.sha
         val artifact = github.findArtifact(lastCommit) ?: run {
@@ -61,9 +61,8 @@ class PullRequestCommands(config: BotConfig, commands: Commands) {
         }
 
         val runId = artifact.workflowRun.id
-        val displayUrl = "https://github.com/hannibal002/SkyHanni/actions/runs/$runId?pr=$prNumber"
-
-        val artifactLine = "Artifact download: <$displayUrl>"
+        val artifactLink = "https://github.com/hannibal002/SkyHanni/actions/runs/$runId?pr=$prNumber"
+        val artifactLine = "Download development build".linkTo(artifactLink)
         reply("$title\n$artifactLine")
     }
 

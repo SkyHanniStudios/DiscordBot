@@ -113,4 +113,6 @@ object Utils {
         textChannel.sendFiles(fileUpload).addContent(comment).queue()
 
     }
+
+    fun String.linkTo(link: String): String = "[$this](<$link>)"
 }
