@@ -10,6 +10,7 @@ import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.Utils.timeExecution
 import at.hannibal2.skyhanni.discord.Utils.uploadFile
 import at.hannibal2.skyhanni.discord.github.GitHubClient
+import at.hannibal2.skyhanni.discord.json.discord.PullRequestJson
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import java.awt.Color
 import java.io.File
@@ -54,6 +55,7 @@ class PullRequestCommands(config: BotConfig, commands: Commands) {
             reply("error while finding pull request: ${e.message}")
             return
         }
+
         val head = pr.head
         val userName = head.user.login
         val userProfile = "https://github.com/$userName"
@@ -81,7 +83,7 @@ class PullRequestCommands(config: BotConfig, commands: Commands) {
         val lastCommit = head.sha
         val artifact = github.findArtifact(lastCommit) ?: run {
             val text = "${title}${time}Latest artifact could not be found \uD83E\uDD7A (expired or still compiling)"
-            reply(embed(embedTitle, text, Color.yellow))
+            reply(embed(embedTitle, text, readColor(pr)))
             return
         }
 
@@ -111,8 +113,15 @@ class PullRequestCommands(config: BotConfig, commands: Commands) {
             append("> (updated ${passedSince(artifact.updatedAt)})")
         }
 
-        reply(embed(embedTitle, "$title$time$artifactDisplay", Color.green))
+        reply(embed(embedTitle, "$title$time$artifactDisplay", readColor(pr)))
 //        reply("$title$time$artifactDisplay")
+    }
+
+    // colors picked from github
+    private fun readColor(pr: PullRequestJson): Color = when {
+        pr.draft -> Color(101, 108, 118)
+        pr.merged -> Color(130, 86, 208)
+        else -> Color(52, 125, 57)
     }
 
     private fun parseToUnixTime(isoTimestamp: String): Long =
