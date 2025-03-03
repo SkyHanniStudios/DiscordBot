@@ -9,6 +9,7 @@ import at.hannibal2.skyhanni.discord.github.GitHubClient
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import java.io.File
 
+@Suppress("ReturnCount")
 class PullRequestCommands(config: BotConfig, commands: Commands) {
 
     private val github = GitHubClient("hannibal002", "SkyHanni", config.githubToken)
@@ -20,6 +21,56 @@ class PullRequestCommands(config: BotConfig, commands: Commands) {
     private fun MessageReceivedEvent.pullRequestCommand(args: List<String>) {
         if (args.size != 2) {
             reply("Usage: `!pr <number>`")
+            return
+        }
+        val prNumber = args[1].toIntOrNull() ?: run {
+            reply("unknwon number \uD83E\uDD7A (${args[1]})")
+            return
+        }
+
+        val prLink = "https://github.com/hannibal002/SkyHanni/pull/$prNumber"
+        fun String.linkTo(link: String): String = "[$this](<$link>)"
+
+        val pr = try {
+            github.findPullRequest(prNumber) ?: run {
+                reply("pr is null!")
+                return
+            }
+        } catch (e: IllegalStateException) {
+            if (e.message == "GitHub API error: 404") {
+                val issueUrl = "https://github.com/hannibal002/SkyHanni/issues/123"
+                val issue = "issue".linkTo(issueUrl)
+                reply("This pull request does not yet exist or is an $issue \uD83E\uDD7A")
+                return
+            }
+            reply("error while finding pull request: ${e.message}")
+            return
+        }
+        val updatedAt = pr.updatedAt
+        val head = pr.head
+        val userName = head.user.login
+        val userProfile = "https://github.com/$userName"
+        val prNumberDisplay = "#$prNumber".linkTo(prLink)
+        val userNameDisplay = userName.linkTo(userProfile)
+        val title = "`${pr.title}` $prNumberDisplay by $userNameDisplay\n" + "updatedAt=$updatedAt"
+
+        val lastCommit = head.sha
+        val artifact = github.findArtifact(lastCommit) ?: run {
+            reply("$title\nLatest artifact could not be found \uD83E\uDD7A (expired or not yet compiled)")
+            return
+        }
+
+        val runId = artifact.workflowRun.id
+        val displayUrl = "https://github.com/hannibal002/SkyHanni/actions/runs/$runId?pr=$prNumber"
+
+        val artifactLine = "Artifact download: <$displayUrl>"
+        reply("$title\n$artifactLine")
+    }
+
+    @Suppress("unused") // TODO implement once we can upload the file
+    private fun MessageReceivedEvent.pullRequestArtifactCommand(args: List<String>) {
+        if (args.size != 2) {
+            reply("Usage: `!prupload <number>`")
             return
         }
         val prNumber = args[1].toIntOrNull() ?: run {
