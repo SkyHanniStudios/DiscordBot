@@ -56,9 +56,14 @@ class PullRequestCommands(config: BotConfig, commands: Commands) {
         val userProfile = "https://github.com/$userName"
         val prNumberDisplay = "#$prNumber".linkTo(prLink)
         val userNameDisplay = userName.linkTo(userProfile)
-        val title = "\u200B\n" +
-                "# ${pr.title}\n" +
-                "> $prNumberDisplay by $userNameDisplay\n"
+        val title = buildString {
+            append("\u200B") // zero-width space to create a empty first line
+            append("\n")
+            append("# ${pr.title}")
+            append("\n")
+            append("> $prNumberDisplay by $userNameDisplay")
+            append("\n")
+        }
 
         val time = buildString {
             val lastUpdate = passedSince(pr.updatedAt)
@@ -100,9 +105,7 @@ class PullRequestCommands(config: BotConfig, commands: Commands) {
 
     private fun toTimeMark(stringTime: String): SimpleTimeMark = (parseToUnixTime(stringTime) * 1000).asTimeMark()
 
-    private fun passedSince(stringTime: String): String {
-        return "<t:${parseToUnixTime(stringTime)}:R>"
-}
+    private fun passedSince(stringTime: String): String = "<t:${parseToUnixTime(stringTime)}:R>"
 
     @Suppress("unused") // TODO implement once we can upload the file
     private fun MessageReceivedEvent.pullRequestArtifactCommand(args: List<String>) {
