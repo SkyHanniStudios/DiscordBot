@@ -18,8 +18,6 @@ object Utils {
     private val logger = LoggerFactory.getLogger(DiscordBot::class.java)
 
     fun MessageReceivedEvent.reply(text: String) {
-
-        println("replay: $text")
         message.messageReply(text)
     }
 

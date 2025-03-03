@@ -4,6 +4,7 @@ import at.hannibal2.skyhanni.discord.SimpleTimeMark.Companion.asTimeMark
 import at.hannibal2.skyhanni.discord.Utils.createParentDirIfNotExist
 import at.hannibal2.skyhanni.discord.Utils.format
 import at.hannibal2.skyhanni.discord.Utils.linkTo
+import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.Utils.timeExecution
 import at.hannibal2.skyhanni.discord.Utils.uploadFile
@@ -31,6 +32,7 @@ class PullRequestCommands(config: BotConfig, commands: Commands) {
             reply("unknwon number \uD83E\uDD7A (${args[1]})")
             return
         }
+        logAction("loads pr infos for #$prNumber")
 
         val prLink = "https://github.com/hannibal002/SkyHanni/pull/$prNumber"
 
@@ -41,7 +43,7 @@ class PullRequestCommands(config: BotConfig, commands: Commands) {
             }
         } catch (e: IllegalStateException) {
             if (e.message == "GitHub API error: 404") {
-                val issueUrl = "https://github.com/hannibal002/SkyHanni/issues/123"
+                val issueUrl = "https://github.com/hannibal002/SkyHanni/issues/$prNumber"
                 val issue = "issue".linkTo(issueUrl)
                 reply("This pull request does not yet exist or is an $issue \uD83E\uDD7A")
                 return
@@ -84,9 +86,8 @@ class PullRequestCommands(config: BotConfig, commands: Commands) {
             append("\n")
             append("From $artifactLine (requries an GitHub Account)")
             append("\n")
-            append("From $nightlyLine (inofficial)")
+            append("From $nightlyLine (unofficial)")
         }
-
 
         reply(" \n$title$time$artifactDisplay")
     }
