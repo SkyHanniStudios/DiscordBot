@@ -56,14 +56,16 @@ class PullRequestCommands(config: BotConfig, commands: Commands) {
         val userProfile = "https://github.com/$userName"
         val prNumberDisplay = "#$prNumber".linkTo(prLink)
         val userNameDisplay = userName.linkTo(userProfile)
-        val title = "`${pr.title}`\n$prNumberDisplay by $userNameDisplay\n"
+        val title = "\u200B\n" +
+                "# ${pr.title}\n" +
+                "> $prNumberDisplay by $userNameDisplay\n"
 
         val time = buildString {
             val lastUpdate = passedSince(pr.updatedAt)
             val created = passedSince(pr.createdAt)
-            append("Created: `$created`")
+            append("> Created: $created")
             append("\n")
-            append("Last Updated: `$lastUpdate`")
+            append("> Last Updated: $lastUpdate")
             append("\n")
         }
 
@@ -80,16 +82,17 @@ class PullRequestCommands(config: BotConfig, commands: Commands) {
         val nightlyLine = "Nightly".linkTo(nightlyLink)
 
         val artifactDisplay = buildString {
+            append(" \n")
             append("Download the latest developement build of this pr!")
             append("\n")
-            append("(updated `${passedSince(artifact.updatedAt)}`)")
+            append("> From $artifactLine (requries an GitHub Account)")
             append("\n")
-            append("From $artifactLine (requries an GitHub Account)")
+            append("> From $nightlyLine (unofficial)")
             append("\n")
-            append("From $nightlyLine (unofficial)")
+            append("> (updated ${passedSince(artifact.updatedAt)})")
         }
 
-        reply(" \n$title$time$artifactDisplay")
+        reply("$title$time$artifactDisplay")
     }
 
     private fun parseToUnixTime(isoTimestamp: String): Long =
@@ -97,7 +100,9 @@ class PullRequestCommands(config: BotConfig, commands: Commands) {
 
     private fun toTimeMark(stringTime: String): SimpleTimeMark = (parseToUnixTime(stringTime) * 1000).asTimeMark()
 
-    private fun passedSince(stringTime: String) = toTimeMark(stringTime).passedSince().format() + " ago"
+    private fun passedSince(stringTime: String): String {
+        return "<t:${parseToUnixTime(stringTime)}:R>"
+}
 
     @Suppress("unused") // TODO implement once we can upload the file
     private fun MessageReceivedEvent.pullRequestArtifactCommand(args: List<String>) {
@@ -111,7 +116,7 @@ class PullRequestCommands(config: BotConfig, commands: Commands) {
         }
 
         val prLink = "https://github.com/hannibal002/SkyHanni/pull/$prNumber"
-        reply("Looking for pr <$prLink> ..")
+        reply("Looking for pr <$prLink..")
 
         val pr = github.findPullRequest(prNumber) ?: run {
             reply("pr is null!")
