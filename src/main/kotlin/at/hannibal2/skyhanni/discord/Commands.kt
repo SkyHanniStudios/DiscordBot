@@ -16,6 +16,7 @@ class Commands(private val config: BotConfig) {
 
     private var tagCommands = TagCommands(config, this)
     private var serverCommands = ServerCommands(config, this)
+    private var pullRequestCommands = PullRequestCommands(config, this)
 
     init {
         add(Command("help", userCommand = true) { event, args -> event.helpCommand(args) })

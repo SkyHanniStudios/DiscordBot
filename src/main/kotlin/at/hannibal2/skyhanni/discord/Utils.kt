@@ -1,10 +1,16 @@
 package at.hannibal2.skyhanni.discord
 
 import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
+import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.utils.FileUpload
 import org.slf4j.LoggerFactory
+import java.io.File
+import java.util.zip.ZipFile
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.nanoseconds
 
 @Suppress("MemberVisibilityCanBePrivate")
 object Utils {
@@ -12,6 +18,8 @@ object Utils {
     private val logger = LoggerFactory.getLogger(DiscordBot::class.java)
 
     fun MessageReceivedEvent.reply(text: String) {
+
+        println("replay: $text")
         message.messageReply(text)
     }
 
@@ -62,5 +70,49 @@ object Utils {
             Thread.sleep(duration.inWholeMilliseconds)
             consumer()
         }.start()
+    }
+
+    fun unzipFile(zipFile: File, destDir: File) {
+        ZipFile(zipFile).use { zip ->
+            zip.entries().asSequence().forEach { entry ->
+                val outFile = File(destDir, entry.name)
+                if (entry.isDirectory) {
+                    outFile.mkdirs()
+                } else {
+                    outFile.parentFile.mkdirs()
+                    zip.getInputStream(entry).use { input ->
+                        outFile.outputStream().use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    inline fun <T> timeExecution(block: () -> T): Pair<T, Duration> {
+        val start = System.nanoTime()
+        val result = block()
+        val duration = System.nanoTime() - start
+        return result to duration.nanoseconds
+    }
+
+    fun Duration.format(): String {
+        val s = inWholeSeconds
+        val m = inWholeMinutes
+        return "${m}m ${s}s"
+    }
+
+    fun File.createParentDirIfNotExist() {
+        parentFile?.let {
+            it.mkdirs()
+        }
+    }
+
+    fun MessageChannelUnion.uploadFile(jarFile: File, comment: String) {
+        val textChannel = this as? TextChannel ?: error("not a text channel: $name")
+        val fileUpload = FileUpload.fromData(jarFile, jarFile.name)
+        textChannel.sendFiles(fileUpload).addContent(comment).queue()
+
     }
 }
