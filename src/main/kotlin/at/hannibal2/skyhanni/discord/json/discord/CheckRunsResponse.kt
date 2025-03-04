@@ -22,6 +22,7 @@ data class CheckRun (
     @SerializedName("output") val output: Output,
     @SerializedName("name") val name: String,
     @SerializedName("check_suite") val checkSuite: CheckSuite?,
+    @SerializedName("app") val app: GitHubapp?,
     @SerializedName("pull_requests") val pullRequests: List<PullRequestMinimal>,
     @SerializedName("deployment") val deployment: Deployment
 )
@@ -54,7 +55,65 @@ data class Output (
 )
 
 data class CheckSuite (
-    @SerializedName("id") val id: Int
+    @SerializedName("id") val id: Long
+)
+
+data class GitHubapp (
+    @SerializedName("id") val id: Long,
+    @SerializedName("slug") val slug: String,
+    @SerializedName("node_id") val nodeId: String,
+    @SerializedName("client_id") val clientId: String,
+    @SerializedName("owner") val owner: SimpleUserOrEnterprise,
+    @SerializedName("name") val name: String,
+    @SerializedName("description") val description: String?,
+    @SerializedName("external_url") val externalUrl: String,
+    @SerializedName("html_url") val htmlUrl: String,
+    @SerializedName("created_at") val createdAt: String,
+    @SerializedName("updated_at") val updatedAt: String,
+    @SerializedName("permissions") val permissions: GitHubPermissions,
+    @SerializedName("events") val events: List<String>,
+    @SerializedName("installations_count") val installationsCount: Int,
+    @SerializedName("client_secret") val clientSecret: String,
+    @SerializedName("webhook_secret") val webhookSecret: String?,
+    @SerializedName("pem") val pem: String
+)
+
+data class SimpleUserOrEnterprise (
+    @SerializedName("name") val name: String?,
+    @SerializedName("email") val email: String?,
+    @SerializedName("login") val login: String?,
+    @SerializedName("id") val id: Long,
+    @SerializedName("node_id") val nodeId: String,
+    @SerializedName("avatar_url") val avatarUrl: String,
+    @SerializedName("gravatar_id") val gravatarId: String?,
+    @SerializedName("url") val url: String?,
+    @SerializedName("html_url") val htmlUrl: String,
+    @SerializedName("followers_url") val followersUrl: String?,
+    @SerializedName("following_url") val followingUrl: String?,
+    @SerializedName("gists_url") val gistsUrl: String?,
+    @SerializedName("starred_url") val starredUrl: String?,
+    @SerializedName("subscriptions_url") val subscriptionsUrl: String?,
+    @SerializedName("organizations_url") val organizationsUrl: String?,
+    @SerializedName("repos_url") val reposUrl: String?,
+    @SerializedName("events_url") val eventsUrl: String?,
+    @SerializedName("received_events_url") val receivedEventsUrl: String?,
+    @SerializedName("type") val type: String?,
+    @SerializedName("site_admin") val siteAdmin: Boolean?,
+    @SerializedName("starred_at") val starredAt: String?,
+    @SerializedName("user_view_type") val userViewType: String?,
+    @SerializedName("description") val description: String?,
+    @SerializedName("website_url") val websiteUrl: String?,
+    @SerializedName("slug") val slug: String?,
+    @SerializedName("created_at") val createdAt: String?,
+    @SerializedName("updated_at") val updatedAt: String?
+)
+
+data class GitHubPermissions (
+    @SerializedName("issues") val issues: String,
+    @SerializedName("checks") val checks: String,
+    @SerializedName("metadata") val metadata: String,
+    @SerializedName("contents") val contents: String,
+    @SerializedName("deployments") val deployments: String
 )
 
 data class PullRequestMinimal (
@@ -85,7 +144,7 @@ data class MinimalBase (
 
 data class Deployment (
     @SerializedName("url") val url: String,
-    @SerializedName("id") val id: Int,
+    @SerializedName("id") val id: Long,
     @SerializedName("node_id") val nodeId: String,
     @SerializedName("task") val task: String,
     @SerializedName("original_environment") val originalEnvironment: String,
@@ -96,5 +155,6 @@ data class Deployment (
     @SerializedName("statuses_url") val statusesUrl: String,
     @SerializedName("repository_url") val repositoryUrl: String,
     @SerializedName("transient_environment") val transientEnvironment: Boolean,
-    @SerializedName("production_environment") val productionEnvironment: Boolean
+    @SerializedName("production_environment") val productionEnvironment: Boolean,
+    @SerializedName("performed_via_github_app") val performedViaGithubApp: GitHubapp?
 )

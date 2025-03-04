@@ -22,15 +22,17 @@ data class PullRequestJson (
     @SerializedName("user") val user: SimpleUser,
     @SerializedName("body") val body: String?,
     @SerializedName("labels") val labels: List<Labels>,
+    @SerializedName("milestone") val milestone: Milestone?,
     @SerializedName("active_lock_reason") val activeLockReason: String?,
     @SerializedName("created_at") val createdAt: String,
     @SerializedName("updated_at") val updatedAt: String,
     @SerializedName("closed_at") val closedAt: String?,
     @SerializedName("merged_at") val mergedAt: String?,
     @SerializedName("merge_commit_sha") val mergeCommitSha: String?,
-    @SerializedName("assignees") val assignees: List<SimpleUser?>,
-    @SerializedName("requested_reviewers") val requestedReviewers: List<SimpleUser?>,
-    @SerializedName("requested_teams") val requestedTeams: List<TeamSimple?>,
+    @SerializedName("assignee") val assignee: SimpleUser?,
+    @SerializedName("assignees") val assignees: List<SimpleUser>?,
+    @SerializedName("requested_reviewers") val requestedReviewers: List<SimpleUser>?,
+    @SerializedName("requested_teams") val requestedTeams: List<TeamSimple>?,
     @SerializedName("head") val head: Head,
     @SerializedName("base") val base: Base,
     @SerializedName("_links") val Links: Links,
@@ -41,6 +43,7 @@ data class PullRequestJson (
     @SerializedName("mergeable") val mergeable: Boolean?,
     @SerializedName("rebaseable") val rebaseable: Boolean?,
     @SerializedName("mergeable_state") val mergeableState: String,
+    @SerializedName("merged_by") val mergedBy: SimpleUser?,
     @SerializedName("comments") val comments: Int,
     @SerializedName("review_comments") val reviewComments: Int,
     @SerializedName("maintainer_can_modify") val maintainerCanModify: Boolean,
@@ -90,8 +93,32 @@ data class Labels (
     @SerializedName("default") val default: Boolean
 )
 
+data class Milestone (
+    @SerializedName("url") val url: String,
+    @SerializedName("html_url") val htmlUrl: String,
+    @SerializedName("labels_url") val labelsUrl: String,
+    @SerializedName("id") val id: Long,
+    @SerializedName("node_id") val nodeId: String,
+    @SerializedName("number") val number: Int,
+    @SerializedName("state") val state: MilestoneState,
+    @SerializedName("title") val title: String,
+    @SerializedName("description") val description: String?,
+    @SerializedName("creator") val creator: SimpleUser?,
+    @SerializedName("open_issues") val openIssues: Int,
+    @SerializedName("closed_issues") val closedIssues: Int,
+    @SerializedName("created_at") val createdAt: String,
+    @SerializedName("updated_at") val updatedAt: String,
+    @SerializedName("closed_at") val closedAt: String?,
+    @SerializedName("due_on") val dueOn: String?
+)
+
+enum class MilestoneState {
+    @SerializedName("open") OPEN,
+    @SerializedName("closed") CLOSED
+}
+
 data class TeamSimple (
-    @SerializedName("id") val id: Int,
+    @SerializedName("id") val id: Long,
     @SerializedName("node_id") val nodeId: String,
     @SerializedName("url") val url: String,
     @SerializedName("members_url") val membersUrl: String,
@@ -119,6 +146,7 @@ data class Repository (
     @SerializedName("node_id") val nodeId: String,
     @SerializedName("name") val name: String,
     @SerializedName("full_name") val fullName: String,
+    @SerializedName("license") val license: LicenseSimple?,
     @SerializedName("forks") val forks: Int,
     @SerializedName("permissions") val permissions: Permissions,
     @SerializedName("owner") val owner: SimpleUser,
@@ -209,6 +237,15 @@ data class Repository (
     @SerializedName("master_branch") val masterBranch: String,
     @SerializedName("starred_at") val starredAt: String,
     @SerializedName("anonymous_access_enabled") val anonymousAccessEnabled: Boolean
+)
+
+data class LicenseSimple (
+    @SerializedName("key") val key: String,
+    @SerializedName("name") val name: String,
+    @SerializedName("url") val url: String?,
+    @SerializedName("spdx_id") val spdxId: String?,
+    @SerializedName("node_id") val nodeId: String,
+    @SerializedName("html_url") val htmlUrl: String
 )
 
 data class Permissions (

@@ -27,13 +27,15 @@ class PullRequestCommands(config: BotConfig, commands: Commands) {
         commands.add(Command("pr") { event, args -> event.pullRequestCommand(args) })
     }
 
+    private val runIdRegex = Regex("https://github\\.com/[\\w.]+/[\\w.]+/actions/runs/(?<RunId>\\d+)/job/(?<JobId>\\d+)")
+
     private fun MessageReceivedEvent.pullRequestCommand(args: List<String>) {
         if (args.size != 2) {
             reply("Usage: `!pr <number>`")
             return
         }
         val prNumber = args[1].toIntOrNull() ?: run {
-            reply("unknwon number \uD83E\uDD7A (${args[1]})")
+            reply("unknown number \uD83E\uDD7A (${args[1]})")
             return
         }
         logAction("loads pr infos for #$prNumber")
@@ -79,14 +81,14 @@ class PullRequestCommands(config: BotConfig, commands: Commands) {
 
         val lastCommit = head.sha
 
-        val run = github.getRun(lastCommit, "Build and test") ?: run {
+        val job = github.getRun(lastCommit, "Build and test") ?: run {
             val text = "${title}${time} \nUnable to locate run \uD83E\uDD7A (expired or does not exist)"
             reply(embed(embedTitle, text, readColor(pr)))
             return
         }
 
-        if (run.status != Status.COMPLETED) {
-            val text = when (run.status) {
+        if (job.status != Status.COMPLETED) {
+            val text = when (job.status) {
                 Status.REQUESTED -> "Run has been requested \uD83E\uDD7A"
                 Status.QUEUED -> "Run is in queue \uD83E\uDD7A"
                 Status.IN_PROGRESS -> "Run is in progress \uD83E\uDD7A"
@@ -98,7 +100,9 @@ class PullRequestCommands(config: BotConfig, commands: Commands) {
             return
         }
 
-        val runId = run.id
+        val match = job.htmlUrl?.let { runIdRegex.matchEntire(it) }
+        val runId = match?.groups?.get("RunId")?.value
+
         val artifactLink = "https://github.com/hannibal002/SkyHanni/actions/runs/$runId?pr=$prNumber"
         val nightlyLink = "https://nightly.link/hannibal002/SkyHanni/actions/runs/$runId/Development%20Build.zip"
         val artifactLine = "GitHub".linkTo(artifactLink)
@@ -111,17 +115,8 @@ class PullRequestCommands(config: BotConfig, commands: Commands) {
             append("> From $artifactLine (requires an GitHub Account)")
             append("\n")
             append("> From $nightlyLine (unofficial)")
-//            append("\n")
-//            append("spam message\n")
-//            append("spam message\n")
-//            append("spam message\n")
-//            append("spam message\n")
-//            append("spam message\n")
-//            append("spam message\n")
-//            append("spam message\n")
-//            append("spam message\n")
             append("\n")
-            append("> (updated ${passedSince(run.completedAt ?: "")})")
+            append("> (updated ${passedSince(job.completedAt ?: "")})")
         }
 
         reply(embed(embedTitle, "$title$time$artifactDisplay", readColor(pr)))
