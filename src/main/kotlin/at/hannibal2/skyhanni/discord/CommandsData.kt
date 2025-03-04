@@ -1,7 +1,5 @@
 package at.hannibal2.skyhanni.discord
 
-import net.dv8tion.jda.api.interactions.commands.build.OptionData
-
 object CommandsData {
 
     private val commands = listOf(
@@ -21,7 +19,7 @@ object CommandsData {
             description = "Displays information about a server from our 'useful server list'.",
             options = listOf(
                 Option("keyword", "Keyword of the server you want to display."),
-                Option("debug", "Display even more useful information.", required = false)
+                Option("debug", "Display even more useful information (-d to use).", required = false)
             ),
             userCommand = true
         ),
