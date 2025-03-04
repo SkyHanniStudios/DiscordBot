@@ -8,7 +8,6 @@ import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import java.awt.Color
-import java.time.Instant
 import kotlin.time.Duration.Companion.seconds
 
 @Suppress("UNUSED_PARAMETER")
@@ -88,7 +87,7 @@ class Commands(private val config: BotConfig) {
 
             if (!command.userCommand && !hasAdminPerms) return
 
-            val embed = this.createHelpEmbed(commandName, command)
+            val embed = command.createHelpEmbed(commandName)
 
             this.reply(embed)
         } else {
@@ -120,24 +119,20 @@ class Commands(private val config: BotConfig) {
 
     fun existCommand(text: String): Boolean = commands.find { it.name.equals(text, ignoreCase = true) } != null
 
-    private fun MessageReceivedEvent.createHelpEmbed(commandName: String, command: CommandData): MessageEmbed {
-        val name = commandName.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
-        val description = command.description
-        val options = command.options.joinToString("\n")
-
+    private fun CommandData.createHelpEmbed(commandName: String): MessageEmbed {
         val em = EmbedBuilder()
 
-        em.setTitle(description)
+        em.setTitle("/$commandName <" + this.options.map { it.name }.joinToString("> <") + ">")
+        em.setDescription("📋 **${this.description}**")
         em.setColor(Color.GREEN)
 
-        for (option in command.options) {
+        for (option in this.options) {
             em.addField(option.name, option.description, true)
             em.addField("Required", if (option.required) "✅" else "❌", true)
             em.addBlankField(true)
         }
 
         return em.build()
-//        val category = command.category 📁 Category: **$category**
     }
 }
 

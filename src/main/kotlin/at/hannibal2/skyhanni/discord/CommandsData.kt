@@ -18,7 +18,7 @@ object CommandsData {
         ),
         CommandData(
             name = "server",
-            description = "Displays information about a server from our 'useful server list'",
+            description = "Displays information about a server from our 'useful server list'.",
             options = listOf(
                 Option("keyword", "Keyword of the server you want to display."),
                 Option("debug", "Display even more useful information.", required = false)
