@@ -11,6 +11,7 @@ import at.hannibal2.skyhanni.discord.Utils.timeExecution
 import at.hannibal2.skyhanni.discord.Utils.uploadFile
 import at.hannibal2.skyhanni.discord.github.GitHubClient
 import at.hannibal2.skyhanni.discord.json.discord.PullRequestJson
+import at.hannibal2.skyhanni.discord.json.discord.Status
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import java.awt.Color
 import java.io.File
@@ -77,13 +78,27 @@ class PullRequestCommands(config: BotConfig, commands: Commands) {
         }
 
         val lastCommit = head.sha
-        val artifact = github.findArtifact(lastCommit) ?: run {
-            val text = "${title}${time} \nLatest artifact could not be found \uD83E\uDD7A (expired or still compiling)"
+
+        val run = github.getRun(lastCommit, "Build and test") ?: run {
+            val text = "${title}${time} \nUnable to locate run \uD83E\uDD7A (expired or does not exist)"
             reply(embed(embedTitle, text, readColor(pr)))
             return
         }
 
-        val runId = artifact.workflowRun.id
+        if (run.status != Status.COMPLETED) {
+            val text = when (run.status) {
+                Status.REQUESTED -> "Run has been requested \uD83E\uDD7A"
+                Status.QUEUED -> "Run is in queue \uD83E\uDD7A"
+                Status.IN_PROGRESS -> "Run is in progress \uD83E\uDD7A"
+                Status.WAITING -> "Run is waiting \uD83E\uDD7A"
+                Status.PENDING -> "Run is pending \uD83E\uDD7A"
+                else -> ""
+            }
+            reply(embed(embedTitle, "${title}${time} \n $text", readColor(pr)))
+            return
+        }
+
+        val runId = run.id
         val artifactLink = "https://github.com/hannibal002/SkyHanni/actions/runs/$runId?pr=$prNumber"
         val nightlyLink = "https://nightly.link/hannibal002/SkyHanni/actions/runs/$runId/Development%20Build.zip"
         val artifactLine = "GitHub".linkTo(artifactLink)
@@ -106,7 +121,7 @@ class PullRequestCommands(config: BotConfig, commands: Commands) {
 //            append("spam message\n")
 //            append("spam message\n")
             append("\n")
-            append("> (updated ${passedSince(artifact.updatedAt)})")
+            append("> (updated ${passedSince(run.completedAt ?: "")})")
         }
 
         reply(embed(embedTitle, "$title$time$artifactDisplay", readColor(pr)))
