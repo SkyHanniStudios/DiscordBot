@@ -22,7 +22,7 @@ data class Job (
     @SerializedName("started_at") val startedAt: String,
     @SerializedName("completed_at") val completedAt: String?,
     @SerializedName("name") val name: String,
-    @SerializedName("steps") val steps: List<Steps>,
+    @SerializedName("steps") val steps: List<Step>,
     @SerializedName("check_run_url") val checkRunUrl: String,
     @SerializedName("labels") val labels: List<String>,
     @SerializedName("runner_id") val runnerId: Int?,
@@ -33,8 +33,8 @@ data class Job (
     @SerializedName("head_branch") val headBranch: String?
 )
 
-data class Steps (
-    @SerializedName("status") val status: Status5,
+data class Step (
+    @SerializedName("status") val status: StepStatus,
     @SerializedName("conclusion") val conclusion: String?,
     @SerializedName("name") val name: String,
     @SerializedName("number") val number: Int,
@@ -42,7 +42,7 @@ data class Steps (
     @SerializedName("completed_at") val completedAt: String?
 )
 
-enum class Status5 {
+enum class StepStatus {
     @SerializedName("queued") QUEUED,
     @SerializedName("in_progress") IN_PROGRESS,
     @SerializedName("completed") COMPLETED
