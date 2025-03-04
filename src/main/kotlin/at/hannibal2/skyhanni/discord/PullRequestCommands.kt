@@ -17,6 +17,7 @@ import java.awt.Color
 import java.io.File
 import java.time.Instant
 import java.time.format.DateTimeFormatter
+import kotlin.time.Duration.Companion.days
 
 @Suppress("ReturnCount")
 class PullRequestCommands(config: BotConfig, commands: Commands) {
@@ -84,6 +85,11 @@ class PullRequestCommands(config: BotConfig, commands: Commands) {
         val job = github.getRun(lastCommit, "Build and test") ?: run {
             val text = "${title}${time} \nUnable to locate run \uD83E\uDD7A (expired or does not exist)"
             reply(embed(embedTitle, text, readColor(pr)))
+            return
+        }
+
+        if (job.startedAt?.let { toTimeMark(it).passedSince() > 90.days } == true) {
+            reply(embed(embedTitle, "${title}${time} \nLast build for PR #$prNumber has expired \uD83E\uDD7A", readColor(pr)))
             return
         }
 
