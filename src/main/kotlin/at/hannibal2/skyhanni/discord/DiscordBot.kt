@@ -35,6 +35,7 @@ class DiscordBot(
 }
 
 fun main() {
+    val config = ConfigLoader.load("config.json")
     val token = config.token
     val commands = CommandListener(config)
     val slashCommands = SlashCommandListener(config)
