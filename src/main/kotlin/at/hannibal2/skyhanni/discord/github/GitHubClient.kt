@@ -16,51 +16,30 @@ import java.io.File
 
 class GitHubClient(owner: String, repo: String, private val token: String) {
     private val client = OkHttpClient()
-    private val gson = Gson()
+    val gson = Gson()
     private val base = "https://api.github.com/repos/$owner/$repo"
 
     fun findArtifact(lastCommit: String): Artifact? {
-        return useJson("$base/actions/artifacts") { json ->
-            val response = gson.fromJson(json, ArtifactResponse::class.java)
+        return readJson<ArtifactResponse, Artifact?>("$base/actions/artifacts") { response ->
             response.artifacts.firstOrNull { artifact ->
                 artifact.workflowRun?.headSha == lastCommit && artifact.name == "Development Build"
             }
-        }
-    }
-
-    inline fun <T> useJson(url: String, crossinline block: (String) -> T): T? = use(url) { body ->
-        block(body.string())
-    }
-
-    fun findArtifact2(lastCommit: String): Artifact? {
-        return useJson2<ArtifactResponse>("$base/actions/artifacts") { response ->
-            response.artifacts.firstOrNull { artifact ->
-                artifact.workflowRun?.headSha == lastCommit && artifact.name == "Development Build"
-            }
-        }
-    }
-
-    inline fun <R, reified T : Any> useJson2(url: String, crossinline block: (T) -> R): R? {
-        use(url) { body ->
-            block(gson.fromJson(body.string(), T::class.java))
         }
     }
 
     fun downloadArtifact(artifactId: Int, outputFile: File) {
-        use("$base/actions/artifacts/$artifactId/zip") { body ->
+        readBody("$base/actions/artifacts/$artifactId/zip") { body ->
             outputFile.writeBytes(body.bytes())
         }
     }
 
     fun findPullRequest(prNumber: Int): PullRequestJson? {
-        return useJson("$base/pulls/$prNumber") { json ->
-            gson.fromJson(json, PullRequestJson::class.java)
-        }
+        return readJson<PullRequestJson, PullRequestJson?>("$base/pulls/$prNumber") { it }
     }
 
     fun getRun(commitSha: String, checkName: String): CheckRun? {
-        return useJson("$base/commits/$commitSha/check-runs?check_name=$checkName") { json ->
-            val response = gson.fromJson(json, CheckRunsResponse::class.java)
+        val url = "$base/commits/$commitSha/check-runs?check_name=$checkName"
+        return readJson<CheckRunsResponse, CheckRun?>(url) { response ->
             if (response.totalCount == 0) {
                 null
             } else {
@@ -71,13 +50,12 @@ class GitHubClient(owner: String, repo: String, private val token: String) {
 
     // might come handy later
     fun getJob(artifactId: String): Job? {
-        return useJson("$base/actions/runs/$artifactId/jobs") { json ->
-            val response = gson.fromJson(json, JobsResponse::class.java)
+        return readJson<JobsResponse, Job?>("$base/actions/runs/$artifactId/jobs") { response ->
             response.jobs.firstOrNull { job -> job.name == "Build and test" }
         }
     }
 
-    private fun <T> use(url: String, block: (ResponseBody) -> T): T? {
+    inline fun <T> readBody(url: String, block: (ResponseBody) -> T): T? {
         response(url).use {
             if (!it.isSuccessful) error("Error fetching $url - code:${it.code} - message:'${it.message}'")
             val body = it.body ?: error("Error loading '$url' - empty response'")
@@ -85,7 +63,13 @@ class GitHubClient(owner: String, repo: String, private val token: String) {
         }
     }
 
-    private fun response(url: String): Response {
+    private inline fun <reified T : Any, R> readJson(url: String, crossinline block: (T) -> R): R? {
+        return readBody(url) { body ->
+            block(gson.fromJson(body.string(), T::class.java))
+        }
+    }
+
+    fun response(url: String): Response {
         val request = Request.Builder().url(url).header("Authorization", "token $token").build()
         return client.newCall(request).execute()
     }
