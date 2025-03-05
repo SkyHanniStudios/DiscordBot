@@ -10,18 +10,17 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import java.awt.Color
 import kotlin.time.Duration.Companion.seconds
 
-@Suppress("UNUSED_PARAMETER")
-class Commands(private val config: BotConfig) {
+class CommandListener(private val config: BotConfig) {
 
     private val botId = "1343351725381128193"
 
     private val commands = mutableSetOf<Command>()
 
     private var tagCommands = TagCommands(config, this)
-    private var serverCommands = ServerCommands(config, this)
-    private var pullRequestCommands = PullRequestCommands(config, this)
 
     init {
+        ServerCommands(config, this)
+        PullRequestCommands(config, this)
         add(Command("help", userCommand = true) { event, args -> event.helpCommand(args) })
     }
 
@@ -81,11 +80,22 @@ class Commands(private val config: BotConfig) {
     private fun MessageReceivedEvent.helpCommand(args: List<String>) {
         val hasAdminPerms = hasAdminPermissions()
 
-        if (args.size >= 2) {
-            val commandName = args[1].lowercase()
-            val command = CommandsData.getCommand(commandName) ?: return
+        if (args.size > 2) {
+            reply("Usage: !help <command>")
+            return
+        }
 
-            if (!command.userCommand && !hasAdminPerms) return
+        if (args.size == 2) {
+            val commandName = args[1].lowercase()
+            val command = CommandsData.getCommand(commandName) ?: run {
+                reply("Unknown command `!$commandName` \uD83E\uDD7A")
+                return
+            }
+
+            if (!command.userCommand && !hasAdminPerms) {
+                reply("No permissions for command `!$commandName` \uD83E\uDD7A")
+                return
+            }
 
             val embed = command.createHelpEmbed(commandName)
 
@@ -122,7 +132,7 @@ class Commands(private val config: BotConfig) {
     private fun CommandData.createHelpEmbed(commandName: String): MessageEmbed {
         val em = EmbedBuilder()
 
-        em.setTitle("/$commandName <" + this.options.map { it.name }.joinToString("> <") + ">")
+        em.setTitle("Usage: /$commandName <" + this.options.joinToString("> <") { it.name } + ">")
         em.setDescription("📋 **${this.description}**")
         em.setColor(Color.GREEN)
 
