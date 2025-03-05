@@ -11,11 +11,13 @@ import at.hannibal2.skyhanni.discord.Utils.timeExecution
 import at.hannibal2.skyhanni.discord.Utils.uploadFile
 import at.hannibal2.skyhanni.discord.github.GitHubClient
 import at.hannibal2.skyhanni.discord.json.discord.PullRequestJson
+import at.hannibal2.skyhanni.discord.json.discord.Status
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import java.awt.Color
 import java.io.File
 import java.time.Instant
 import java.time.format.DateTimeFormatter
+import kotlin.time.Duration.Companion.days
 
 @Suppress("ReturnCount")
 class PullRequestCommands(config: BotConfig, commands: CommandListener) {
@@ -26,13 +28,15 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
         commands.add(Command("pr", userCommand = true) { event, args -> event.pullRequestCommand(args) })
     }
 
+    private val runIdRegex = Regex("https://github\\.com/[\\w.]+/[\\w.]+/actions/runs/(?<RunId>\\d+)/job/(?<JobId>\\d+)")
+
     private fun MessageReceivedEvent.pullRequestCommand(args: List<String>) {
         if (args.size != 2) {
             reply("Usage: `!pr <number>`")
             return
         }
         val prNumber = args[1].toIntOrNull() ?: run {
-            reply("unknwon number \uD83E\uDD7A (${args[1]})")
+            reply("unknown number \uD83E\uDD7A (${args[1]})")
             return
         }
         if (prNumber < 1) {
@@ -81,13 +85,34 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
         }
 
         val lastCommit = head.sha
-        val artifact = github.findArtifact(lastCommit) ?: run {
-            val text = "${title}${time} \nLatest artifact could not be found \uD83E\uDD7A (expired or still compiling)"
+
+        val job = github.getRun(lastCommit, "Build and test") ?: run {
+            val text = "${title}${time} \nUnable to locate run \uD83E\uDD7A (expired or does not exist)"
             reply(embed(embedTitle, text, readColor(pr)))
             return
         }
 
-        val runId = artifact.workflowRun.id
+        if (job.startedAt?.let { toTimeMark(it).passedSince() > 90.days } == true) {
+            reply(embed(embedTitle, "${title}${time} \nLast build for PR #$prNumber has expired \uD83E\uDD7A", readColor(pr)))
+            return
+        }
+
+        if (job.status != Status.COMPLETED) {
+            val text = when (job.status) {
+                Status.REQUESTED -> "Run has been requested \uD83E\uDD7A"
+                Status.QUEUED -> "Run is in queue \uD83E\uDD7A"
+                Status.IN_PROGRESS -> "Run is in progress \uD83E\uDD7A"
+                Status.WAITING -> "Run is waiting \uD83E\uDD7A"
+                Status.PENDING -> "Run is pending \uD83E\uDD7A"
+                else -> ""
+            }
+            reply(embed(embedTitle, "${title}${time} \n $text", readColor(pr)))
+            return
+        }
+
+        val match = job.htmlUrl?.let { runIdRegex.matchEntire(it) }
+        val runId = match?.groups?.get("RunId")?.value
+
         val artifactLink = "https://github.com/hannibal002/SkyHanni/actions/runs/$runId?pr=$prNumber"
         val nightlyLink = "https://nightly.link/hannibal002/SkyHanni/actions/runs/$runId/Development%20Build.zip"
         val artifactLine = "GitHub".linkTo(artifactLink)
@@ -100,17 +125,8 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
             append("> From $artifactLine (requires an GitHub Account)")
             append("\n")
             append("> From $nightlyLine (unofficial)")
-//            append("\n")
-//            append("spam message\n")
-//            append("spam message\n")
-//            append("spam message\n")
-//            append("spam message\n")
-//            append("spam message\n")
-//            append("spam message\n")
-//            append("spam message\n")
-//            append("spam message\n")
             append("\n")
-            append("> (updated ${passedSince(artifact.updatedAt)})")
+            append("> (updated ${passedSince(job.completedAt ?: "")})")
         }
 
         reply(embed(embedTitle, "$title$time$artifactDisplay", readColor(pr)))
