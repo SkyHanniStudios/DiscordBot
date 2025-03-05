@@ -28,6 +28,24 @@ class GitHubClient(owner: String, repo: String, private val token: String) {
         }
     }
 
+    inline fun <T> useJson(url: String, crossinline block: (String) -> T): T? = use(url) { body ->
+        block(body.string())
+    }
+
+    fun findArtifact2(lastCommit: String): Artifact? {
+        return useJson2<ArtifactResponse>("$base/actions/artifacts") { response ->
+            response.artifacts.firstOrNull { artifact ->
+                artifact.workflowRun?.headSha == lastCommit && artifact.name == "Development Build"
+            }
+        }
+    }
+
+    inline fun <R, reified T : Any> useJson2(url: String, crossinline block: (T) -> R): R? {
+        use(url) { body ->
+            block(gson.fromJson(body.string(), T::class.java))
+        }
+    }
+
     fun downloadArtifact(artifactId: Int, outputFile: File) {
         use("$base/actions/artifacts/$artifactId/zip") { body ->
             outputFile.writeBytes(body.bytes())
@@ -65,10 +83,6 @@ class GitHubClient(owner: String, repo: String, private val token: String) {
             val body = it.body ?: error("Error loading '$url' - empty response'")
             return block(body)
         }
-    }
-
-    private fun <T> useJson(url: String, block: (String) -> T): T? = use(url) { body ->
-        block(body.string())
     }
 
     private fun response(url: String): Response {
