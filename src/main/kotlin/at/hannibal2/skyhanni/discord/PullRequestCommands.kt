@@ -35,6 +35,10 @@ class PullRequestCommands(config: BotConfig, commands: Commands) {
             reply("unknwon number \uD83E\uDD7A (${args[1]})")
             return
         }
+        if (prNumber < 1) {
+            reply("PR number needs to be positive \uD83E\uDD7A")
+            return
+        }
         logAction("loads pr infos for #$prNumber")
 
         val prLink = "https://github.com/hannibal002/SkyHanni/pull/$prNumber"
