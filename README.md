@@ -1,7 +1,3 @@
-Below is the revised version with each command starting with "!" followed immediately by a new line (without an extra blank line):
-
----
-
 This is the source code for a Discord bot the [SkyHanni](https://github.com/hannibal002/SkyHanni) staff uses on the [SkyHanni Support Server](https://discord.gg/skyhanni-997079228510117908).
 
 ## Technical Infos
