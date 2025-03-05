@@ -1,6 +1,5 @@
 package at.hannibal2.skyhanni.discord
 
-import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.messageDeleteAndThen
 import at.hannibal2.skyhanni.discord.Utils.reply
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent

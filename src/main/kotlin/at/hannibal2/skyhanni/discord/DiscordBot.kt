@@ -2,24 +2,45 @@ package at.hannibal2.skyhanni.discord
 
 import at.hannibal2.skyhanni.discord.Utils.messageSend
 import net.dv8tion.jda.api.JDABuilder
+import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.events.session.ReadyEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.requests.GatewayIntent
 import java.util.Scanner
 
-class DiscordBot(val config: BotConfig, private val commands: CommandListener) : ListenerAdapter() {
+class DiscordBot(
+    val config: BotConfig,
+    private val commands: CommandListener,
+    private val slashCommands: SlashCommands
+) : ListenerAdapter() {
     override fun onMessageReceived(event: MessageReceivedEvent) {
         commands.onMessage(this, event)
+    }
+
+    override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) {
+        slashCommands.onCommand(event)
+    }
+
+    override fun onCommandAutoCompleteInteraction(event: CommandAutoCompleteInteractionEvent) {
+        slashCommands.onAutocomplete(event)
+    }
+
+    override fun onReady(event: ReadyEvent) {
+        event.jda.getGuildById(config.allowedServerId)?.let {
+            slashCommands.createSlashCommands(it)
+        }
     }
 }
 
 fun main() {
-    val config = ConfigLoader.load("config.json")
     val token = config.token
     val commands = CommandListener(config)
+    val slashCommands = SlashCommands(config)
 
     val jda = JDABuilder.createDefault(token)
-        .addEventListeners(DiscordBot(config, commands))
+        .addEventListeners(DiscordBot(config, commands, slashCommands))
         .enableIntents(GatewayIntent.MESSAGE_CONTENT)
         .build()
     jda.awaitReady()

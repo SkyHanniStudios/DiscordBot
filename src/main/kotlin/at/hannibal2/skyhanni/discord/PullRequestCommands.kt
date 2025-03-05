@@ -5,7 +5,6 @@ import at.hannibal2.skyhanni.discord.Utils.createParentDirIfNotExist
 import at.hannibal2.skyhanni.discord.Utils.embed
 import at.hannibal2.skyhanni.discord.Utils.format
 import at.hannibal2.skyhanni.discord.Utils.linkTo
-import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.Utils.timeExecution
 import at.hannibal2.skyhanni.discord.Utils.uploadFile
@@ -155,7 +154,7 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
             return
         }
         val prNumber = args[1].toIntOrNull() ?: run {
-            reply("unknwon number \uD83E\uDD7A (${args[1]})")
+            reply("unknown number \uD83E\uDD7A (${args[1]})")
             return
         }
 
@@ -185,7 +184,7 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
         val (_, downloadTime) = timeExecution {
             github.downloadArtifact(artifactId, fileRaw)
         }
-        reply("artifact downnloaded in ${downloadTime.format()}")
+        reply("artifact downloaded in ${downloadTime.format()}")
 
         Utils.unzipFile(fileRaw, fileUnzipped)
         fileRaw.delete()

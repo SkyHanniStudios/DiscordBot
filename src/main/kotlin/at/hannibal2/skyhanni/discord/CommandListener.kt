@@ -1,13 +1,11 @@
 package at.hannibal2.skyhanni.discord
 
+import at.hannibal2.skyhanni.discord.Utils.createHelpEmbed
 import at.hannibal2.skyhanni.discord.Utils.messageDelete
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.Utils.replyWithConsumer
 import at.hannibal2.skyhanni.discord.Utils.runDelayed
-import net.dv8tion.jda.api.EmbedBuilder
-import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
-import java.awt.Color
 import kotlin.time.Duration.Companion.seconds
 
 class CommandListener(private val config: BotConfig) {
@@ -68,7 +66,7 @@ class CommandListener(private val config: BotConfig) {
             }
         }
 
-        // allows to use `!<command> -help` instaed of `!help -<command>`
+        // allows to use `!<command> -help` instead of `!help -<command>`
         if (args.size == 2) {
             if (args[1] == "-help") {
                 sendUsageReply(literal)
@@ -141,22 +139,6 @@ class CommandListener(private val config: BotConfig) {
     }
 
     fun existCommand(text: String): Boolean = commands.find { it.name.equals(text, ignoreCase = true) } != null
-
-    private fun CommandData.createHelpEmbed(commandName: String): MessageEmbed {
-        val em = EmbedBuilder()
-
-        em.setTitle("Usage: /$commandName <" + this.options.joinToString("> <") { it.name } + ">")
-        em.setDescription("📋 **${this.description}**")
-        em.setColor(Color.GREEN)
-
-        for (option in this.options) {
-            em.addField(option.name, option.description, true)
-            em.addField("Required", if (option.required) "✅" else "❌", true)
-            em.addBlankField(true)
-        }
-
-        return em.build()
-    }
 }
 
 class Command(

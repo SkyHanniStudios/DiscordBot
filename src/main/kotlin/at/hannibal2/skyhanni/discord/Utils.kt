@@ -210,4 +210,22 @@ object Utils {
 
         return eb.build()
     }
+
+    fun CommandData.createHelpEmbed(commandName: String): MessageEmbed {
+        val em = EmbedBuilder()
+
+        val optionStr = if (this.options.isEmpty()) this.options.joinToString("> <", "<", ">") { it.name } else ""
+
+        em.setTitle("Usage: /$commandName $optionStr")
+        em.setDescription("📋 **${this.description}**")
+        em.setColor(Color.GREEN)
+
+        for (option in this.options) {
+            em.addField(option.name, option.description, true)
+            em.addField("Required", if (option.required) "✅" else "❌", true)
+            em.addBlankField(true)
+        }
+
+        return em.build()
+    }
 }
