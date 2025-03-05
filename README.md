@@ -24,7 +24,8 @@ Shows the exact usage and description of a command and its parameters.
 Used to show a longer text as a response when running a small command.  
 
 `!<tag>`  
-Returns a response under the tag. Allows replying to another message so that the original message gets deleted and the response is a reply to that message.  
+Returns a response under the tag.  
+Allows replying to another message so that the original message gets deleted and the response is a reply to that message.  
 Allows the parameter `-d` to delete the user’s message.
 
 `!tagadd <tag> <response>`  
