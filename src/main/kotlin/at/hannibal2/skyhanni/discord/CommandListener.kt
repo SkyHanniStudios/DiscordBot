@@ -72,8 +72,11 @@ class CommandListener(private val config: BotConfig) {
                 return
             }
         }
-
-        command.consumer(event, args)
+        try {
+            command.consumer(event, args)
+        } catch (e: Exception) {
+            event.reply("Error: ${e.message}")
+        }
     }
 
     private val commandPattern = "^!(?!!).+".toPattern()
