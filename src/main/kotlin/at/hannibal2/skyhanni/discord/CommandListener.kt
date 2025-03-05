@@ -65,6 +65,14 @@ class CommandListener(private val config: BotConfig) {
             }
         }
 
+        // allows to use `!<command> -help` instaed of `!help -<command>`
+        if (args.size == 2) {
+            if (args[1] == "-help") {
+                event.sendUsageReply(literal)
+                return
+            }
+        }
+
         command.consumer(event, args)
     }
 
@@ -78,30 +86,15 @@ class CommandListener(private val config: BotConfig) {
     private fun MessageReceivedEvent.inBotCommandChannel() = channel.id == config.botCommandChannelId
 
     private fun MessageReceivedEvent.helpCommand(args: List<String>) {
-        val hasAdminPerms = hasAdminPermissions()
-
         if (args.size > 2) {
             reply("Usage: !help <command>")
             return
         }
 
         if (args.size == 2) {
-            val commandName = args[1].lowercase()
-            val command = CommandsData.getCommand(commandName) ?: run {
-                reply("Unknown command `!$commandName` \uD83E\uDD7A")
-                return
-            }
-
-            if (!command.userCommand && !hasAdminPerms) {
-                reply("No permissions for command `!$commandName` \uD83E\uDD7A")
-                return
-            }
-
-            val embed = command.createHelpEmbed(commandName)
-
-            this.reply(embed)
+            sendUsageReply(args[1].lowercase())
         } else {
-            val commands = if (hasAdminPerms && inBotCommandChannel()) {
+            val commands = if (hasAdminPermissions() && inBotCommandChannel()) {
                 commands
             } else {
                 commands.filter { it.userCommand }
@@ -109,7 +102,7 @@ class CommandListener(private val config: BotConfig) {
             val list = commands.joinToString(", !", prefix = "!") { it.name }
             reply("Supported commands: $list")
 
-            if (hasAdminPerms && !inBotCommandChannel()) {
+            if (hasAdminPermissions() && !inBotCommandChannel()) {
                 val id = config.botCommandChannelId
                 val botCommandChannel = "https://discord.com/channels/$id/$id"
                 replyWithConsumer("You wanna see the cool admin only commands? visit $botCommandChannel") { consumer ->
@@ -119,6 +112,20 @@ class CommandListener(private val config: BotConfig) {
                 }
             }
         }
+    }
+
+    private fun MessageReceivedEvent.sendUsageReply(commandName: String) {
+        val command = CommandsData.getCommand(commandName) ?: run {
+            reply("Unknown command `!$commandName` \uD83E\uDD7A")
+            return
+        }
+
+        if (!command.userCommand && !hasAdminPermissions()) {
+            reply("No permissions for command `!$commandName` \uD83E\uDD7A")
+            return
+        }
+
+        this.reply(command.createHelpEmbed(commandName))
     }
 
     private fun MessageReceivedEvent.hasAdminPermissions(): Boolean {
