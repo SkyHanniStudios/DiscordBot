@@ -4,21 +4,23 @@ import at.hannibal2.skyhanni.discord.Utils.messageDelete
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.Utils.replyWithConsumer
 import at.hannibal2.skyhanni.discord.Utils.runDelayed
+import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import java.awt.Color
 import kotlin.time.Duration.Companion.seconds
 
-@Suppress("UNUSED_PARAMETER")
-class Commands(private val config: BotConfig) {
+class CommandListener(private val config: BotConfig) {
 
     private val botId = "1343351725381128193"
 
     private val commands = mutableSetOf<Command>()
 
     private var tagCommands = TagCommands(config, this)
-    private var serverCommands = ServerCommands(config, this)
-    private var pullRequestCommands = PullRequestCommands(config, this)
 
     init {
+        ServerCommands(config, this)
+        PullRequestCommands(config, this)
         add(Command("help", userCommand = true) { event, args -> event.helpCommand(args) })
     }
 
@@ -29,16 +31,16 @@ class Commands(private val config: BotConfig) {
     fun onMessage(bot: DiscordBot, event: MessageReceivedEvent) {
         if (event.guild.id != bot.config.allowedServerId) return
 
-        val autor = event.author
-        if (autor.isBot) {
-            if (autor.id == botId) {
+        val author = event.author
+        if (author.isBot) {
+            if (author.id == botId) {
                 BotMessageHandler.handle(event)
             }
             return
         }
         val content = event.message.contentRaw.trim()
         if (content != "!undo") {
-            tagCommands.lastMessages.remove(autor.id)
+            tagCommands.lastMessages.remove(author.id)
         }
 
         if (!isCommand(content)) return
@@ -77,20 +79,43 @@ class Commands(private val config: BotConfig) {
 
     private fun MessageReceivedEvent.helpCommand(args: List<String>) {
         val hasAdminPerms = hasAdminPermissions()
-        val commands = if (hasAdminPerms && inBotCommandChannel()) {
-            commands
-        } else {
-            commands.filter { it.userCommand }
-        }
-        val list = commands.joinToString(", !", prefix = "!") { it.name }
-        reply("Supported commands: $list")
 
-        if (hasAdminPermissions() && !inBotCommandChannel()) {
-            val id = config.botCommandChannelId
-            val botCommandChannel = "https://discord.com/channels/$id/$id"
-            replyWithConsumer("You wanna see the cool admin only commands? visit $botCommandChannel") { consumer ->
-                runDelayed(3.seconds) {
-                    consumer.message.messageDelete()
+        if (args.size > 2) {
+            reply("Usage: !help <command>")
+            return
+        }
+
+        if (args.size == 2) {
+            val commandName = args[1].lowercase()
+            val command = CommandsData.getCommand(commandName) ?: run {
+                reply("Unknown command `!$commandName` \uD83E\uDD7A")
+                return
+            }
+
+            if (!command.userCommand && !hasAdminPerms) {
+                reply("No permissions for command `!$commandName` \uD83E\uDD7A")
+                return
+            }
+
+            val embed = command.createHelpEmbed(commandName)
+
+            this.reply(embed)
+        } else {
+            val commands = if (hasAdminPerms && inBotCommandChannel()) {
+                commands
+            } else {
+                commands.filter { it.userCommand }
+            }
+            val list = commands.joinToString(", !", prefix = "!") { it.name }
+            reply("Supported commands: $list")
+
+            if (hasAdminPerms && !inBotCommandChannel()) {
+                val id = config.botCommandChannelId
+                val botCommandChannel = "https://discord.com/channels/$id/$id"
+                replyWithConsumer("You wanna see the cool admin only commands? visit $botCommandChannel") { consumer ->
+                    runDelayed(3.seconds) {
+                        consumer.message.messageDelete()
+                    }
                 }
             }
         }
@@ -103,6 +128,22 @@ class Commands(private val config: BotConfig) {
     }
 
     fun existCommand(text: String): Boolean = commands.find { it.name.equals(text, ignoreCase = true) } != null
+
+    private fun CommandData.createHelpEmbed(commandName: String): MessageEmbed {
+        val em = EmbedBuilder()
+
+        em.setTitle("Usage: /$commandName <" + this.options.joinToString("> <") { it.name } + ">")
+        em.setDescription("📋 **${this.description}**")
+        em.setColor(Color.GREEN)
+
+        for (option in this.options) {
+            em.addField(option.name, option.description, true)
+            em.addField("Required", if (option.required) "✅" else "❌", true)
+            em.addBlankField(true)
+        }
+
+        return em.build()
+    }
 }
 
 class Command(

@@ -18,7 +18,7 @@ import java.time.Instant
 import java.time.format.DateTimeFormatter
 
 @Suppress("ReturnCount")
-class PullRequestCommands(config: BotConfig, commands: Commands) {
+class PullRequestCommands(config: BotConfig, commands: CommandListener) {
 
     private val github = GitHubClient("hannibal002", "SkyHanni", config.githubToken)
 
