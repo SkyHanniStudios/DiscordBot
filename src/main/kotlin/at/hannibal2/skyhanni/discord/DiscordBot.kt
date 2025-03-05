@@ -13,7 +13,7 @@ import java.util.Scanner
 class DiscordBot(
     val config: BotConfig,
     private val commands: CommandListener,
-    private val slashCommands: SlashCommands
+    private val slashCommands: SlashCommandListener
 ) : ListenerAdapter() {
     override fun onMessageReceived(event: MessageReceivedEvent) {
         commands.onMessage(this, event)
@@ -37,7 +37,7 @@ class DiscordBot(
 fun main() {
     val token = config.token
     val commands = CommandListener(config)
-    val slashCommands = SlashCommands(config)
+    val slashCommands = SlashCommandListener(config)
 
     val jda = JDABuilder.createDefault(token)
         .addEventListeners(DiscordBot(config, commands, slashCommands))

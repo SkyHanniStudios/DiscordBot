@@ -5,6 +5,7 @@ import at.hannibal2.skyhanni.discord.Utils.createParentDirIfNotExist
 import at.hannibal2.skyhanni.discord.Utils.embed
 import at.hannibal2.skyhanni.discord.Utils.format
 import at.hannibal2.skyhanni.discord.Utils.linkTo
+import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.Utils.timeExecution
 import at.hannibal2.skyhanni.discord.Utils.uploadFile

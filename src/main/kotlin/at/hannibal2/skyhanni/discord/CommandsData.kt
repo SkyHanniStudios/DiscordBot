@@ -33,8 +33,13 @@ object CommandsData {
             name = "server",
             description = "Displays information about a server from our 'useful server list'.",
             options = listOf(
-                Option("keyword", "Keyword of the server you want to display."),
-                Option("debug", "Display even more useful information (-d to use).", required = false)
+                Option("keyword", "Keyword of the server you want to display.", autoComplete = true),
+                Option(
+                    "debug",
+                    "Display even more useful information (-d to use).",
+                    required = false,
+                    type = OptionType.BOOLEAN
+                )
             ),
             userCommand = true
         ),

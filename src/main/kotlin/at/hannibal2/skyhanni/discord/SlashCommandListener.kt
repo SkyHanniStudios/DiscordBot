@@ -10,12 +10,13 @@ import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
 import kotlin.time.Duration.Companion.seconds
 
-class SlashCommands(private val config: BotConfig) {
+class SlashCommandListener(private val config: BotConfig) {
 
     private val commands = mutableSetOf<SlashCommand>()
     private val commandsData = mutableSetOf<Command>()
 
     init {
+        ServerSlashCommands(config, this)
         add(SlashCommand("help", userCommand = true) { event -> event.helpCommand() })
     }
 
@@ -32,14 +33,19 @@ class SlashCommands(private val config: BotConfig) {
     fun onAutocomplete(event: CommandAutoCompleteInteractionEvent) {
         when (event.fullCommandName) {
             "help" -> {
-                println("test")
                 if (event.focusedOption.name != "command") return
-                println(CommandsData.getCommands()
-                    .filterKeys { key -> key.startsWith(event.focusedOption.value) }.keys)
 
-                event.replyChoiceStrings(CommandsData.getCommands()
-                    .filterKeys { key -> key.startsWith(event.focusedOption.value) }.keys
+                event.replyChoiceStrings(
+                    CommandsData.getCommands()
+                        .filterKeys { key -> key.startsWith(event.focusedOption.value) }.keys
                 ).queue()
+            }
+
+            "server" -> {
+                if (event.focusedOption.name != "keyword") return
+
+                event.replyChoiceStrings(Database.listServers().map { it.keyword }
+                    .filter { it.startsWith(event.focusedOption.value) }).queue()
             }
         }
     }
@@ -86,15 +92,15 @@ class SlashCommands(private val config: BotConfig) {
         return !member.roles.none { it.id in allowedRoleIds }
     }
 
-    fun deleteSlashCommand(name: String) {
+    fun deleteSlashCommand(name: String, guild: Guild) {
         val command = commandsData.firstOrNull { it.name.equals(name, true) } ?: return
-        command.delete().queue()
+        guild.deleteCommandById(command.id).queue()
     }
 
-    fun updateSlashCommand(name: String) {
-        val command = commandsData.firstOrNull { it.name.equals(name, true) } ?: return
+    fun updateSlashCommand(name: String, guild: Guild) {
+        commandsData.firstOrNull { it.name.equals(name, true) } ?: return
         val data = CommandsData.getCommand(name) ?: return
-        command.editCommand().apply(convertToData(data)).queue()
+        guild.upsertCommand(convertToData(data)).queue()
     }
 
     fun createSlashCommands(guild: Guild) {
