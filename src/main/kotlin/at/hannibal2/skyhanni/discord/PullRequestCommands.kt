@@ -87,13 +87,13 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
         val lastCommit = head.sha
 
         val job = github.getRun(lastCommit, "Build and test") ?: run {
-            val text = "${title}${time} \nUnable to locate run \uD83E\uDD7A (expired or does not exist)"
+            val text = "${title}${time} \nArtifact does not exist \uD83E\uDD7A (expired or first pr of contributor)"
             reply(embed(embedTitle, text, readColor(pr)))
             return
         }
 
         if (job.startedAt?.let { toTimeMark(it).passedSince() > 90.days } == true) {
-            reply(embed(embedTitle, "${title}${time} \nLast build for PR #$prNumber has expired \uD83E\uDD7A", readColor(pr)))
+            reply(embed(embedTitle, "${title}${time} \nartifact has expired \uD83E\uDD7A", readColor(pr)))
             return
         }
 

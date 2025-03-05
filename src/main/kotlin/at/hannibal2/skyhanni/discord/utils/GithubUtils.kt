@@ -1,6 +1,12 @@
 package at.hannibal2.skyhanni.discord.utils
 
-import at.hannibal2.skyhanni.discord.json.discord.*
+import at.hannibal2.skyhanni.discord.json.discord.Artifact
+import at.hannibal2.skyhanni.discord.json.discord.ArtifactResponse
+import at.hannibal2.skyhanni.discord.json.discord.CheckRun
+import at.hannibal2.skyhanni.discord.json.discord.CheckRunsResponse
+import at.hannibal2.skyhanni.discord.json.discord.Job
+import at.hannibal2.skyhanni.discord.json.discord.JobsResponse
+import at.hannibal2.skyhanni.discord.json.discord.PullRequestJson
 import com.google.gson.Gson
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -44,7 +50,7 @@ object GithubUtils {
             if (!checkRunsResponse.isSuccessful) error("Error fetching artifacts: ${checkRunsResponse.code}")
             val json = checkRunsResponse.body?.string() ?: return null
             val response = gson.fromJson(json, CheckRunsResponse::class.java)
-            if (response.totalCount == 0) error("No runs with the specified name!")
+            if (response.totalCount == 0) return null
             return response.checkRuns.firstOrNull()
         }
     }
