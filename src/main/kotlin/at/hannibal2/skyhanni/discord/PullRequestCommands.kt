@@ -28,7 +28,8 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
         commands.add(Command("pr", userCommand = true) { event, args -> event.pullRequestCommand(args) })
     }
 
-    private val runIdRegex = Regex("https://github\\.com/[\\w.]+/[\\w.]+/actions/runs/(?<RunId>\\d+)/job/(?<JobId>\\d+)")
+    private val runIdRegex =
+        Regex("https://github\\.com/[\\w.]+/[\\w.]+/actions/runs/(?<RunId>\\d+)/job/(?<JobId>\\d+)")
 
     private fun MessageReceivedEvent.pullRequestCommand(args: List<String>) {
         if (args.size != 2) {
@@ -53,14 +54,14 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
                 return
             }
         } catch (e: IllegalStateException) {
-            if (e.message == "GitHub API error: 404") {
+            if (e.message?.contains(" code:404 ") == true) {
                 val issueUrl = "https://github.com/hannibal002/SkyHanni/issues/$prNumber"
                 val issue = "issue".linkTo(issueUrl)
                 val text = "This pull request does not yet exist or is an $issue"
                 reply(embed("Not found \uD83E\uDD7A", text, Color.red))
                 return
             }
-            reply("error while finding pull request: ${e.message}")
+            reply("Could not load pull request infos for #$prNumber: ${e.message}")
             return
         }
 

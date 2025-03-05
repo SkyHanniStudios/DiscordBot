@@ -11,6 +11,7 @@ import com.google.gson.Gson
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import okhttp3.ResponseBody
 import java.io.File
 
 class GitHubClient(owner: String, repo: String, private val token: String) {
@@ -19,50 +20,55 @@ class GitHubClient(owner: String, repo: String, private val token: String) {
     private val base = "https://api.github.com/repos/$owner/$repo"
 
     fun findArtifact(lastCommit: String): Artifact? {
-        response("$base/actions/artifacts").use {
-            if (!it.isSuccessful) error("Error fetching artifacts: ${it.code}")
-            val json = it.body?.string() ?: return null
+        return useJson("$base/actions/artifacts") { json ->
             val response = gson.fromJson(json, ArtifactResponse::class.java)
-            return response.artifacts.firstOrNull { artifact ->
+            response.artifacts.firstOrNull { artifact ->
                 artifact.workflowRun?.headSha == lastCommit && artifact.name == "Development Build"
             }
         }
     }
 
     fun downloadArtifact(artifactId: Int, outputFile: File) {
-        response("$base/actions/artifacts/$artifactId/zip").use {
-            if (!it.isSuccessful) error("Artifact download error: ${it.code} - ${it.message}")
-            outputFile.writeBytes(it.body?.bytes() ?: ByteArray(0))
+        use("$base/actions/artifacts/$artifactId/zip") { body ->
+            outputFile.writeBytes(body.bytes())
         }
     }
 
     fun findPullRequest(prNumber: Int): PullRequestJson? {
-        response("$base/pulls/$prNumber").use {
-            val gson = Gson()
-            if (!it.isSuccessful) error("GitHub API error: ${it.code}")
-            val json = it.body?.string() ?: return null
-            return gson.fromJson(json, PullRequestJson::class.java)
+        return useJson("$base/pulls/$prNumber") { json ->
+            gson.fromJson(json, PullRequestJson::class.java)
         }
     }
 
     fun getRun(commitSha: String, checkName: String): CheckRun? {
-        response("$base/commits/$commitSha/check-runs?check_name=$checkName").use {
-            if (!it.isSuccessful) error("Error fetching artifacts: ${it.code}")
-            val json = it.body?.string() ?: return null
+        return useJson("$base/commits/$commitSha/check-runs?check_name=$checkName") { json ->
             val response = gson.fromJson(json, CheckRunsResponse::class.java)
-            if (response.totalCount == 0) return null
-            return response.checkRuns.firstOrNull()
+            if (response.totalCount == 0) {
+                null
+            } else {
+                response.checkRuns.firstOrNull()
+            }
         }
     }
 
     // might come handy later
     fun getJob(artifactId: String): Job? {
-        response("$base/actions/runs/$artifactId/jobs").use {
-            if (!it.isSuccessful) error("Error fetching jobs: ${it.code}")
-            val json = it.body?.string() ?: return null
+        return useJson("$base/actions/runs/$artifactId/jobs") { json ->
             val response = gson.fromJson(json, JobsResponse::class.java)
-            return response.jobs.firstOrNull { job -> job.name == "Build and test" }
+            response.jobs.firstOrNull { job -> job.name == "Build and test" }
         }
+    }
+
+    private fun <T> use(url: String, block: (ResponseBody) -> T): T? {
+        response(url).use {
+            if (!it.isSuccessful) error("Error fetching $url - code:${it.code} - message:'${it.message}'")
+            val body = it.body ?: error("Error loading '$url' - empty response'")
+            return block(body)
+        }
+    }
+
+    private fun <T> useJson(url: String, block: (String) -> T): T? = use(url) { body ->
+        block(body.string())
     }
 
     private fun response(url: String): Response {
