@@ -29,18 +29,21 @@ class CommandListener(private val config: BotConfig) {
     }
 
     fun onMessage(bot: DiscordBot, event: MessageReceivedEvent) {
-        if (event.guild.id != bot.config.allowedServerId) return
+        event.onMessage(bot)
+    }
 
-        val author = event.author
-        if (author.isBot) {
-            if (author.id == botId) {
-                BotMessageHandler.handle(event)
+    private fun MessageReceivedEvent.onMessage(bot: DiscordBot) {
+        if (guild.id != bot.config.allowedServerId) return
+
+        if (this.author.isBot) {
+            if (this.author.id == botId) {
+                BotMessageHandler.handle(this)
             }
             return
         }
-        val content = event.message.contentRaw.trim()
+        val content = message.contentRaw.trim()
         if (content != "!undo") {
-            tagCommands.lastMessages.remove(author.id)
+            tagCommands.lastMessages.remove(this.author.id)
         }
 
         if (!isCommand(content)) return
@@ -49,18 +52,18 @@ class CommandListener(private val config: BotConfig) {
         val literal = args[0].lowercase()
 
         val command = commands.find { it.name == literal } ?: run {
-            tagCommands.handleTag(event)
+            tagCommands.handleTag(this)
             return
         }
 
         if (!command.userCommand) {
-            if (!event.hasAdminPermissions()) {
-                event.reply("No permissions \uD83E\uDD7A")
+            if (!hasAdminPermissions()) {
+                reply("No permissions \uD83E\uDD7A")
                 return
             }
 
-            if (!event.inBotCommandChannel()) {
-                event.reply("Wrong channel \uD83E\uDD7A")
+            if (!inBotCommandChannel()) {
+                reply("Wrong channel \uD83E\uDD7A")
                 return
             }
         }
@@ -68,14 +71,14 @@ class CommandListener(private val config: BotConfig) {
         // allows to use `!<command> -help` instaed of `!help -<command>`
         if (args.size == 2) {
             if (args[1] == "-help") {
-                event.sendUsageReply(literal)
+                sendUsageReply(literal)
                 return
             }
         }
         try {
-            command.consumer(event, args)
+            command.consumer(this, args)
         } catch (e: Exception) {
-            event.reply("Error: ${e.message}")
+            reply("Error: ${e.message}")
         }
     }
 
