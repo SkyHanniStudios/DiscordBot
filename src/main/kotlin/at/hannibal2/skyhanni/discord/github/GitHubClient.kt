@@ -16,7 +16,7 @@ import java.io.File
 
 class GitHubClient(owner: String, repo: String, private val token: String) {
     private val client = OkHttpClient()
-    val gson = Gson()
+    private val gson = Gson()
     private val base = "https://api.github.com/repos/$owner/$repo"
 
     fun findArtifact(lastCommit: String): Artifact? {
@@ -55,17 +55,16 @@ class GitHubClient(owner: String, repo: String, private val token: String) {
         }
     }
 
+    private inline fun <reified T : Any, R> readJson(url: String, crossinline block: (T) -> R): R? =
+        readBody(url) { body ->
+            block(gson.fromJson(body.string(), T::class.java))
+        }
+
     inline fun <T> readBody(url: String, block: (ResponseBody) -> T): T? {
         response(url).use {
             if (!it.isSuccessful) error("Error fetching $url - code:${it.code} - message:'${it.message}'")
             val body = it.body ?: error("Error loading '$url' - empty response'")
             return block(body)
-        }
-    }
-
-    private inline fun <reified T : Any, R> readJson(url: String, crossinline block: (T) -> R): R? {
-        return readBody(url) { body ->
-            block(gson.fromJson(body.string(), T::class.java))
         }
     }
 
