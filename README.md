@@ -28,7 +28,8 @@ Shows the exact usage and description of a command and its parameters.
 Used to show a longer text as a response when running a small command.  
 
 `!<tag>`  
-Returns a response under the tag. Allows replying to another message so that the original message gets deleted and the response is a reply to that message. Allows the parameter `-d` to delete the user’s message.
+Returns a response under the tag. Allows replying to another message so that the original message gets deleted and the response is a reply to that message.  
+Allows the parameter `-d` to delete the user’s message.
 
 `!tagadd <tag> <response>`  
 Creates a tag.  
@@ -50,7 +51,8 @@ Removes the last tag message the user has sent.
 Shows information about another, previously defined Discord server.  
 
 `!server <server>`  
-Shows information about a server. Allows the parameter `-d` to show debug info for this server.  
+Shows information about a server.  
+Allows the parameter `-d` to show debug info for this server.  
 
 `!serveradd <server> <display name> <invite url> <description>`  
 Adds a server.  
@@ -70,4 +72,5 @@ Removes an alias for a server.
 ### Pull Request
 
 `!pr <number>`  
-Lists information about the pull request with the given number. Includes a link to download the artifact.
+Lists information about the pull request with the given number.  
+Includes a link to download the artifact.
