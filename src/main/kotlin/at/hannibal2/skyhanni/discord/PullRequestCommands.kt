@@ -23,7 +23,7 @@ class PullRequestCommands(config: BotConfig, commands: Commands) {
     private val github = GitHubClient("hannibal002", "SkyHanni", config.githubToken)
 
     init {
-        commands.add(Command("pr") { event, args -> event.pullRequestCommand(args) })
+        commands.add(Command("pr", userCommand = true) { event, args -> event.pullRequestCommand(args) })
     }
 
     private fun MessageReceivedEvent.pullRequestCommand(args: List<String>) {

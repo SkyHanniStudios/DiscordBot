@@ -58,7 +58,7 @@ class TagCommands(private val config: BotConfig, private val commands: Commands)
                 reply("✅ Keyword '$keyword' added by <@$id>:")
                 reply(response)
                 logAction("added keyword '$keyword'")
-                logAction("response: '$response'")
+                logAction("response: '$response'", raw = true)
                 lastTouchedTag[id] = keyword
             }
         } else {
@@ -89,8 +89,8 @@ class TagCommands(private val config: BotConfig, private val commands: Commands)
                 reply("✅ Keyword '$keyword' edited by <@$id>:")
                 reply(response)
                 logAction("edited keyword '$keyword'")
-                logAction("old response: '$oldResponse'")
-                logAction("new response: '$response'")
+                logAction("old response: '$oldResponse'", raw = true)
+                logAction("new response: '$response'", raw = true)
                 lastTouchedTag[id] = keyword
             }
         } else {
@@ -118,7 +118,7 @@ class TagCommands(private val config: BotConfig, private val commands: Commands)
         if (Database.deleteKeyword(keyword)) {
             reply("🗑️ Keyword '$keyword' deleted!")
             logAction("deleted keyword '$keyword'")
-            logAction("response was: '$oldResponse'")
+            logAction("response was: '$oldResponse'", raw = true)
             val id = author.id
             lastTouchedTag.remove(id)
         } else {
@@ -168,23 +168,23 @@ class TagCommands(private val config: BotConfig, private val commands: Commands)
         }
 
         val author = message.author.id
-        val channelName = event.channel.name
         lastTouchedTag[author] = keyword
         message.referencedMessage?.let {
-            event.logAction("used reply keyword '$keyword' in channel '$channelName'")
+            event.logAction("used keyword '$keyword' (with reply)")
             message.messageDelete()
             it.replyWithConsumer(response) { consumer ->
                 addLastMessage(author, consumer.message)
             }
         } ?: run {
             if (deleting) {
-                event.logAction("used keyword with delete '$keyword' in channel '$channelName'")
+                event.logAction("used keyword '$keyword' (with delete)")
                 message.messageDeleteAndThen {
                     event.channel.sendMessageWithConsumer(response) { consumer ->
                         addLastMessage(author, consumer.message)
                     }
                 }
             } else {
+                event.logAction("used keyword '$keyword'")
                 addLastMessage(author, message)
                 message.replyWithConsumer(response) { consumer ->
                     addLastMessage(author, consumer.message)

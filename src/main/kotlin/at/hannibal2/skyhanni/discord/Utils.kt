@@ -65,11 +65,19 @@ object Utils {
         messageSend(text)
     }
 
-    fun MessageReceivedEvent.logAction(action: String) {
+    fun MessageReceivedEvent.logAction(action: String, raw: Boolean = false) {
+        if (raw) {
+            logger.info(action)
+            return
+        }
+        val channelName = channel.name
         val name = author.name
         val id = author.id
-        val nick = member?.nickname
-        logger.info("$id/$name (`$nick`) $action")
+
+        val nick = member?.nickname?.takeIf { it != "null" }
+        val nickString = nick?.let { " (`$nick`)" } ?: ""
+
+        logger.info("$id/$name$nickString $action in channel '$channelName'")
     }
 
     fun runDelayed(duration: Duration, consumer: () -> Unit) {
