@@ -155,7 +155,7 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
             return
         }
         val prNumber = args[1].toIntOrNull() ?: run {
-            reply("unknwon number \uD83E\uDD7A (${args[1]})")
+            reply("unknown number \uD83E\uDD7A (${args[1]})")
             return
         }
 
@@ -185,7 +185,7 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
         val (_, downloadTime) = timeExecution {
             github.downloadArtifact(artifactId, fileRaw)
         }
-        reply("artifact downnloaded in ${downloadTime.format()}")
+        reply("artifact downloaded in ${downloadTime.format()}")
 
         Utils.unzipFile(fileRaw, fileUnzipped)
         fileRaw.delete()

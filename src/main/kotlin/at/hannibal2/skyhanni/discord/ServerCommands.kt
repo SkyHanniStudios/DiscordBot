@@ -37,30 +37,6 @@ class ServerCommands(private val config: BotConfig, commands: CommandListener) {
         }
     }
 
-    private fun Server.print(): String = with(this) {
-        buildString {
-            append("**$displayName**\n")
-            if (description.isNotEmpty()) {
-                append(description)
-                append("\n")
-            }
-            append(inviteLink)
-        }
-    }
-
-    private fun Server.printDebug(): String = with(this) {
-        buildString {
-            append("keyword: '$keyword'\n")
-            append("displayName: '$displayName'\n")
-            append("description: '$description'\n")
-            append("inviteLink: '<$inviteLink>'\n")
-            val aliases = Database.getServerAliases(keyword)
-            append("aliases: $aliases\n")
-            append("edit command:\n")
-            append("`!serveredit $keyword ${displayName.replace(" ", "_")} $inviteLink $description`")
-        }
-    }
-
     private fun MessageReceivedEvent.serverAdd(args: List<String>) {
         if (args.size < 4) {
             reply("Usage: !serveradd <keyword> <displayName> <invite link> <description>")
@@ -180,17 +156,40 @@ class ServerCommands(private val config: BotConfig, commands: CommandListener) {
         }
     }
 
-    private fun MessageReceivedEvent.serverList(args: List<String>) {
-        val servers = Database.listServers()
-        if (servers.isEmpty()) {
-            reply("No servers found.")
-            return
+    private fun MessageReceivedEvent.serverList(args: List<String>) = reply(listServers())
+}
+
+fun Server.print(): String = with(this) {
+    buildString {
+        append("**$displayName**\n")
+        if (description.isNotEmpty()) {
+            append(description)
+            append("\n")
         }
-        val list = servers.joinToString("\n") { server ->
-            val aliases = Database.getServerAliases(server.keyword)
-            if (aliases.isNotEmpty()) "${server.keyword} [${aliases.joinToString(", ")}]"
-            else server.keyword
-        }
-        reply("Server list:\n$list")
+        append(inviteLink)
+    }
+}
+
+fun Server.printDebug(): String = with(this) {
+    buildString {
+        append("keyword: '$keyword'\n")
+        append("displayName: '$displayName'\n")
+        append("description: '$description'\n")
+        append("inviteLink: '<$inviteLink>'\n")
+        val aliases = Database.getServerAliases(keyword)
+        append("aliases: $aliases\n")
+        append("edit command:\n")
+        append("`!serveredit $keyword ${displayName.replace(" ", "_")} $inviteLink $description`")
+    }
+}
+
+fun listServers(): String {
+    val servers = Database.listServers()
+    if (servers.isEmpty()) return "No servers found."
+
+    return "Server list:\n" + servers.joinToString("\n") { server ->
+        val aliases = Database.getServerAliases(server.keyword)
+        if (aliases.isNotEmpty()) "${server.keyword} [${aliases.joinToString(", ")}]"
+        else server.keyword
     }
 }

@@ -6,6 +6,7 @@ import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.utils.FileUpload
 import org.slf4j.LoggerFactory
@@ -26,6 +27,14 @@ object Utils {
 
     fun MessageReceivedEvent.reply(embed: MessageEmbed) {
         message.messageReply(embed)
+    }
+
+    fun SlashCommandInteractionEvent.replyT(text: String, ephemeral: Boolean = false) {
+        reply(text).setEphemeral(ephemeral).queue()
+    }
+
+    fun SlashCommandInteractionEvent.replyE(embed: MessageEmbed, ephemeral: Boolean = false) {
+        replyEmbeds(embed).setEphemeral(ephemeral).queue()
     }
 
     fun MessageReceivedEvent.replyWithConsumer(text: String, consumer: (MessageReceivedEvent) -> Unit) {
@@ -73,6 +82,21 @@ object Utils {
         val channelName = channel.name
         val name = author.name
         val id = author.id
+
+        val nick = member?.nickname?.takeIf { it != "null" }
+        val nickString = nick?.let { " (`$nick`)" } ?: ""
+
+        logger.info("$id/$name$nickString $action in channel '$channelName'")
+    }
+
+    fun SlashCommandInteractionEvent.logAction(action: String, raw: Boolean = false) {
+        if (raw) {
+            logger.info(action)
+            return
+        }
+        val channelName = channel.name
+        val name = member?.user?.name
+        val id = member?.id
 
         val nick = member?.nickname?.takeIf { it != "null" }
         val nickString = nick?.let { " (`$nick`)" } ?: ""
@@ -209,5 +233,23 @@ object Utils {
 //        eb.setThumbnail("https://github.com/zekroTJA/DiscordBot/blob/master/.websrc/logo%20-%20title.png")
 
         return eb.build()
+    }
+
+    fun CommandData.createHelpEmbed(commandName: String): MessageEmbed {
+        val em = EmbedBuilder()
+
+        val optionStr = if (this.options.isEmpty()) this.options.joinToString("> <", "<", ">") { it.name } else ""
+
+        em.setTitle("Usage: /$commandName $optionStr")
+        em.setDescription("📋 **${this.description}**")
+        em.setColor(Color.GREEN)
+
+        for (option in this.options) {
+            em.addField(option.name, option.description, true)
+            em.addField("Required", if (option.required) "✅" else "❌", true)
+            em.addBlankField(true)
+        }
+
+        return em.build()
     }
 }
