@@ -1,72 +1,73 @@
-This is the source code for a discord bot the [SkyHanni](https://github.com/hannibal002/SkyHanni) staff uses on the [SkyHanni Support Server](https://discord.gg/skyhanni-997079228510117908).
+Below is the revised version with each command starting with "!" followed immediately by a new line (without an extra blank line):
 
-## Technical infos
-This discord bot is written in [Kotlin](https://kotlinlang.org/).
-We use [JDA](https://github.com/discord-jda/JDA) to communicate with the Discord Bot API.
-We use [gson](https://github.com/google/gson) to parse the JSON responses from the APIs from [Discord](https://discord.com/developers/docs/intro) and [GitHub](https://docs.github.com/en/rest).
+---
+
+This is the source code for a Discord bot the [SkyHanni](https://github.com/hannibal002/SkyHanni) staff uses on the [SkyHanni Support Server](https://discord.gg/skyhanni-997079228510117908).
+
+## Technical Infos
+This Discord bot is written in [Kotlin](https://kotlinlang.org/).  
+We use [JDA](https://github.com/discord-jda/JDA) to communicate with the Discord Bot API.  
+We use [gson](https://github.com/google/gson) to parse the JSON responses from the APIs provided by [Discord](https://discord.com/developers/docs/intro) and [GitHub](https://docs.github.com/en/rest).  
 We use [SQLite](https://www.sqlite.org/index.html) to store the information locally.
 
 ## Features
 
 ### Help
 
-`!help`
-lists all commands the user can use
-This list is different for admins
+`!help`  
+Lists all commands the user can use. This list is different for admins.
 
-`!help <command>`
-shows exact usage and descripton of command and parameters for a given command
+`!help <command>`  
+Shows the exact usage and description of a command and its parameters.  
 
-`!<command> -help`
-shows exact usage and descripton of command and parameters for a given command
+`!<command> -help`  
+Shows the exact usage and description of a command and its parameters.
 
 ### Tag
-used to show a longer text as response when running a small command
 
-`!<tag>`
-returns a response under the tag
-Allows to reply to antoher message so that this message gets deleted and the response is a reply to the other message.
-Allows parameter `-d` to delete the user message
+Used to show a longer text as a response when running a small command.  
 
-`!tagadd <tag> <response>`
-creates a tag with 
+`!<tag>`  
+Returns a response under the tag. Allows replying to another message so that the original message gets deleted and the response is a reply to that message. Allows the parameter `-d` to delete the user’s message.
 
-`!tagedit <tag> <response>`
-edits alrady eixsitng tags
+`!tagadd <tag> <response>`  
+Creates a tag.  
 
-`!tagdelete <tag>`
-deletes a tag
+`!tagedit <tag> <response>`  
+Edits an already existing tag.  
 
-`!taglist`
-shows a list of all tags
+`!tagdelete <tag>`  
+Deletes a tag.  
 
-`!undo`
-removes the last tag message the user has sent
+`!taglist`  
+Shows a list of all tags.  
+
+`!undo`  
+Removes the last tag message the user has sent.
 
 ### Server
-shows information about another, previously defined discord server
 
-`!server <server`
-shows infos about a server
-Allows parameter `-d` to show debug info for this server
+Shows information about another, previously defined Discord server.  
 
-`!serveradd <server> <display name> <invite url> <description>`
-adds a server
+`!server <server>`  
+Shows information about a server. Allows the parameter `-d` to show debug info for this server.  
 
-`serverdelete <server>`
-delets a server
+`!serveradd <server> <display name> <invite url> <description>`  
+Adds a server.  
 
-`!serverlist`
-lists all servers
+`!serverdelete <server>`  
+Deletes a server.  
 
-`!serveraliasadd <server> <alias>`
-adds an alias for a server
+`!serverlist`  
+Lists all servers.  
 
-`!serveraliasremove <server> <alias>`
-removes an alias for a server
+`!serveraliasadd <server> <alias>`  
+Adds an alias for a server.  
+
+`!serveraliasremove <server> <alias>`  
+Removes an alias for a server.
 
 ### Pull Request
 
-`!pr <number>`
-lists infos about this pr number.
-Includes a link to downoad the artifact
+`!pr <number>`  
+Lists information about the pull request with the given number. Includes a link to download the artifact.
