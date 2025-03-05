@@ -123,7 +123,7 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
             append(" \n")
             append("Download the latest development build of this pr!")
             append("\n")
-            append("> From $artifactLine (requires an GitHub Account)")
+            append("> From $artifactLine (requires a GitHub Account)")
             append("\n")
             append("> From $nightlyLine (unofficial)")
             append("\n")
