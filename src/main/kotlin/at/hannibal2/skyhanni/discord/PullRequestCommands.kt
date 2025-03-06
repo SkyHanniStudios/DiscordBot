@@ -78,7 +78,7 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
         }
 
         val labels = pr.labels.map {
-            "`(${it.name})`"
+            "`${it.name}`"
         }
 
         val time = buildString {
