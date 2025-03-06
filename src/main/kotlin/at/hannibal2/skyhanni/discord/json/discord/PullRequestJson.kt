@@ -107,7 +107,7 @@ enum class SkyHanniLabel(private val title: String, val category: SkyhanniLabelC
     @SerializedName("Good First Issue") GOOD_FIRST_ISSUE("Good First Issue", SkyhanniLabelCategory.MISC),
     @SerializedName("Merge Conflicts") MERGE_CONFLICTS("Merge Conflicts", SkyhanniLabelCategory.STATE),
     @SerializedName("Soon") SOON("Soon", SkyhanniLabelCategory.TIMELINE),
-    @SerializedName("Waiting on Dependency PR") WAITING_ON_DEPENDECY("Waiting on Dependency PR", SkyhanniLabelCategory.STATE),
+    @SerializedName("Waiting on Dependency PR") WAITING_ON_DEPENDENCY("Waiting on Dependency PR", SkyhanniLabelCategory.STATE),
     @SerializedName("Waiting on Hypixel") WAITING_ON_HYPIXEL("Waiting on Hypixel", SkyhanniLabelCategory.STATE),
     @SerializedName("Wrong Title/Changelog") WRONG_TITLE_OR_CHANGELOG("Wrong Title/Changelog", SkyhanniLabelCategory.STATE);
 
