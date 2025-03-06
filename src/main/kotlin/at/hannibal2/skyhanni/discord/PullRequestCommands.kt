@@ -12,7 +12,9 @@ import at.hannibal2.skyhanni.discord.Utils.uploadFile
 import at.hannibal2.skyhanni.discord.github.GitHubClient
 import at.hannibal2.skyhanni.discord.json.discord.Conclusion
 import at.hannibal2.skyhanni.discord.json.discord.PullRequestJson
-import at.hannibal2.skyhanni.discord.json.discord.Status
+import at.hannibal2.skyhanni.discord.json.discord.SkyhanniLabelCategory
+import at.hannibal2.skyhanni.discord.json.discord.RunStatus
+import at.hannibal2.skyhanni.discord.json.discord.SkyHanniLabel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import java.awt.Color
 import java.io.File
