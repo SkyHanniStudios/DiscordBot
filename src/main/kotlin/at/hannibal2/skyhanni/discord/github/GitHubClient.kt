@@ -40,11 +40,7 @@ class GitHubClient(owner: String, repo: String, private val token: String) {
     fun getRun(commitSha: String, checkName: String): CheckRun? {
         val url = "$base/commits/$commitSha/check-runs?check_name=$checkName"
         return readJson<CheckRunsResponse, CheckRun?>(url) { response ->
-            if (response.totalCount == 0) {
-                null
-            } else {
-                response.checkRuns.firstOrNull()
-            }
+            response.checkRuns.firstOrNull()
         }
     }
 

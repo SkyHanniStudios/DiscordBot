@@ -10,6 +10,7 @@ import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.Utils.timeExecution
 import at.hannibal2.skyhanni.discord.Utils.uploadFile
 import at.hannibal2.skyhanni.discord.github.GitHubClient
+import at.hannibal2.skyhanni.discord.json.discord.Conclusion
 import at.hannibal2.skyhanni.discord.json.discord.PullRequestJson
 import at.hannibal2.skyhanni.discord.json.discord.Status
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
@@ -76,6 +77,10 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
             append("\n")
         }
 
+        val labels = pr.labels.map {
+            "`(${it.name})`"
+        }
+
         val time = buildString {
             val lastUpdate = passedSince(pr.updatedAt)
             val created = passedSince(pr.createdAt)
@@ -83,12 +88,16 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
             append("\n")
             append("> Last Updated: $lastUpdate")
             append("\n")
+            if (labels.isNotEmpty()) {
+                append("> Labels: ${labels.joinToString(" ")}")
+                append("\n")
+            }
         }
 
         val lastCommit = head.sha
 
         val job = github.getRun(lastCommit, "Build and test") ?: run {
-            val text = "${title}${time} \nArtifact does not exist \uD83E\uDD7A (expired or first pr of contributor)"
+            val text = "${title}${time} \nBuild does not exist \uD83E\uDD7A (build is too old)"
             reply(embed(embedTitle, text, readColor(pr)))
             return
         }
@@ -100,14 +109,19 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
 
         if (job.status != Status.COMPLETED) {
             val text = when (job.status) {
-                Status.REQUESTED -> "Run has been requested \uD83E\uDD7A"
-                Status.QUEUED -> "Run is in queue \uD83E\uDD7A"
-                Status.IN_PROGRESS -> "Run is in progress \uD83E\uDD7A"
-                Status.WAITING -> "Run is waiting \uD83E\uDD7A"
-                Status.PENDING -> "Run is pending \uD83E\uDD7A"
+                Status.REQUESTED -> "Build has been requested \uD83E\uDD7A"
+                Status.QUEUED -> "Build is in queue \uD83E\uDD7A"
+                Status.IN_PROGRESS -> "Build is in progress \uD83E\uDD7A"
+                Status.WAITING -> "Build is waiting \uD83E\uDD7A"
+                Status.PENDING -> "Build is pending \uD83E\uDD7A"
                 else -> ""
             }
             reply(embed(embedTitle, "${title}${time} \n $text", readColor(pr)))
+            return
+        }
+
+        if (job.conclusion != Conclusion.SUCCESS) {
+            reply(embed(embedTitle, "$title$time\nLast development build failed \uD83E\uDD7A", Color.red))
             return
         }
 
