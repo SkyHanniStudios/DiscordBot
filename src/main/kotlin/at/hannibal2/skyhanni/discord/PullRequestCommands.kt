@@ -37,7 +37,7 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
             reply("Usage: `!pr <number>`")
             return
         }
-        val prNumber = args[1].toIntOrNull() ?: run {
+        val prNumber = args[1].toLongOrNull() ?: run {
             reply("unknown number \uD83E\uDD7A (${args[1]})")
             return
         }
@@ -77,8 +77,13 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
             append("\n")
         }
 
-        val labels = pr.labels.map {
-            "`${it.name}`"
+        val labels: MutableMap<SkyhanniLabelCategory, MutableList<SkyHanniLabel>> = mutableMapOf()
+
+        for (label in pr.labels) {
+            labels.getOrPut(label.name.category) {
+                val emptyList: MutableList<SkyHanniLabel> = mutableListOf()
+                emptyList
+            }.add(label.name)
         }
 
         val time = buildString {
@@ -88,32 +93,49 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
             append("\n")
             append("> Last Updated: $lastUpdate")
             append("\n")
-            if (labels.isNotEmpty()) {
-                append("> Labels: ${labels.joinToString(" ")}")
+            if (labels.containsKey(SkyhanniLabelCategory.TYPE)) {
+                append("> Type: `${labels[SkyhanniLabelCategory.TYPE]?.joinToString("` `")}`")
                 append("\n")
             }
+            if (labels.containsKey(SkyhanniLabelCategory.STATE)) {
+                append("> State: `${labels[SkyhanniLabelCategory.STATE]?.joinToString("` `")}`")
+                append("\n")
+            }
+            if (labels.containsKey(SkyhanniLabelCategory.TIMELINE)) {
+                append("> Milestone: `${labels[SkyhanniLabelCategory.TIMELINE]?.joinToString("` `")}` `${pr.milestone?.title}`")
+                append("\n")
+            } else if (pr.milestone?.title != null) {
+                append("> Milestone: `${pr.milestone.title}`")
+                append("\n")
+            }
+        }
+
+        if (toTimeMark(pr.updatedAt).passedSince() > 400.days) {
+            val text = "${title}${time} \nBuild data no longer exists \uD83E\uDD7A"
+            reply(embed(embedTitle, text, readColor(pr)))
+            return
         }
 
         val lastCommit = head.sha
 
         val job = github.getRun(lastCommit, "Build and test") ?: run {
-            val text = "${title}${time} \nBuild does not exist \uD83E\uDD7A (build is too old)"
+            val text = "${title}${time} \nBuild needs approval \uD83E\uDD7A"
             reply(embed(embedTitle, text, readColor(pr)))
             return
         }
 
         if (job.startedAt?.let { toTimeMark(it).passedSince() > 90.days } == true) {
-            reply(embed(embedTitle, "${title}${time} \nartifact has expired \uD83E\uDD7A", readColor(pr)))
+            reply(embed(embedTitle, "${title}${time} \nBuild download has expired \uD83E\uDD7A", readColor(pr)))
             return
         }
 
-        if (job.status != Status.COMPLETED) {
+        if (job.status != RunStatus.COMPLETED) {
             val text = when (job.status) {
-                Status.REQUESTED -> "Build has been requested \uD83E\uDD7A"
-                Status.QUEUED -> "Build is in queue \uD83E\uDD7A"
-                Status.IN_PROGRESS -> "Build is in progress \uD83E\uDD7A"
-                Status.WAITING -> "Build is waiting \uD83E\uDD7A"
-                Status.PENDING -> "Build is pending \uD83E\uDD7A"
+                RunStatus.REQUESTED -> "Build has been requested \uD83E\uDD7A"
+                RunStatus.QUEUED -> "Build is in queue \uD83E\uDD7A"
+                RunStatus.IN_PROGRESS -> "Build is in progress \uD83E\uDD7A"
+                RunStatus.WAITING -> "Build is waiting \uD83E\uDD7A"
+                RunStatus.PENDING -> "Build is pending \uD83E\uDD7A"
                 else -> ""
             }
             reply(embed(embedTitle, "${title}${time} \n $text", readColor(pr)))
@@ -168,7 +190,7 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
             reply("Usage: `!prupload <number>`")
             return
         }
-        val prNumber = args[1].toIntOrNull() ?: run {
+        val prNumber = args[1].toLongOrNull() ?: run {
             reply("unknwon number \uD83E\uDD7A (${args[1]})")
             return
         }

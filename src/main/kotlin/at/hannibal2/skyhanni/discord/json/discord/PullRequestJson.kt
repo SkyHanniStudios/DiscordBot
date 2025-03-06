@@ -15,13 +15,13 @@ data class PullRequestJson (
     @SerializedName("review_comment_url") val reviewCommentUrl: String,
     @SerializedName("comments_url") val commentsUrl: String,
     @SerializedName("statuses_url") val statusesUrl: String,
-    @SerializedName("number") val number: Int,
+    @SerializedName("number") val number: Long,
     @SerializedName("state") val state: State,
     @SerializedName("locked") val locked: Boolean,
     @SerializedName("title") val title: String,
     @SerializedName("user") val user: SimpleUser,
     @SerializedName("body") val body: String?,
-    @SerializedName("labels") val labels: List<Labels>,
+    @SerializedName("labels") val labels: List<Label>,
     @SerializedName("milestone") val milestone: Milestone?,
     @SerializedName("active_lock_reason") val activeLockReason: String?,
     @SerializedName("created_at") val createdAt: String,
@@ -44,13 +44,13 @@ data class PullRequestJson (
     @SerializedName("rebaseable") val rebaseable: Boolean?,
     @SerializedName("mergeable_state") val mergeableState: String,
     @SerializedName("merged_by") val mergedBy: SimpleUser?,
-    @SerializedName("comments") val comments: Int,
-    @SerializedName("review_comments") val reviewComments: Int,
+    @SerializedName("comments") val comments: Long,
+    @SerializedName("review_comments") val reviewComments: Long,
     @SerializedName("maintainer_can_modify") val maintainerCanModify: Boolean,
-    @SerializedName("commits") val commits: Int,
-    @SerializedName("additions") val additions: Int,
-    @SerializedName("deletions") val deletions: Int,
-    @SerializedName("changed_files") val changedFiles: Int
+    @SerializedName("commits") val commits: Long,
+    @SerializedName("additions") val additions: Long,
+    @SerializedName("deletions") val deletions: Long,
+    @SerializedName("changed_files") val changedFiles: Long
 )
 
 enum class State {
@@ -83,15 +83,38 @@ data class SimpleUser (
     @SerializedName("user_view_type") val userViewType: String
 )
 
-data class Labels (
+data class Label (
     @SerializedName("id") val id: Long,
     @SerializedName("node_id") val nodeId: String,
     @SerializedName("url") val url: String,
-    @SerializedName("name") val name: String,
+    @SerializedName("name") val name: SkyHanniLabel,
     @SerializedName("description") val description: String?,
     @SerializedName("color") val color: String,
     @SerializedName("default") val default: Boolean
 )
+
+enum class SkyhanniLabelCategory {
+    TYPE,
+    STATE,
+    TIMELINE,
+    MISC
+}
+
+enum class SkyHanniLabel(private val title: String, val category: SkyhanniLabelCategory) {
+    @SerializedName("Backend") BACKEND("Backend", SkyhanniLabelCategory.TYPE),
+    @SerializedName("Bug Fix") BUG_FIX("Bug Fix", SkyhanniLabelCategory.TYPE),
+    @SerializedName("Detekt") DETEKT("Detekt", SkyhanniLabelCategory.STATE),
+    @SerializedName("Good First Issue") GOOD_FIRST_ISSUE("Good First Issue", SkyhanniLabelCategory.MISC),
+    @SerializedName("Merge Conflicts") MERGE_CONFLICTS("Merge Conflicts", SkyhanniLabelCategory.STATE),
+    @SerializedName("Soon") SOON("Soon", SkyhanniLabelCategory.TIMELINE),
+    @SerializedName("Waiting on Dependency PR") WAITING_ON_DEPENDECY("Waiting on Dependency PR", SkyhanniLabelCategory.STATE),
+    @SerializedName("Waiting on Hypixel") WAITING_ON_HYPIXEL("Waiting on Hypixel", SkyhanniLabelCategory.STATE),
+    @SerializedName("Wrong Title/Changelog") WRONG_TITLE_OR_CHANGELOG("Wrong Title/Changelog", SkyhanniLabelCategory.STATE);
+
+    override fun toString(): String {
+        return title
+    }
+}
 
 data class Milestone (
     @SerializedName("url") val url: String,
@@ -99,13 +122,13 @@ data class Milestone (
     @SerializedName("labels_url") val labelsUrl: String,
     @SerializedName("id") val id: Long,
     @SerializedName("node_id") val nodeId: String,
-    @SerializedName("number") val number: Int,
+    @SerializedName("number") val number: Long,
     @SerializedName("state") val state: MilestoneState,
     @SerializedName("title") val title: String,
     @SerializedName("description") val description: String?,
     @SerializedName("creator") val creator: SimpleUser?,
-    @SerializedName("open_issues") val openIssues: Int,
-    @SerializedName("closed_issues") val closedIssues: Int,
+    @SerializedName("open_issues") val openIssues: Long,
+    @SerializedName("closed_issues") val closedIssues: Long,
     @SerializedName("created_at") val createdAt: String,
     @SerializedName("updated_at") val updatedAt: String,
     @SerializedName("closed_at") val closedAt: String?,
@@ -147,7 +170,7 @@ data class Repository (
     @SerializedName("name") val name: String,
     @SerializedName("full_name") val fullName: String,
     @SerializedName("license") val license: LicenseSimple?,
-    @SerializedName("forks") val forks: Int,
+    @SerializedName("forks") val forks: Long,
     @SerializedName("permissions") val permissions: Permissions,
     @SerializedName("owner") val owner: SimpleUser,
     @SerializedName("private") val private: Boolean,
@@ -198,12 +221,12 @@ data class Repository (
     @SerializedName("svn_url") val svnUrl: String,
     @SerializedName("homepage") val homepage: String?,
     @SerializedName("language") val language: String?,
-    @SerializedName("forks_count") val forksCount: Int,
-    @SerializedName("stargazers_count") val stargazersCount: Int,
-    @SerializedName("watchers_count") val watchersCount: Int,
-    @SerializedName("size") val size: Int,
+    @SerializedName("forks_count") val forksCount: Long,
+    @SerializedName("stargazers_count") val stargazersCount: Long,
+    @SerializedName("watchers_count") val watchersCount: Long,
+    @SerializedName("size") val size: Long,
     @SerializedName("default_branch") val defaultBranch: String,
-    @SerializedName("open_issues_count") val openIssuesCount: Int,
+    @SerializedName("open_issues_count") val openIssuesCount: Long,
     @SerializedName("is_template") val isTemplate: Boolean,
     @SerializedName("topics") val topics: List<String>,
     @SerializedName("has_issues") val hasIssues: Boolean,
@@ -232,8 +255,8 @@ data class Repository (
     @SerializedName("allow_merge_commit") val allowMergeCommit: Boolean,
     @SerializedName("allow_forking") val allowForking: Boolean,
     @SerializedName("web_commit_signoff_required") val webCommitSignoffRequired: Boolean,
-    @SerializedName("open_issues") val openIssues: Int,
-    @SerializedName("watchers") val watchers: Int,
+    @SerializedName("open_issues") val openIssues: Long,
+    @SerializedName("watchers") val watchers: Long,
     @SerializedName("master_branch") val masterBranch: String,
     @SerializedName("starred_at") val starredAt: String,
     @SerializedName("anonymous_access_enabled") val anonymousAccessEnabled: Boolean
