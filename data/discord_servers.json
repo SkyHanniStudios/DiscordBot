@@ -232,12 +232,12 @@
       "aliases": ["sky kings", "leaderboard", "lb"]
     }
   },
-  "ressource packs": {
+  "resource packs": {
     "fsr": {
       "name": "Furfsky Reborn",
       "size": "51k",
       "invite": "https://discord.gg/fsr",
-      "description": "A ressource pack for SkyBlock. <https://furfsky.net/downloads>",
+      "description": "A resource pack for SkyBlock. <https://furfsky.net/downloads>",
       "aliases": [
         "Furfsky",
         "FurfskyReborn"
@@ -247,13 +247,13 @@
       "name": "Packs HQ",
       "size": "22.5k",
       "invite": "https://discord.com/invite/KwvMQ4T",
-      "description": "A ressource pack for SkyBlock. <https://packshq.com/content/packs/>"
+      "description": "A resource pack for SkyBlock. <https://packshq.com/content/packs/>"
     },
     "hypixelplus": {
       "name": "Hypixel Plus",
       "size": "3.8k",
       "invite": "https://discord.gg/9pqyhhd28V",
-      "description": "A hypixel ressource pack with many SkyBlock items. <https://modrinth.com/resourcepack/hypixel-plus/>",
+      "description": "A hypixel resource pack with many SkyBlock items. <https://modrinth.com/resourcepack/hypixel-plus/>",
       "aliases": [
         "HypixelPlus",
         "Hypixel+",
