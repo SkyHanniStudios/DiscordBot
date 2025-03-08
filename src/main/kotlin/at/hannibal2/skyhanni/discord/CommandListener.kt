@@ -61,12 +61,12 @@ class CommandListener(private val config: BotConfig) {
 
         if (!command.userCommand) {
             if (!hasAdminPermissions()) {
-                reply("No permissions \uD83E\uDD7A")
+                reply("No permissions $PLEADING_FACE")
                 return
             }
 
             if (!inBotCommandChannel()) {
-                reply("Wrong channel \uD83E\uDD7A")
+                reply("Wrong channel $PLEADING_FACE")
                 return
             }
         }
@@ -125,12 +125,12 @@ class CommandListener(private val config: BotConfig) {
 
     private fun MessageReceivedEvent.sendUsageReply(commandName: String) {
         val command = CommandsData.getCommand(commandName) ?: run {
-            reply("Unknown command `!$commandName` \uD83E\uDD7A")
+            reply("Unknown command `!$commandName` $PLEADING_FACE")
             return
         }
 
         if (!command.userCommand && !hasAdminPermissions()) {
-            reply("No permissions for command `!$commandName` \uD83E\uDD7A")
+            reply("No permissions for command `!$commandName` $PLEADING_FACE")
             return
         }
 

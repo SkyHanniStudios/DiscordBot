@@ -41,11 +41,11 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
             return
         }
         val prNumber = args[1].toIntOrNull() ?: run {
-            reply("unknown number \uD83E\uDD7A (${args[1]})")
+            reply("unknown number $PLEADING_FACE (${args[1]})")
             return
         }
         if (prNumber < 1) {
-            reply("PR number needs to be positive \uD83E\uDD7A")
+            reply("PR number needs to be positive $PLEADING_FACE")
             return
         }
         loadPrInfos(prNumber)
@@ -66,7 +66,7 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
                 val issueUrl = "https://github.com/hannibal002/SkyHanni/issues/$prNumber"
                 val issue = "issue".linkTo(issueUrl)
                 val text = "This pull request does not yet exist or is an $issue"
-                reply(embed("Not found \uD83E\uDD7A", text, Color.red))
+                reply(embed("Not found $PLEADING_FACE", text, Color.red))
                 return
             }
             reply("Could not load pull request infos for #$prNumber: ${e.message}")
@@ -96,23 +96,23 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
         val lastCommit = head.sha
 
         val job = github.getRun(lastCommit, "Build and test") ?: run {
-            val text = "${title}${time} \nArtifact does not exist \uD83E\uDD7A (expired or first pr of contributor)"
+            val text = "${title}${time} \nArtifact does not exist $PLEADING_FACE (expired or first pr of contributor)"
             reply(embed(embedTitle, text, readColor(pr)))
             return
         }
 
         if (job.startedAt?.let { toTimeMark(it).passedSince() > 90.days } == true) {
-            reply(embed(embedTitle, "${title}${time} \nartifact has expired \uD83E\uDD7A", readColor(pr)))
+            reply(embed(embedTitle, "${title}${time} \nartifact has expired $PLEADING_FACE", readColor(pr)))
             return
         }
 
         if (job.status != Status.COMPLETED) {
             val text = when (job.status) {
-                Status.REQUESTED -> "Run has been requested \uD83E\uDD7A"
-                Status.QUEUED -> "Run is in queue \uD83E\uDD7A"
-                Status.IN_PROGRESS -> "Run is in progress \uD83E\uDD7A"
-                Status.WAITING -> "Run is waiting \uD83E\uDD7A"
-                Status.PENDING -> "Run is pending \uD83E\uDD7A"
+                Status.REQUESTED -> "Run has been requested $PLEADING_FACE"
+                Status.QUEUED -> "Run is in queue $PLEADING_FACE"
+                Status.IN_PROGRESS -> "Run is in progress $PLEADING_FACE"
+                Status.WAITING -> "Run is waiting $PLEADING_FACE"
+                Status.PENDING -> "Run is pending $PLEADING_FACE"
                 else -> ""
             }
             reply(embed(embedTitle, "${title}${time} \n $text", readColor(pr)))
@@ -162,7 +162,7 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
             return
         }
         val prNumber = args[1].toIntOrNull() ?: run {
-            reply("unknwon number \uD83E\uDD7A (${args[1]})")
+            reply("unknwon number $PLEADING_FACE (${args[1]})")
             return
         }
 
