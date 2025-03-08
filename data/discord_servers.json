@@ -178,16 +178,7 @@
       ]
     }
   },
-  "utility": {
-    "hypixel": {
-      "name": "Hypixel",
-      "size": "468k",
-      "invite": "https://discord.gg/hypixel",
-      "description": "Official Hypixel server. <https://hypixel.net/>",
-      "aliases": [
-        "Official Hypixel"
-      ]
-    },
+  "discord bot": {
     "sbs": {
       "name": "SkyBlock Simplified",
       "size": "107k",
@@ -197,6 +188,37 @@
         "SkyBlockSimplified"
       ]
     },
+    "skyhelper": {
+      "name": "SkyHelper",
+      "size": "10.7k",
+      "invite": "https://discord.gg/4gUp4gHfcu",
+      "description": "A Discord Bot.",
+      "aliases": [
+        "Sky Helper"
+      ]
+    }
+  },
+  "website": {
+    "modrinth": {
+      "name": "Modrinth",
+      "size": "44k",
+      "invite": "https://discord.com/invite/EUHuJHt",
+      "description": "A minecraft modding plattform. <https://modrinth.com/>"
+    },
+    "cofl": {
+      "name": "Coflnet",
+      "size": "11.1k",
+      "invite": "https://discord.gg/wvKXfTgCfb",
+      "description": "A Auction House History website. <https://sky.coflnet.com/>"
+    },
+    "skycrypt": {
+      "name": "SkyCrypt",
+      "size": "8k",
+      "invite": "https://discord.com/invite/cNgADv2kEQ",
+      "description": "A profile viewer website. <https://sky.shiiyu.moe>"
+    }
+  },
+  "ressource pack": {
     "fsr": {
       "name": "Furfsky Reborn",
       "size": "51k",
@@ -207,17 +229,41 @@
         "FurfskyReborn"
       ]
     },
+    "hypixelplus": {
+      "name": "Hypixel Plus",
+      "size": "3.8k",
+      "invite": "https://discord.gg/9pqyhhd28V",
+      "description": "A ressource pack with many SkyBlock items.",
+      "aliases": [
+        "HypixelPlus",
+        "Hypixel+",
+        "Hypixel +"
+      ]
+    }
+  },
+  "developement": {
     "fabric": {
       "name": "The Fabric Project",
       "size": "45k",
       "invite": "https://discord.gg/v6v4pMv",
       "description": "A minecraft modding plattform."
     },
-    "modrinth": {
-      "name": "Modrinth",
-      "size": "44k",
-      "invite": "https://discord.com/invite/EUHuJHt",
-      "description": "A minecraft modding plattform. <https://modrinth.com/>"
+    "jda": {
+      "name": "JDA",
+      "size": "7k",
+      "invite": "https://discord.gg/jda",
+      "description": "A Java Discord API."
+    }
+  },
+  "utility": {
+    "hypixel": {
+      "name": "Hypixel",
+      "size": "468k",
+      "invite": "https://discord.gg/hypixel",
+      "description": "Official Hypixel server. <https://hypixel.net/>",
+      "aliases": [
+        "Official Hypixel"
+      ]
     },
     "skyclient": {
       "name": "SkyClient by Polyfrost",
@@ -237,44 +283,6 @@
       "aliases": [
         "Prism Launcher",
         "PrismLauncher"
-      ]
-    },
-    "cofl": {
-      "name": "Coflnet",
-      "size": "11.1k",
-      "invite": "https://discord.gg/wvKXfTgCfb",
-      "description": "A Auction House History website. <https://sky.coflnet.com/>"
-    },
-    "skyhelper": {
-      "name": "SkyHelper",
-      "size": "10.7k",
-      "invite": "https://discord.gg/4gUp4gHfcu",
-      "description": "A Discord Bot.",
-      "aliases": [
-        "Sky Helper"
-      ]
-    },
-    "skycrypt": {
-      "name": "SkyCrypt",
-      "size": "8k",
-      "invite": "https://discord.com/invite/cNgADv2kEQ",
-      "description": "A profile viewer website. <https://sky.shiiyu.moe>"
-    },
-    "jda": {
-      "name": "JDA",
-      "size": "7k",
-      "invite": "https://discord.gg/jda",
-      "description": "A Java Discord API."
-    },
-    "hypixelplus": {
-      "name": "Hypixel Plus",
-      "size": "3.8k",
-      "invite": "https://discord.gg/9pqyhhd28V",
-      "description": "A ressource pack with many SkyBlock items.",
-      "aliases": [
-        "HypixelPlus",
-        "Hypixel+",
-        "Hypixel +"
       ]
     }
   },
