@@ -32,14 +32,14 @@
       ]
     },
     "drm": {
-      "name": "Dungeon Room Mod",
+      "name": "Dungeon Rooms Mod",
       "size": "57k",
       "invite": "https://discord.gg/kr2M7WutgJ",
       "description": "A mod focusing on Dungeon secrets and pathfinds.",
       "aliases": [
-        "DungeonRoomMod",
+        "DungeonRoomsMod",
         "Room Mod",
-        "RoomMod"
+        "RoomsMod"
       ]
     },
     "dg": {
