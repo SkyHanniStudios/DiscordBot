@@ -371,13 +371,14 @@
       ]
     },
     "hunter": {
-      "name": "Official Hunter Disocrd",
+      "name": "Official Hunters Disocrd",
       "size": "14k",
       "invite": "https://discord.gg/tvb55qGnFU",
       "description": "A communty around finding new secrets on SkyBlock.",
       "aliases": [
+        "Official Hunters",
         "Official Hunter",
-        "Official Hunters"
+        "Hunter"
       ]
     },
     "splash": {
