@@ -57,6 +57,9 @@ Allows the parameter `-d` to show debug info for this server.
 `!serverlist`  
 Lists all servers.
 
+`!updateservers`  
+Admin command to reload the locally stored discord servers list json file.
+
 ### Pull Request
 
 `!pr <number>`  

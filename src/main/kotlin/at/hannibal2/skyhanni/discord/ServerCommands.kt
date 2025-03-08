@@ -63,7 +63,7 @@ class ServerCommands(private val config: BotConfig, commands: CommandListener) {
 
     private fun MessageReceivedEvent.updateServers(args: List<String>) {
         loadServers()
-        reply("updated server list!")
+        reply("updated server list. (See on [GitHub](https://github.com/SkyHanniStudios/DiscordBot/blob/master/data/discord_servers.json))")
     }
 
     private fun MessageReceivedEvent.serverCommand(args: List<String>) {
