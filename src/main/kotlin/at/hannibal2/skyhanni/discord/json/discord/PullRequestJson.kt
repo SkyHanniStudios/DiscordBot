@@ -87,34 +87,11 @@ data class Label (
     @SerializedName("id") val id: Long,
     @SerializedName("node_id") val nodeId: String,
     @SerializedName("url") val url: String,
-    @SerializedName("name") val name: SkyHanniLabel,
+    @SerializedName("name") val name: String,
     @SerializedName("description") val description: String?,
     @SerializedName("color") val color: String,
     @SerializedName("default") val default: Boolean
 )
-
-enum class SkyhanniLabelCategory {
-    TYPE,
-    STATE,
-    TIMELINE,
-    MISC
-}
-
-enum class SkyHanniLabel(private val title: String, val category: SkyhanniLabelCategory) {
-    @SerializedName("Backend") BACKEND("Backend", SkyhanniLabelCategory.TYPE),
-    @SerializedName("Bug Fix") BUG_FIX("Bug Fix", SkyhanniLabelCategory.TYPE),
-    @SerializedName("Detekt") DETEKT("Detekt", SkyhanniLabelCategory.STATE),
-    @SerializedName("Good First Issue") GOOD_FIRST_ISSUE("Good First Issue", SkyhanniLabelCategory.MISC),
-    @SerializedName("Merge Conflicts") MERGE_CONFLICTS("Merge Conflicts", SkyhanniLabelCategory.STATE),
-    @SerializedName("Soon") SOON("Soon", SkyhanniLabelCategory.TIMELINE),
-    @SerializedName("Waiting on Dependency PR") WAITING_ON_DEPENDENCY("Waiting on Dependency PR", SkyhanniLabelCategory.STATE),
-    @SerializedName("Waiting on Hypixel") WAITING_ON_HYPIXEL("Waiting on Hypixel", SkyhanniLabelCategory.STATE),
-    @SerializedName("Wrong Title/Changelog") WRONG_TITLE_OR_CHANGELOG("Wrong Title/Changelog", SkyhanniLabelCategory.STATE);
-
-    override fun toString(): String {
-        return title
-    }
-}
 
 data class Milestone (
     @SerializedName("url") val url: String,

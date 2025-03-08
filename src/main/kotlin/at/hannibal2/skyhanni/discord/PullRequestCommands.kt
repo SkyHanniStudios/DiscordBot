@@ -12,9 +12,7 @@ import at.hannibal2.skyhanni.discord.Utils.uploadFile
 import at.hannibal2.skyhanni.discord.github.GitHubClient
 import at.hannibal2.skyhanni.discord.json.discord.Conclusion
 import at.hannibal2.skyhanni.discord.json.discord.PullRequestJson
-import at.hannibal2.skyhanni.discord.json.discord.SkyhanniLabelCategory
 import at.hannibal2.skyhanni.discord.json.discord.RunStatus
-import at.hannibal2.skyhanni.discord.json.discord.SkyHanniLabel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import java.awt.Color
 import java.io.File
@@ -79,13 +77,22 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
             append("\n")
         }
 
-        val labels: MutableMap<SkyhanniLabelCategory, MutableList<SkyHanniLabel>> = mutableMapOf()
+
+        val labels: MutableMap<String, MutableList<String>> = mutableMapOf(
+            Pair("Type", mutableListOf()),
+            Pair("State", mutableListOf()),
+            Pair("Timeline", mutableListOf()),
+            Pair("Misc", mutableListOf())
+        )
 
         for (label in pr.labels) {
-            labels.getOrPut(label.name.category) {
-                val emptyList: MutableList<SkyHanniLabel> = mutableListOf()
-                emptyList
-            }.add(label.name)
+            val category = when (label.name) {
+                "Backend", "Bug Fix" -> "Type"
+                "Detekt", "Merge Conflicts", "Waiting on Dependency PR", "Waiting on Hypixel", "Wrong Title/Changelog" -> "State"
+                "Soon" -> "Timeline"
+                else -> "Misc"
+            }
+            labels[category]?.add(label.name)
         }
 
         val time = buildString {
@@ -95,16 +102,16 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
             append("\n")
             append("> Last Updated: $lastUpdate")
             append("\n")
-            if (labels.containsKey(SkyhanniLabelCategory.TYPE)) {
-                append("> Type: `${labels[SkyhanniLabelCategory.TYPE]?.joinToString("` `")}`")
+            if (labels["Type"]?.isNotEmpty() == true) {
+                append("> Type: `${labels["Type"]?.joinToString("` `")}`")
                 append("\n")
             }
-            if (labels.containsKey(SkyhanniLabelCategory.STATE)) {
-                append("> State: `${labels[SkyhanniLabelCategory.STATE]?.joinToString("` `")}`")
+            if (labels["State"]?.isNotEmpty() == true) {
+                append("> Issues: `${labels["State"]?.joinToString("` `")}`")
                 append("\n")
             }
-            if (labels.containsKey(SkyhanniLabelCategory.TIMELINE)) {
-                append("> Milestone: `${labels[SkyhanniLabelCategory.TIMELINE]?.joinToString("` `")}` `${pr.milestone?.title}`")
+            if (labels["Timeline"]?.isNotEmpty() == true) {
+                append("> Milestone: `${labels["Timeline"]?.joinToString("` `")}` `${pr.milestone?.title}`")
                 append("\n")
             } else if (pr.milestone?.title != null) {
                 append("> Milestone: `${pr.milestone.title}`")
