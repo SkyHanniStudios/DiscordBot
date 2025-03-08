@@ -13,15 +13,15 @@ class DiscordBot(val config: BotConfig, private val commands: CommandListener) :
     }
 }
 
+const val PLEADING_FACE = "\uD83E\uDD7A"
+
 fun main() {
     val config = ConfigLoader.load("config.json")
     val token = config.token
     val commands = CommandListener(config)
 
-    val jda = JDABuilder.createDefault(token)
-        .addEventListeners(DiscordBot(config, commands))
-        .enableIntents(GatewayIntent.MESSAGE_CONTENT)
-        .build()
+    val jda = JDABuilder.createDefault(token).addEventListeners(DiscordBot(config, commands))
+        .enableIntents(GatewayIntent.MESSAGE_CONTENT).build()
     jda.awaitReady()
 
     fun sendMessageToBotChannel(message: String) {

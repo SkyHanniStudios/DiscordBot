@@ -6,7 +6,10 @@ import at.hannibal2.skyhanni.discord.Utils.embed
 import at.hannibal2.skyhanni.discord.Utils.format
 import at.hannibal2.skyhanni.discord.Utils.linkTo
 import at.hannibal2.skyhanni.discord.Utils.logAction
+import at.hannibal2.skyhanni.discord.Utils.messageDelete
 import at.hannibal2.skyhanni.discord.Utils.reply
+import at.hannibal2.skyhanni.discord.Utils.replyWithConsumer
+import at.hannibal2.skyhanni.discord.Utils.runDelayed
 import at.hannibal2.skyhanni.discord.Utils.timeExecution
 import at.hannibal2.skyhanni.discord.Utils.uploadFile
 import at.hannibal2.skyhanni.discord.github.GitHubClient
@@ -18,6 +21,7 @@ import java.io.File
 import java.time.Instant
 import java.time.format.DateTimeFormatter
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.seconds
 
 @Suppress("ReturnCount")
 class PullRequestCommands(config: BotConfig, commands: CommandListener) {
@@ -44,6 +48,10 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
             reply("PR number needs to be positive \uD83E\uDD7A")
             return
         }
+        loadPrInfos(prNumber)
+    }
+
+    private fun MessageReceivedEvent.loadPrInfos(prNumber: Int) {
         logAction("loads pr infos for #$prNumber")
 
         val prLink = "https://github.com/hannibal002/SkyHanni/pull/$prNumber"
@@ -131,7 +139,6 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
         }
 
         reply(embed(embedTitle, "$title$time$artifactDisplay", readColor(pr)))
-//        reply("$title$time$artifactDisplay")
     }
 
     // colors picked from github
@@ -207,4 +214,18 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
     private fun findJarFile(directory: File): File? {
         return directory.walkTopDown().firstOrNull { it.isFile && it.name.startsWith("SkyHanni-") }
     }
+
+    fun isPullRequest(event: MessageReceivedEvent, message: String): Boolean {
+        val matcher = "https://github.com/hannibal002/SkyHanni/pull/(?<pr>\\d+)".toPattern().matcher(message)
+        if (!matcher.matches()) return false
+        val pr = matcher.group("pr")?.toIntOrNull() ?: return false
+        event.replyWithConsumer("Next time just type `!pr $pr` $PLEADING_FACE") { consumer ->
+            runDelayed(3.seconds) {
+                consumer.message.messageDelete()
+            }
+        }
+        event.loadPrInfos(pr)
+        return true
+    }
+
 }

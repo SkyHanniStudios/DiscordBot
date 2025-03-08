@@ -18,9 +18,9 @@ class CommandListener(private val config: BotConfig) {
 
     private val tagCommands = TagCommands(config, this)
     private val serversCommands = ServerCommands(config, this)
+    private val pullRequestCommands = PullRequestCommands(config, this)
 
     init {
-        PullRequestCommands(config, this)
         add(Command("help", userCommand = true) { event, args -> event.helpCommand(args) })
     }
 
@@ -47,6 +47,7 @@ class CommandListener(private val config: BotConfig) {
         }
 
         if (serversCommands.isKnownServerUrl(this, content)) return
+        if (pullRequestCommands.isPullRequest(this, content)) return
 
         if (!isCommand(content)) return
 
