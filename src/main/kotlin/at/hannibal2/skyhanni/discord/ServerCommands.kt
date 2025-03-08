@@ -19,6 +19,7 @@ class ServerCommands(private val config: BotConfig, commands: CommandListener) {
 
     class ServerJson(
         val name: String,
+        val size: String,
         val invite: String,
         val description: String,
         val aliases: List<String>? = null,
