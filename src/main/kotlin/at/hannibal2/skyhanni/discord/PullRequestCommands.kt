@@ -136,7 +136,7 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
         val lastCommit = head.sha
 
         val job = github.getRun(lastCommit, "Build and test") ?: run {
-            val text = "${title}${time} \nBuild needs approval$PLEADING_FACE"
+            val text = "${title}${time} \nBuild needs approval $PLEADING_FACE"
 
             reply(embed(embedTitle, text, readColor(pr)))
             return
