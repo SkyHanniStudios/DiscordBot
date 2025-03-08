@@ -31,6 +31,17 @@
         "hanni"
       ]
     },
+    "drm": {
+      "name": "Dungeon Room Mod",
+      "size": "57k",
+      "invite": "https://discord.gg/kr2M7WutgJ",
+      "description": "A mod focusing on Dungeon secrets and pathfinds.",
+      "aliases": [
+        "DungeonRoomMod",
+        "Room Mod",
+        "RoomMod"
+      ]
+    },
     "dg": {
       "name": "Dungeons Guide",
       "size": "21k",
@@ -65,48 +76,6 @@
     }
   },
   "small mods": {
-    "sba": {
-      "name": "Biscuit Bakery",
-      "size": "60k",
-      "invite": "https://discord.gg/PqTAEek",
-      "description": "A end of life SkyBlock mod.",
-      "aliases": [
-        "skyblockaddons",
-        "SkyBlock addons",
-        "Sky Block addons"
-      ]
-    },
-    "drm": {
-      "name": "Dungeon Room Mod",
-      "size": "57k",
-      "invite": "https://discord.gg/kr2M7WutgJ",
-      "description": "A mod focusing on Dungeon secrets and pathfinds.",
-      "aliases": [
-        "DungeonRoomMod",
-        "Room Mod",
-        "RoomMod"
-      ]
-    },
-    "soopy": {
-      "name": "Soopy's Pog Discord",
-      "size": "34.5k",
-      "invite": "https://discord.gg/dfSMq96RSN",
-      "description": "A SoopyV2 is an end of life Chat Triggers module.",
-      "aliases": [
-        "SoopyMod",
-        "Soopy Mod"
-      ]
-    },
-    "dulkir": {
-      "name": "JustChatting",
-      "size": "8.1k",
-      "invite": "https://discord.gg/WnJwrNZQSn",
-      "description": "Dulkir Mod is a SkyBlock mod.",
-      "aliases": [
-        "Dulkir Mod",
-        "Dulkir Mod"
-      ]
-    },
     "bazaar": {
       "name": "meyi's hangout",
       "size": "5.7k",
@@ -173,6 +142,39 @@
       "description": "A SkyBlock mod.",
       "aliases": [
         "SkyBlock Overhaul"
+      ]
+    }
+  },
+  "eol mods": {
+    "sba": {
+      "name": "Biscuit Bakery",
+      "size": "60k",
+      "invite": "https://discord.gg/PqTAEek",
+      "description": "A end of life SkyBlock mod.",
+      "aliases": [
+        "skyblockaddons",
+        "SkyBlock addons",
+        "Sky Block addons"
+      ]
+    },
+    "soopy": {
+      "name": "Soopy's Pog Discord",
+      "size": "34.5k",
+      "invite": "https://discord.gg/dfSMq96RSN",
+      "description": "A SoopyV2 is an end of life Chat Triggers module.",
+      "aliases": [
+        "SoopyMod",
+        "Soopy Mod"
+      ]
+    },
+    "dulkir": {
+      "name": "JustChatting",
+      "size": "8.1k",
+      "invite": "https://discord.gg/WnJwrNZQSn",
+      "description": "Dulkir Mod is a SkyBlock mod.",
+      "aliases": [
+        "Dulkir Mod",
+        "Dulkir Mod"
       ]
     }
   },
