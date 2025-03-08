@@ -1,0 +1,485 @@
+{
+  "big mods": {
+    "neu": {
+      "name": "Moulberry's Bush",
+      "size": "150k",
+      "invite": "https://discord.gg/moulberry",
+      "description": "NotEnoughUpdates is a general purpose SkyBlock mod.",
+      "aliases": [
+        "moulberry",
+        "moul",
+        "notenoughupdates",
+        "not enough updates"
+      ]
+    },
+    "st": {
+      "name": "Skytils",
+      "size": "148k",
+      "invite": "https://discord.gg/skytils",
+      "description": "A general purpose SkyBlock mod.",
+      "aliases": [
+        "sky tils"
+      ]
+    },
+    "sh": {
+      "name": "SkyHanni",
+      "size": "60.6k",
+      "invite": "https://discord.gg/skyhanni-997079228510117908",
+      "description": "A general purpose SkyBlock mod.",
+      "aliases": [
+        "sky hanni",
+        "hanni"
+      ]
+    },
+    "drm": {
+      "name": "Dungeon Rooms Mod",
+      "size": "57k",
+      "invite": "https://discord.gg/kr2M7WutgJ",
+      "description": "A mod focusing on Dungeon secrets and pathfinds.",
+      "aliases": [
+        "DungeonRoomsMod",
+        "Room Mod",
+        "RoomsMod"
+      ]
+    },
+    "dg": {
+      "name": "Dungeons Guide",
+      "size": "21k",
+      "invite": "https://discord.gg/vuGsXhY5Bv",
+      "description": "A general Dungeon mod.",
+      "aliases": [
+        "DungeonsGuide"
+      ]
+    },
+    "dsm": {
+      "name": "Dankers Skyblock Mod",
+      "size": "19k",
+      "invite": "https://discord.gg/QsEkNQS",
+      "description": "A general purpose SkyBlock mod.",
+      "aliases": [
+        "dankers",
+        "DankersSkyblockMod",
+        "DankerSkyblockMod",
+        "Danker Skyblock Mod"
+      ]
+    },
+    "bettermap": {
+      "name": "BetterMap",
+      "size": "18.5k",
+      "invite": "https://discord.gg/Uq5YzpaMsr",
+      "description": "A Chat Triggers module with a dungeon map.",
+      "aliases": [
+        "Better Maps",
+        "BetterMaps",
+        "Better Map"
+      ]
+    }
+  },
+  "small mods": {
+    "scatha": {
+      "name": "Scatha Farmers",
+      "size": "8.9k",
+      "invite": "https://discord.com/invite/scatha-farmers-898827889145942056",
+      "description": "Scatha-Pro is a Chat Triggers module that helps when you mine for scathas.",
+      "aliases": [
+        "Scatha-Pro",
+        "Scatha Pro"
+      ]
+    },
+    "bazaar": {
+      "name": "meyi's hangout",
+      "size": "5.7k",
+      "invite": "https://discord.gg/wjpJSVSwvD",
+      "description": "The mod Bazaar Notifier helps with Bazaar flipping.",
+      "aliases": [
+        "bazaar notifier",
+        "BazaarNotifier"
+      ]
+    },
+    "apec": {
+      "name": "Apec",
+      "size": "3.4k",
+      "invite": "https://discord.gg/YXrJzpY",
+      "description": "A HUD mod.",
+      "aliases": [
+        "ApecMod"
+      ]
+    },
+    "bloom": {
+      "name": "Bloom",
+      "size": "2.7k",
+      "invite": "https://discord.com/invite/pykzREcAuZ",
+      "description": "Bloom is a Chat Triggers module."
+    },
+    "volc": {
+      "name": "VolcAddons",
+      "size": "2.2k",
+      "invite": "https://discord.com/invite/ftxB4kG2tw",
+      "description": "A Chat Triggers module with focus on Crimson Isle and Kuudra.",
+      "aliases": [
+        "Volc Addons",
+        "VolcAddon",
+        "Volc Addon"
+      ]
+    },
+    "pss": {
+      "name": "Partly Sane Studios",
+      "size": "700",
+      "invite": "https://discord.gg/v4PU3WeH7z",
+      "description": "Partly Sane Skies is a SkyBlock mod.",
+      "aliases": [
+        "Partly Sane Skies",
+        "skies",
+        "PartlySaneSkies"
+      ]
+    },
+    "sbu": {
+      "name": "SBU",
+      "size": "600",
+      "invite": "https://discord.gg/3tUSe37gZ4",
+      "description": "SkyBlock Utils is a SkyBlock mod.",
+      "aliases": [
+        "SkyBlockUtils"
+      ]
+    },
+    "sbo": {
+      "name": "SkyBlockOverhaul",
+      "size": "180",
+      "invite": "https://discord.gg/QvM6b9jsJD",
+      "description": "A SkyBlock mod.",
+      "aliases": [
+        "SkyBlock Overhaul"
+      ]
+    }
+  },
+  "eol mods": {
+    "sba": {
+      "name": "Biscuit Bakery",
+      "size": "60k",
+      "invite": "https://discord.gg/PqTAEek",
+      "description": "A end of life SkyBlock mod.",
+      "aliases": [
+        "skyblockaddons",
+        "SkyBlock addons",
+        "Sky Block addons"
+      ]
+    },
+    "soopy": {
+      "name": "Soopy's Pog Discord",
+      "size": "34.5k",
+      "invite": "https://discord.gg/dfSMq96RSN",
+      "description": "A SoopyV2 is an end of life Chat Triggers module.",
+      "aliases": [
+        "SoopyMod",
+        "Soopy Mod"
+      ]
+    },
+    "dulkir": {
+      "name": "JustChatting",
+      "size": "8.1k",
+      "invite": "https://discord.gg/WnJwrNZQSn",
+      "description": "Dulkir Mod is a SkyBlock mod.",
+      "aliases": [
+        "Dulkir Mod",
+        "Dulkir Mod"
+      ]
+    }
+  },
+  "discord bots": {
+    "sbs": {
+      "name": "SkyBlock Simplified",
+      "size": "107k",
+      "invite": "https://discord.com/invite/sbs",
+      "description": "A Discord Bot.",
+      "aliases": [
+        "SkyBlockSimplified"
+      ]
+    },
+    "skyhelper": {
+      "name": "SkyHelper",
+      "size": "10.7k",
+      "invite": "https://discord.gg/4gUp4gHfcu",
+      "description": "A Discord Bot.",
+      "aliases": [
+        "Sky Helper"
+      ]
+    }
+  },
+  "websites": {
+    "modrinth": {
+      "name": "Modrinth",
+      "size": "44k",
+      "invite": "https://discord.com/invite/EUHuJHt",
+      "description": "A minecraft modding plattform. <https://modrinth.com/>"
+    },
+    "cofl": {
+      "name": "Coflnet",
+      "size": "11.1k",
+      "invite": "https://discord.gg/wvKXfTgCfb",
+      "description": "A Auction House History website. <https://sky.coflnet.com/>"
+    },
+    "skycrypt": {
+      "name": "SkyCrypt",
+      "size": "8k",
+      "invite": "https://discord.com/invite/cNgADv2kEQ",
+      "description": "A profile viewer website. <https://sky.shiiyu.moe>"
+    },
+    "skyKings": {
+      "name": "SkyKings",
+      "size": "3.4k",
+      "invite": "https://discord.com/invite/skykings",
+      "description": "A leaderboard website for guilds and players. <https://skykings.net/leaderboard/>",
+      "aliases": ["sky kings", "leaderboard", "lb"]
+    }
+  },
+  "resource packs": {
+    "fsr": {
+      "name": "Furfsky Reborn",
+      "size": "51k",
+      "invite": "https://discord.gg/fsr",
+      "description": "A resource pack for SkyBlock. <https://furfsky.net/downloads>",
+      "aliases": [
+        "Furfsky",
+        "FurfskyReborn"
+      ]
+    },
+    "packshq": {
+      "name": "Packs HQ",
+      "size": "22.5k",
+      "invite": "https://discord.com/invite/KwvMQ4T",
+      "description": "A resource pack for SkyBlock. <https://packshq.com/content/packs/>"
+    },
+    "hypixelplus": {
+      "name": "Hypixel Plus",
+      "size": "3.8k",
+      "invite": "https://discord.gg/9pqyhhd28V",
+      "description": "A hypixel resource pack with many SkyBlock items. <https://modrinth.com/resourcepack/hypixel-plus/>",
+      "aliases": [
+        "HypixelPlus",
+        "Hypixel+",
+        "Hypixel +"
+      ]
+    }
+  },
+  "developement": {
+    "fabric": {
+      "name": "The Fabric Project",
+      "size": "45k",
+      "invite": "https://discord.gg/v6v4pMv",
+      "description": "A minecraft modding plattform."
+    },
+    "jda": {
+      "name": "JDA",
+      "size": "7k",
+      "invite": "https://discord.gg/jda",
+      "description": "A Java Discord API."
+    }
+  },
+  "utility": {
+    "hypixel": {
+      "name": "Hypixel",
+      "size": "468k",
+      "invite": "https://discord.gg/hypixel",
+      "description": "Official Hypixel server. <https://hypixel.net/>",
+      "aliases": [
+        "Official Hypixel"
+      ]
+    },
+    "skyclient": {
+      "name": "SkyClient by Polyfrost",
+      "size": "40k",
+      "invite": "https://discord.gg/VH6fdBYzQQ",
+      "description": "Installer that helps get lots of SkyBlock mods easily.",
+      "aliases": [
+        "Sky Client",
+        "polyfrost"
+      ]
+    },
+    "prism": {
+      "name": "Prism Community",
+      "size": "21k",
+      "invite": "https://discord.gg/ArX2nafFz2",
+      "description": "Prism Launcher is an alternative minecraft launcher with many features.",
+      "aliases": [
+        "Prism Launcher",
+        "PrismLauncher"
+      ]
+    }
+  },
+  "big communities": {
+    "sbz": {
+      "name": "SkyBlockZ",
+      "size": "184k",
+      "invite": "https://discord.gg/skyblock",
+      "description": "A big SkyBlock discord.",
+      "aliases": [
+        "Sky Block Z",
+        "SkyBlock Z"
+      ]
+    },
+    "sbm": {
+      "name": "SkyBlock Maniacs",
+      "size": "106k",
+      "invite": "https://discord.gg/sbm",
+      "description": "A large general SkyBlock community.",
+      "aliases": [
+        "SkyBlockManiacs",
+        "Sky Block Maniacs"
+      ]
+    },
+    "mining": {
+      "name": "Mining Cult",
+      "size": "84k",
+      "invite": "https://discord.gg/mining",
+      "description": "A community around mining, also includes the ColeWeight Chat Triggers module.",
+      "aliases": [
+        "MiningCult",
+        "ColeWeight",
+        "cole weight",
+        "cole"
+      ]
+    },
+    "kuudra": {
+      "name": "Kuudra Gang",
+      "size": "41k",
+      "invite": "https://discord.gg/kuudra",
+      "description": "A community around the Kuudra Fight and a Discord bot for Kuudra."
+    },
+    "farming": {
+      "name": "Elite Skyblock Farmers",
+      "size": "31k",
+      "invite": "https://discord.gg/farms",
+      "description": "A community for the best farmers and a farming weight website. <https://elitebot.dev/>",
+      "aliases": [
+        "farmers",
+        "EliteFarmers",
+        "elite"
+      ]
+    }
+  },
+  "medium communities": {
+    "cowshed": {
+      "name": "Cowshed",
+      "size": "27.2k",
+      "invite": "https://discord.gg/fU2tFPf",
+      "description": "A discord that shares the latest SkyBlock news and the SkyBlock mod \"Cowlection\".",
+      "aliases": [
+        "Cowlection",
+        "news"
+      ]
+    },
+    "bingo": {
+      "name": "Bingo Brewers",
+      "size": "25k",
+      "invite": "https://discord.gg/bingobrewers",
+      "description": "A communty for bingo game mode and a SkyBlock mod for Bingo.",
+      "aliases": [
+        "bb",
+        "bingobrewers",
+        "bingobrewer",
+        "bingo brewer"
+      ]
+    },
+    "ims": {
+      "name": "Ironman Sweats",
+      "size": "20.5k",
+      "invite": "https://discord.gg/ims",
+      "description": "A community for the ironman game mode.",
+      "aliases": [
+        "ironman",
+        "IronmanSweats"
+      ]
+    },
+    "council": {
+      "name": "Farming Council",
+      "size": "18k",
+      "invite": "https://discord.gg/farmers",
+      "description": "A communty around farming.",
+      "aliases": [
+        "FarmingCouncil"
+      ]
+    },
+    "hunter": {
+      "name": "Official Hunters Discord",
+      "size": "14k",
+      "invite": "https://discord.gg/tvb55qGnFU",
+      "description": "A communty around finding new secrets on SkyBlock.",
+      "aliases": [
+        "Official Hunters",
+        "Official Hunter",
+        "Hunter"
+      ]
+    },
+    "splash": {
+      "name": "Bingo Splash Community",
+      "size": "9.4k",
+      "invite": "https://discord.gg/bingo",
+      "description": "A communty for bingo game mode.",
+      "aliases": [
+        "SplashCommunity",
+        "Bingo Splash"
+      ]
+    },
+    "fishing": {
+      "name": "Casters | SkyBlock Fishing",
+      "size": "6.1k",
+      "invite": "https://discord.gg/YSXErRzYnr",
+      "description": "A communty around fishing.",
+      "aliases": [
+        "casters",
+        "caster",
+        "fish",
+        "blub"
+      ]
+    }
+  },
+  "small communities": {
+    "stranded": {
+      "name": "Stranded Sweats",
+      "size": "4.8k",
+      "invite": "https://discord.gg/MKaJaZFcXS",
+      "description": "A communty for the stranded game mode.",
+      "aliases": [
+        "StrandedSweats"
+      ]
+    },
+    "collectors": {
+      "name": "Collectors Hub",
+      "size": "4.7k",
+      "invite": "https://discord.gg/collectors",
+      "description": "A communty for trading rare items in SkyBlock.",
+      "aliases": [
+        "collections",
+        "rare items"
+      ]
+    },
+    "dragon": {
+      "name": "Dragon's Den",
+      "size": "3.1k",
+      "invite": "https://discord.gg/Q4EwRVMtd3",
+      "description": "A communty around the Dragon fight in the End."
+    },
+    "foraging": {
+      "name": "The Foraging Islands",
+      "size": "2.5k",
+      "invite": "https://discord.gg/TZ6WT2kkwG",
+      "description": "A communty around the Park island, the planned foraging and hunting skill update.",
+      "aliases": [
+        "foraging island",
+        "foraging islands"
+      ]
+    },
+    "chocolate": {
+      "name": "Night's Chocolate Factory",
+      "size": "600",
+      "invite": "https://discord.gg/rP4sAn38jp",
+      "description": "A communty around the Chocolate Factory and Hoppity Event",
+      "aliases": [
+        "cf",
+        "Chocolate Factory",
+        "Hoppity",
+        "Hoppity Hunt"
+      ]
+    }
+  }
+}
