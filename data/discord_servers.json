@@ -106,16 +106,6 @@
         "Volc Addon"
       ]
     },
-    "cw": {
-      "name": "Nin's Server",
-      "size": "1.7k",
-      "invite": "https://discord.gg/yj4P4FqHPA",
-      "description": "ColeWeight is a SkyBlock Chat Triggers module around mining.",
-      "aliases": [
-        "ColeWeight",
-        "cole weight"
-      ]
-    },
     "pss": {
       "name": "Partly Sane Skies",
       "size": "700",
@@ -311,9 +301,12 @@
       "name": "Mining Cult",
       "size": "84k",
       "invite": "https://discord.gg/mining",
-      "description": "A community around mining.",
+      "description": "A community around mining, also includes the ColeWeight Chat Triggers module.",
       "aliases": [
-        "MiningCult"
+        "MiningCult",
+        "ColeWeight",
+        "cole weight",
+        "cole"
       ]
     },
     "kuudra": {
