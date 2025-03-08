@@ -1,5 +1,5 @@
 {
-  "big mods": {
+  "big_mods": {
     "neu": {
       "name": "Moulberry's Bush",
       "size": "150k",
@@ -75,7 +75,7 @@
       ]
     }
   },
-  "small mods": {
+  "small_mods": {
     "scatha": {
       "name": "Scatha Farmers",
       "size": "8.9k",
@@ -152,7 +152,7 @@
       ]
     }
   },
-  "eol mods": {
+  "eol_mods": {
     "sba": {
       "name": "Biscuit Bakery",
       "size": "60k",
@@ -185,7 +185,7 @@
       ]
     }
   },
-  "discord bots": {
+  "discord_bots": {
     "sbs": {
       "name": "SkyBlock Simplified",
       "size": "107k",
@@ -236,7 +236,7 @@
       ]
     }
   },
-  "resource packs": {
+  "resource_packs": {
     "fsr": {
       "name": "Furfsky Reborn",
       "size": "51k",
@@ -310,7 +310,7 @@
       ]
     }
   },
-  "big communities": {
+  "big_communities": {
     "sbz": {
       "name": "SkyBlockZ",
       "size": "184k",
@@ -361,7 +361,7 @@
       ]
     }
   },
-  "medium communities": {
+  "medium_communities": {
     "cowshed": {
       "name": "Cowshed",
       "size": "27.2k",
@@ -437,7 +437,7 @@
       ]
     }
   },
-  "small communities": {
+  "small_communities": {
     "stranded": {
       "name": "Stranded Sweats",
       "size": "4.8k",
