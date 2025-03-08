@@ -1,5 +1,6 @@
 package at.hannibal2.skyhanni.discord
 
+import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.reply
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -26,6 +27,7 @@ class ServerCommands(private val config: BotConfig, commands: CommandListener) {
     )
 
     private var servers = listOf<Server>()
+    private val disordServerPattern = "(https?://)?(www\\.)?(discord\\.gg|discord\\.com/invite)/[\\w-]+".toPattern()
 
     init {
         commands.add(Command("server", userCommand = true) { event, args -> event.serverCommand(args) })
@@ -50,8 +52,7 @@ class ServerCommands(private val config: BotConfig, commands: CommandListener) {
         // Flatten into a list of Mods (ignoring category)
         servers = data.flatMap { (_, serverCategories) ->
             serverCategories.map { (id, data) ->
-                Server(
-                    id.lowercase(),
+                Server(id.lowercase(),
                     data.name,
                     data.invite,
                     data.description,
@@ -100,14 +101,18 @@ class ServerCommands(private val config: BotConfig, commands: CommandListener) {
         return null
     }
 
-    private fun Server.print(): String = with(this) {
+    private fun Server.print(tutorial: Boolean = false): String = with(this) {
         buildString {
             append("**$name**\n")
             if (description.isNotEmpty()) {
                 append(description)
                 append("\n")
             }
-            append(invite)
+            if (!tutorial) {
+                append(invite)
+            } else {
+                append("||In the future, you can do `!server $keyword`. Then you get this auto reply||")
+            }
         }
     }
 
@@ -132,5 +137,21 @@ class ServerCommands(private val config: BotConfig, commands: CommandListener) {
             else server.keyword
         }
         reply("Server list:\n$list")
+    }
+
+    private fun isDiscordInvite(message: String): Boolean = disordServerPattern.matcher(message).find()
+
+    private fun getServerByInviteUrl(url: String): Server? = servers.firstOrNull { it.invite == url }
+
+    fun isKnownServerUrl(event: MessageReceivedEvent, message: String): Boolean {
+        val server = getServerByInviteUrl(message) ?: run {
+            if (isDiscordInvite(message)) {
+                event.logAction("sends unknown discord invite '$message'")
+            }
+            return false
+        }
+
+        event.reply(server.print(tutorial = true))
+        return true
     }
 }

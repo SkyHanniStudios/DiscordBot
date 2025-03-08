@@ -16,10 +16,10 @@ class CommandListener(private val config: BotConfig) {
 
     private val commands = mutableSetOf<Command>()
 
-    private var tagCommands = TagCommands(config, this)
+    private val tagCommands = TagCommands(config, this)
+    private val serversCommands = ServerCommands(config, this)
 
     init {
-        ServerCommands(config, this)
         PullRequestCommands(config, this)
         add(Command("help", userCommand = true) { event, args -> event.helpCommand(args) })
     }
@@ -45,6 +45,8 @@ class CommandListener(private val config: BotConfig) {
         if (content != "!undo") {
             tagCommands.lastMessages.remove(this.author.id)
         }
+
+        if (serversCommands.isKnownServerUrl(this, content)) return
 
         if (!isCommand(content)) return
 

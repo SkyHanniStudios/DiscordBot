@@ -46,7 +46,9 @@ Removes the last tag message the user has sent.
 ### Server
 
 Shows information about skyblock related Discord server.
-The list is saved as JSON in this repo under `data/discord_servers.json`
+The list is saved as JSON in this repo under `data/discord_servers.json`.  
+We remind users when they send the server url directly that they could use `!server keyword` instead,
+and we log unknown server links to easily add them for the future.  
 
 `!server <server>`  
 Shows information about a server.  
