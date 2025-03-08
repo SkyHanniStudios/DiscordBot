@@ -6,7 +6,10 @@ import at.hannibal2.skyhanni.discord.Utils.embed
 import at.hannibal2.skyhanni.discord.Utils.format
 import at.hannibal2.skyhanni.discord.Utils.linkTo
 import at.hannibal2.skyhanni.discord.Utils.logAction
+import at.hannibal2.skyhanni.discord.Utils.messageDelete
 import at.hannibal2.skyhanni.discord.Utils.reply
+import at.hannibal2.skyhanni.discord.Utils.replyWithConsumer
+import at.hannibal2.skyhanni.discord.Utils.runDelayed
 import at.hannibal2.skyhanni.discord.Utils.timeExecution
 import at.hannibal2.skyhanni.discord.Utils.uploadFile
 import at.hannibal2.skyhanni.discord.github.GitHubClient
@@ -19,6 +22,7 @@ import java.io.File
 import java.time.Instant
 import java.time.format.DateTimeFormatter
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.seconds
 
 @Suppress("ReturnCount")
 class PullRequestCommands(config: BotConfig, commands: CommandListener) {
@@ -38,13 +42,17 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
             return
         }
         val prNumber = args[1].toLongOrNull() ?: run {
-            reply("unknown number \uD83E\uDD7A (${args[1]})")
+            reply("unknown number $PLEADING_FACE (${args[1]})")
             return
         }
         if (prNumber < 1) {
-            reply("PR number needs to be positive \uD83E\uDD7A")
+            reply("PR number needs to be positive $PLEADING_FACE")
             return
         }
+        loadPrInfos(prNumber)
+    }
+
+    private fun MessageReceivedEvent.loadPrInfos(prNumber: Int) {
         logAction("loads pr infos for #$prNumber")
 
         val prLink = "https://github.com/hannibal002/SkyHanni/pull/$prNumber"
@@ -59,7 +67,7 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
                 val issueUrl = "https://github.com/hannibal002/SkyHanni/issues/$prNumber"
                 val issue = "issue".linkTo(issueUrl)
                 val text = "This pull request does not yet exist or is an $issue"
-                reply(embed("Not found \uD83E\uDD7A", text, Color.red))
+                reply(embed("Not found $PLEADING_FACE", text, Color.red))
                 return
             }
             reply("Could not load pull request infos for #$prNumber: ${e.message}")
@@ -120,7 +128,7 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
         }
 
         if (toTimeMark(pr.updatedAt).passedSince() > 400.days) {
-            val text = "${title}${time} \nBuild data no longer exists \uD83E\uDD7A"
+            val text = "${title}${time} \nBuild data no longer exists $PLEADING_FACE"
             reply(embed(embedTitle, text, readColor(pr)))
             return
         }
@@ -128,23 +136,25 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
         val lastCommit = head.sha
 
         val job = github.getRun(lastCommit, "Build and test") ?: run {
-            val text = "${title}${time} \nBuild needs approval \uD83E\uDD7A"
+            val text = "${title}${time} \nBuild needs approval$PLEADING_FACE"
+
             reply(embed(embedTitle, text, readColor(pr)))
             return
         }
 
         if (job.startedAt?.let { toTimeMark(it).passedSince() > 90.days } == true) {
-            reply(embed(embedTitle, "${title}${time} \nBuild download has expired \uD83E\uDD7A", readColor(pr)))
+            reply(embed(embedTitle, "${title}${time} \nBuild download has expired $PLEADING_FACE", readColor(pr)))
+            
             return
         }
 
         if (job.status != RunStatus.COMPLETED) {
             val text = when (job.status) {
-                RunStatus.REQUESTED -> "Build has been requested \uD83E\uDD7A"
-                RunStatus.QUEUED -> "Build is in queue \uD83E\uDD7A"
-                RunStatus.IN_PROGRESS -> "Build is in progress \uD83E\uDD7A"
-                RunStatus.WAITING -> "Build is waiting \uD83E\uDD7A"
-                RunStatus.PENDING -> "Build is pending \uD83E\uDD7A"
+                RunStatus.REQUESTED -> "Build has been requested $PLEADING_FACE"
+                RunStatus.QUEUED -> "Build is in queue $PLEADING_FACE"
+                RunStatus.IN_PROGRESS -> "Build is in progress $PLEADING_FACE"
+                RunStatus.WAITING -> "Build is waiting $PLEADING_FACE"
+                RunStatus.PENDING -> "Build is pending $PLEADING_FACE"
                 else -> ""
             }
             reply(embed(embedTitle, "${title}${time} \n $text", readColor(pr)))
@@ -152,7 +162,7 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
         }
 
         if (job.conclusion != Conclusion.SUCCESS) {
-            reply(embed(embedTitle, "$title$time\nLast development build failed \uD83E\uDD7A", Color.red))
+            reply(embed(embedTitle, "$title$time\nLast development build failed $PLEADING_FACE", Color.red))
             return
         }
 
@@ -176,7 +186,6 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
         }
 
         reply(embed(embedTitle, "$title$time$artifactDisplay", readColor(pr)))
-//        reply("$title$time$artifactDisplay")
     }
 
     // colors picked from github
@@ -200,7 +209,7 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
             return
         }
         val prNumber = args[1].toLongOrNull() ?: run {
-            reply("unknwon number \uD83E\uDD7A (${args[1]})")
+            reply("unknwon number $PLEADING_FACE (${args[1]})")
             return
         }
 
@@ -252,4 +261,18 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
     private fun findJarFile(directory: File): File? {
         return directory.walkTopDown().firstOrNull { it.isFile && it.name.startsWith("SkyHanni-") }
     }
+
+    fun isPullRequest(event: MessageReceivedEvent, message: String): Boolean {
+        val matcher = "https://github.com/hannibal002/SkyHanni/pull/(?<pr>\\d+)".toPattern().matcher(message)
+        if (!matcher.matches()) return false
+        val pr = matcher.group("pr")?.toIntOrNull() ?: return false
+        event.replyWithConsumer("Next time just type `!pr $pr` $PLEADING_FACE") { consumer ->
+            runDelayed(3.seconds) {
+                consumer.message.messageDelete()
+            }
+        }
+        event.loadPrInfos(pr)
+        return true
+    }
+
 }

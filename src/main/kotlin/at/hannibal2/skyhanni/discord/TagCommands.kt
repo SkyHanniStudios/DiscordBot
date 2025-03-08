@@ -101,7 +101,7 @@ class TagCommands(private val config: BotConfig, private val commands: CommandLi
     private fun MessageReceivedEvent.editLastCommand(args: List<String>) {
         val id = author.id
         val lastTag = lastTouchedTag[id] ?: run {
-            reply("No last tag found \uD83E\uDD7A")
+            reply("No last tag found $PLEADING_FACE")
             return
         }
         val response = Database.getResponse(lastTag) ?: run {
@@ -163,7 +163,7 @@ class TagCommands(private val config: BotConfig, private val commands: CommandLi
             deleting = true
         }
         val response = Database.getResponse(keyword) ?: run {
-            event.reply("Unknown command \uD83E\uDD7A Type `!help` for help.")
+            event.reply("Unknown command $PLEADING_FACE Type `!help` for help.")
             return false
         }
 
