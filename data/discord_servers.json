@@ -76,6 +76,16 @@
     }
   },
   "small mods": {
+    "scatha": {
+      "name": "Scatha Farmers",
+      "size": "8.9k",
+      "invite": "https://discord.com/invite/scatha-farmers-898827889145942056",
+      "description": "Scatha-Pro is a Chat Triggers module that helps when you mine for scathas.",
+      "aliases": [
+        "Scatha-Pro",
+        "Scatha Pro"
+      ]
+    },
     "bazaar": {
       "name": "meyi's hangout",
       "size": "5.7k",
@@ -94,6 +104,12 @@
       "aliases": [
         "ApecMod"
       ]
+    },
+    "bloom": {
+      "name": "Bloom",
+      "size": "2.7k",
+      "invite": "https://discord.com/invite/pykzREcAuZ",
+      "description": "Bloom is a Chat Triggers module."
     },
     "volc": {
       "name": "VolcAddons",
@@ -207,6 +223,13 @@
       "size": "8k",
       "invite": "https://discord.com/invite/cNgADv2kEQ",
       "description": "A profile viewer website. <https://sky.shiiyu.moe>"
+    },
+    "skyKings": {
+      "name": "SkyKings",
+      "size": "3.4k",
+      "invite": "https://discord.com/invite/skykings",
+      "description": "A leaderboard website for guilds and players. <https://skykings.net/leaderboard/>",
+      "aliases": ["sky kings", "leaderboard", "lb"]
     }
   },
   "ressource packs": {
@@ -220,11 +243,17 @@
         "FurfskyReborn"
       ]
     },
+    "packshq": {
+      "name": "Packs HQ",
+      "size": "22.5k",
+      "invite": "https://discord.com/invite/KwvMQ4T",
+      "description": "A ressource pack for SkyBlock. <https://packshq.com/content/packs/>"
+    },
     "hypixelplus": {
       "name": "Hypixel Plus",
       "size": "3.8k",
       "invite": "https://discord.gg/9pqyhhd28V",
-      "description": "A ressource pack with many SkyBlock items.",
+      "description": "A hypixel ressource pack with many SkyBlock items. <https://modrinth.com/resourcepack/hypixel-plus/>",
       "aliases": [
         "HypixelPlus",
         "Hypixel+",
@@ -320,7 +349,7 @@
       "name": "Elite Skyblock Farmers",
       "size": "31k",
       "invite": "https://discord.gg/farms",
-      "description": "A communty for the best farmers and a farming weight website. <https://elitebot.dev/>",
+      "description": "A community for the best farmers and a farming weight website. <https://elitebot.dev/>",
       "aliases": [
         "farmers",
         "EliteFarmers",
