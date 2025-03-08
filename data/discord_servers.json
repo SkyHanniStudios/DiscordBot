@@ -107,20 +107,21 @@
       ]
     },
     "pss": {
-      "name": "Partly Sane Skies",
+      "name": "Partly Sane Studios",
       "size": "700",
       "invite": "https://discord.gg/v4PU3WeH7z",
-      "description": "A SkyBlock mod.",
+      "description": "Partly Sane Skies is a SkyBlock mod.",
       "aliases": [
+        "Partly Sane Skies",
         "skies",
         "PartlySaneSkies"
       ]
     },
     "sbu": {
-      "name": "SkyBlock Utils",
+      "name": "SBU",
       "size": "600",
       "invite": "https://discord.gg/3tUSe37gZ4",
-      "description": "A SkyBlock mod.",
+      "description": "SkyBlock Utils is a SkyBlock mod.",
       "aliases": [
         "SkyBlockUtils"
       ]
@@ -168,7 +169,7 @@
       ]
     }
   },
-  "discord bot": {
+  "discord bots": {
     "sbs": {
       "name": "SkyBlock Simplified",
       "size": "107k",
@@ -188,7 +189,7 @@
       ]
     }
   },
-  "website": {
+  "websites": {
     "modrinth": {
       "name": "Modrinth",
       "size": "44k",
@@ -208,7 +209,7 @@
       "description": "A profile viewer website. <https://sky.shiiyu.moe>"
     }
   },
-  "ressource pack": {
+  "ressource packs": {
     "fsr": {
       "name": "Furfsky Reborn",
       "size": "51k",
@@ -276,7 +277,7 @@
       ]
     }
   },
-  "communities": {
+  "big communities": {
     "sbz": {
       "name": "SkyBlockZ",
       "size": "184k",
@@ -325,7 +326,9 @@
         "EliteFarmers",
         "elite"
       ]
-    },
+    }
+  },
+  "medium communities": {
     "cowshed": {
       "name": "Cowshed",
       "size": "27.2k",
@@ -398,7 +401,9 @@
         "fish",
         "blub"
       ]
-    },
+    }
+  },
+  "small communities": {
     "stranded": {
       "name": "Stranded Sweats",
       "size": "4.8k",
