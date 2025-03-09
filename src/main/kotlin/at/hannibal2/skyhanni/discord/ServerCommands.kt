@@ -85,7 +85,7 @@ class ServerCommands(private val bot: DiscordBot, commands: CommandListener) {
         }
         val count = duplicates.size
         if (count > 0) {
-            println("$count duplicate servers found!")
+            bot.logger.warn("$count duplicate servers found!")
             val message = "Found $count duplicate servers:\n${duplicates.joinToString("\n")}"
             if (startup) {
                 Utils.runDelayed(500.milliseconds) {
@@ -95,7 +95,7 @@ class ServerCommands(private val bot: DiscordBot, commands: CommandListener) {
                 bot.sendMessageToBotChannel(message)
             }
         } else {
-            println("no duplicate servers found.")
+            bot.logger.info("no duplicate servers found.")
         }
     }
 

@@ -6,9 +6,12 @@ import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.requests.GatewayIntent
+import org.slf4j.LoggerFactory
 import java.util.Scanner
 
 class DiscordBot(private val jda: JDA, val config: BotConfig) {
+    val logger = LoggerFactory.getLogger(this::class.java)
+
     var manualShutdown = false
 
     fun sendMessageToBotChannel(message: String) {
