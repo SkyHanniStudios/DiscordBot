@@ -2,6 +2,7 @@ package at.hannibal2.skyhanni.discord
 
 import at.hannibal2.skyhanni.discord.Utils.hasAdminPermissions
 import at.hannibal2.skyhanni.discord.Utils.inBotCommandChannel
+import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.messageDelete
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.Utils.replyWithConsumer
@@ -15,8 +16,7 @@ import org.reflections.Reflections
 import java.lang.reflect.Modifier
 import kotlin.time.Duration.Companion.seconds
 
-class CommandListener(private val config: BotConfig) {
-
+class CommandListener(bot: DiscordBot) {
     private val botId = "1343351725381128193"
 
     private val commands = mutableMapOf<String, BaseCommand>()
@@ -36,6 +36,11 @@ class CommandListener(private val config: BotConfig) {
     }
 
     private fun MessageReceivedEvent.onMessage(bot: DiscordBot) {
+        val message = message.contentRaw.trim()
+        if (!isFromGuild) {
+            logAction("private dm: '$message'")
+            return
+        }
         if (guild.id != bot.config.allowedServerId) return
 
         if (this.author.isBot) {
@@ -44,17 +49,16 @@ class CommandListener(private val config: BotConfig) {
             }
             return
         }
-        val content = message.contentRaw.trim()
-        if (content != "!undo") {
+        if (message != "!undo") {
             TagCommands.lastMessages.remove(this.author.id)
         }
 
-        if (serversCommands.isKnownServerUrl(this, content)) return
-        if (PullRequestCommand.isPullRequest(this, content)) return
+        if (serversCommands.isKnownServerUrl(this, message)) return
+        if (PullRequestCommand.isPullRequest(this, message)) return
 
-        if (!isCommand(content)) return
+        if (!isCommand(message)) return
 
-        val split = content.substring(1).split(" ")
+        val split = message.substring(1).split(" ")
         val literal = split[0].lowercase()
         val args = split.drop(1)
 
