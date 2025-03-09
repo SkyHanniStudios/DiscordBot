@@ -71,7 +71,6 @@ object HelpCommand : BaseCommand() {
         }
     }
 
-
     fun sendUsageReply(commandName: String, event: Any) {
         val command = CommandListener.getCommand(commandName) ?: run {
             reply("Unknown command `!$commandName` $PLEADING_FACE", event)
@@ -85,20 +84,21 @@ object HelpCommand : BaseCommand() {
 
         reply(createHelpEmbed(commandName), event)
     }
-}
 
-fun BaseCommand.createHelpEmbed(commandName: String): MessageEmbed {
-    val em = EmbedBuilder()
+    private fun BaseCommand.createHelpEmbed(commandName: String): MessageEmbed {
+        val em = EmbedBuilder()
 
-    em.setTitle("Usage: /$commandName <" + this.options.joinToString("> <") { it.name } + ">")
-    em.setDescription("📋 **${this.description}**")
-    em.setColor(Color.GREEN)
+        em.setTitle("Usage: /$commandName <" + this.options.joinToString("> <") { it.name } + ">")
+        em.setDescription("📋 **${this.description}**")
+        em.setColor(Color.GREEN)
 
-    for (option in this.options) {
-        em.addField(option.name, option.description, true)
-        em.addField("Required", if (option.required) "✅" else "❌", true)
-        em.addBlankField(true)
+        for (option in this.options) {
+            em.addField(option.name, option.description, true)
+            em.addField("Required", if (option.required) "✅" else "❌", true)
+            em.addBlankField(true)
+        }
+
+        return em.build()
     }
-
-    return em.build()
 }
+
