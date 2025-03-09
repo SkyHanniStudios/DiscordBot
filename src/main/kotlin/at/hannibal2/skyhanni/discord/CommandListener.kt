@@ -1,5 +1,6 @@
 package at.hannibal2.skyhanni.discord
 
+import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.messageDelete
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.Utils.replyWithConsumer
@@ -33,6 +34,11 @@ class CommandListener(bot: DiscordBot) {
     }
 
     private fun MessageReceivedEvent.onMessage(bot: DiscordBot) {
+        val message = message.contentRaw.trim()
+        if (!isFromGuild) {
+            logAction("private dm: '$message'")
+            return
+        }
         if (guild.id != bot.config.allowedServerId) return
 
         if (this.author.isBot) {
@@ -41,17 +47,16 @@ class CommandListener(bot: DiscordBot) {
             }
             return
         }
-        val content = message.contentRaw.trim()
-        if (content != "!undo") {
+        if (message != "!undo") {
             tagCommands.lastMessages.remove(this.author.id)
         }
 
-        if (serversCommands.isKnownServerUrl(this, content)) return
-        if (pullRequestCommands.isPullRequest(this, content)) return
+        if (serversCommands.isKnownServerUrl(this, message)) return
+        if (pullRequestCommands.isPullRequest(this, message)) return
 
-        if (!isCommand(content)) return
+        if (!isCommand(message)) return
 
-        val args = content.substring(1).split(" ")
+        val args = message.substring(1).split(" ")
         val literal = args[0].lowercase()
 
         val command = commands.find { it.name == literal } ?: run {
