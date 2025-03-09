@@ -152,6 +152,24 @@ object CommandListener {
                         .take(25)
                 ).queue()
             }
+
+            "tagedit" -> {
+                if (focusedOption.name != "keyword") return
+
+                replyChoiceStrings(
+                    Database.listKeywords().filter { it.startsWith(focusedOption.value, true) }
+                        .take(25)
+                ).queue()
+            }
+
+            "tagdelete" -> {
+                if (focusedOption.name != "keyword") return
+
+                replyChoiceStrings(
+                    Database.listKeywords().filter { it.startsWith(focusedOption.value, true) }
+                        .take(25)
+                ).queue()
+            }
         }
     }
 

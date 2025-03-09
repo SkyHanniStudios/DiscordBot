@@ -91,7 +91,7 @@ class TagEdit : BaseCommand() {
     override val name = "tagedit"
     override val description = "Edits a tag in the database."
     override val options: List<Option> = listOf(
-        Option("tag", "The tag you want to edit.", autoComplete = true),
+        Option("keyword", "The tag you want to edit.", autoComplete = true),
         Option("response", "Response you want the tag to have.")
     )
     override val aliases = listOf("tagchange")
@@ -100,13 +100,13 @@ class TagEdit : BaseCommand() {
         val keyword = doWhen(event,
             {
                 if (args.size < 2) {
-                    wrongUsage("<tag> <response>", event)
+                    wrongUsage("<keyword> <response>", event)
                     return@doWhen null
                 }
 
                 args.first()
             },
-            { it.getOption("tag")?.asString }
+            { it.getOption("keyword")?.asString }
         ) ?: return
 
         val response =
