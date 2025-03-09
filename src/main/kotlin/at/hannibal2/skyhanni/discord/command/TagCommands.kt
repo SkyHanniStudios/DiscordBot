@@ -1,11 +1,16 @@
 package at.hannibal2.skyhanni.discord.command
 
-import at.hannibal2.skyhanni.discord.*
+import at.hannibal2.skyhanni.discord.CommandListener
+import at.hannibal2.skyhanni.discord.Database
+import at.hannibal2.skyhanni.discord.Option
+import at.hannibal2.skyhanni.discord.PLEADING_FACE
+import at.hannibal2.skyhanni.discord.Utils.doWhen
 import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.messageDelete
 import at.hannibal2.skyhanni.discord.Utils.messageDeleteAndThen
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.Utils.replyWithConsumer
+import at.hannibal2.skyhanni.discord.Utils.runDelayed
 import at.hannibal2.skyhanni.discord.Utils.sendError
 import at.hannibal2.skyhanni.discord.Utils.sendMessageWithConsumer
 import at.hannibal2.skyhanni.discord.Utils.userError
@@ -35,28 +40,28 @@ object TagCommands {
             deleting = true
         }
         val response = Database.getResponse(keyword) ?: run {
-            event.reply("Unknown command $PLEADING_FACE Type `!help` for help.")
+            reply("Unknown command $PLEADING_FACE Type `!help` for help.", event)
             return false
         }
 
         val author = message.author.id
         lastTouchedTag[author] = keyword
         message.referencedMessage?.let {
-            event.logAction("used keyword '$keyword' (with reply)")
+            logAction("used keyword '$keyword' (with reply)", event)
             message.messageDelete()
             it.replyWithConsumer(response) { consumer ->
                 addLastMessage(author, consumer.message)
             }
         } ?: run {
             if (deleting) {
-                event.logAction("used keyword '$keyword' (with delete)")
+                logAction("used keyword '$keyword' (with delete)", event)
                 message.messageDeleteAndThen {
                     event.channel.sendMessageWithConsumer(response) { consumer ->
                         addLastMessage(author, consumer.message)
                     }
                 }
             } else {
-                event.logAction("used keyword '$keyword'")
+                logAction("used keyword '$keyword'", event)
                 addLastMessage(author, message)
                 message.replyWithConsumer(response) { consumer ->
                     addLastMessage(author, consumer.message)
@@ -74,10 +79,10 @@ class TagList : BaseCommand() {
     override val aliases = listOf("tags")
     override val userCommand: Boolean = true
 
-    override fun MessageReceivedEvent.execute(args: List<String>) {
+    override fun execute(args: List<String>, event: Any) {
         val list = Database.listKeywords()
         val keywords = list.joinToString(", !", prefix = "!")
-        reply(if (list.isNotEmpty()) "📌 All ${list.size} keywords: $keywords" else "No keywords set.")
+        reply(if (list.isNotEmpty()) "📌 All ${list.size} keywords: $keywords" else "No keywords set.", event)
     }
 }
 
@@ -86,32 +91,45 @@ class TagEdit : BaseCommand() {
     override val name = "tagedit"
     override val description = "Edits a tag in the database."
     override val options: List<Option> = listOf(
-        Option("tag", "The tag you want to edit."),
+        Option("tag", "The tag you want to edit.", autoComplete = true),
         Option("response", "Response you want the tag to have.")
     )
     override val aliases = listOf("tagchange")
 
-    override fun MessageReceivedEvent.execute(args: List<String>) {
-        if (args.size < 2) return wrongUsage("<tag> <response>")
-        val keyword = args.first()
-        val response = args.drop(1).joinToString(" ")
+    override fun execute(args: List<String>, event: Any) {
+        val keyword = doWhen(event,
+            {
+                if (args.size < 2) {
+                    wrongUsage("<tag> <response>", event)
+                    return@doWhen null
+                }
+
+                args.first()
+            },
+            { it.getOption("tag")?.asString }
+        ) ?: return
+
+        val response =
+            doWhen(event, { args.drop(1).joinToString(" ") }, { it.getOption("response")?.asString }) ?: return
+
         val oldResponse = Database.getResponse(keyword)
         if (oldResponse == null) {
-            userError("❌ Keyword doesn't exist! Use `!tagadd` instead.")
+            userError("Keyword doesn't exist! Use `!tagadd` instead.", event, ephemeral = true)
             return
         }
         if (Database.addKeyword(keyword, response)) {
-            message.messageDeleteAndThen {
-                val id = author.id
-                reply("✅ Keyword '$keyword' edited by <@$id>:")
-                reply(response)
-                logAction("edited keyword '$keyword'")
-                logAction("old response: '$oldResponse'", raw = true)
-                logAction("new response: '$response'", raw = true)
-                lastTouchedTag[id] = keyword
-            }
+            doWhen(event, { it.message.messageDelete() }, {})
+
+            val id = doWhen(event, { it.author.id }, { it.user.id }).toString()
+
+            reply("✅ Keyword '$keyword' edited by <@$id>:", event)
+            doWhen(event, { reply(response, it) }, { it.channel.sendMessage(response).queue() })
+            logAction("edited keyword '$keyword'", event)
+            logAction("old response: '$oldResponse'", event, raw = true)
+            logAction("new response: '$response'", event, raw = true)
+            lastTouchedTag[id] = keyword
         } else {
-            sendError("❌ Failed to edit keyword.")
+            sendError("❌ Failed to edit keyword.", event, ephemeral = true)
         }
     }
 }
@@ -121,15 +139,20 @@ class TagEditLast : BaseCommand() {
     override val name = "tageditlast"
     override val description = "Show info on how to edit the last tag used."
 
-    override fun MessageReceivedEvent.execute(args: List<String>) {
-        val id = author.id
+    override fun execute(args: List<String>, event: Any) {
+        val id = doWhen(event, { it.author.id }, { it.user.id }).toString()
+
         val lastTag = lastTouchedTag[id] ?: run {
-            return userError("No last tag found $PLEADING_FACE")
+            return userError("No last tag found $PLEADING_FACE", event, ephemeral = true)
         }
         val response = Database.getResponse(lastTag) ?: run {
-            return sendError("Last tag `$lastTag` got deleted, this should not happen, therefore we ping <@239858538959077376>")
+            return sendError(
+                "Last tag `$lastTag` got deleted, this should not happen, therefore we ping <@239858538959077376>",
+                event,
+                ephemeral = true
+            )
         }
-        reply("```!tagedit $lastTag $response```")
+        reply("```!tagedit $lastTag $response```", event, ephemeral = true)
     }
 }
 
@@ -143,26 +166,42 @@ class TagAdd : BaseCommand() {
     )
     override val aliases = listOf("tagcreate")
 
-    override fun MessageReceivedEvent.execute(args: List<String>) {
-        if (args.size < 2) return wrongUsage("<keyword> <response>")
-        val keyword = args.first()
+    override fun execute(args: List<String>, event: Any) {
+        val keyword = doWhen(event, {
+            if (args.size < 2) {
+                wrongUsage("<keyword> <response>", event)
+                return@doWhen null
+            }
+            args.first()
+        }, {
+            it.getOption("keyword")?.asString
+        }) ?: return
+
+
         if (CommandListener.existsCommand(keyword)) {
-            return userError("❌ Can not create keyword `!$keyword`. There is already a command with that name")
+            return userError(
+                "Can not create keyword `!$keyword`. There is already a command with that name",
+                event,
+                ephemeral = true
+            )
         }
-        val response = args.drop(1).joinToString(" ")
+        val response =
+            doWhen(event, { args.drop(1).joinToString(" ") }, { it.getOption("response")?.asString }) ?: return
+
         if (Database.containsKeyword(keyword)) {
-            return userError("❌ Keyword already exists. Use `!tagedit` instead.")
+            return userError("Keyword already exists. Use `!tagedit` instead.", event, ephemeral = true)
         }
         if (Database.addKeyword(keyword, response)) {
-            message.messageDeleteAndThen {
-                reply("✅ Keyword '$keyword' added by ${author.asMention}:")
-                reply(response)
-                logAction("added keyword '$keyword'")
-                logAction("response: '$response'", raw = true)
-                lastTouchedTag[author.id] = keyword
-            }
+            doWhen(event, { it.message.messageDelete() }, {})
+            val author = doWhen(event, { it.author }, { it.user }) ?: return
+
+            reply("✅ Keyword '$keyword' added by ${author.asMention}:", event)
+            doWhen(event, { reply(response, event) }, { it.channel.sendMessage(response).queue() })
+            logAction("added keyword '$keyword'", event)
+            logAction("response: '$response'", event, raw = true)
+            lastTouchedTag[author.id] = keyword
         } else {
-            sendError("❌ Failed to add keyword.")
+            sendError("❌ Failed to add keyword.", event, ephemeral = true)
         }
     }
 }
@@ -172,25 +211,32 @@ class TagDelete : BaseCommand() {
     override val name: String = "tagdelete"
     override val description: String = "Deletes a tag from the database."
     override val options: List<Option> = listOf(
-        Option("keyword", "Keyword of the tag you want to delete.")
+        Option("keyword", "Keyword of the tag you want to delete.", autoComplete = true)
     )
     override val aliases: List<String> = listOf("tagremove")
 
-    override fun MessageReceivedEvent.execute(args: List<String>) {
-        if (args.isEmpty()) return wrongUsage("<keyword>")
-        val keyword = args.first()
+    override fun execute(args: List<String>, event: Any) {
+        val keyword = doWhen(event, {
+            if (args.isEmpty()) {
+                wrongUsage("<keyword>", event)
+                return@doWhen null
+            }
+
+            args.first()
+        }, { it.getOption("keyword")?.asString }) ?: return
+
         val oldResponse = Database.getResponse(keyword)
+
         if (Database.deleteKeyword(keyword)) {
-            reply("🗑️ Keyword '$keyword' deleted!")
-            logAction("deleted keyword '$keyword'")
-            logAction("response was: '$oldResponse'", raw = true)
-            val id = author.id
+            reply("🗑️ Keyword '$keyword' deleted!", event)
+            logAction("deleted keyword '$keyword'", event)
+            logAction("response was: '$oldResponse'", event, raw = true)
+            val id = doWhen(event, { it.author.id }, { it.user.id })
             lastTouchedTag.remove(id)
         } else {
-            userError("❌ Keyword '$keyword' not found.")
+            userError("Keyword '$keyword' not found.", event, ephemeral = true)
         }
     }
-
 }
 
 @Suppress("unused")
@@ -200,32 +246,36 @@ class TagUndo : BaseCommand() {
     override val userCommand: Boolean = true
     override val aliases: List<String> = listOf("undo")
 
-    override fun MessageReceivedEvent.execute(args: List<String>) {
-        val author = author.id
-        val message = message
+    override fun execute(args: List<String>, event: Any) {
+        val author = doWhen(event, { it.author.id }, { it.user.id }) ?: return
         if (undo(author)) {
-            logAction("undid last send tag.")
+            logAction("undid last send tag.", event)
             lastTouchedTag.remove(author)
-            message.messageDelete()
+            doWhen(event, { it.message.messageDelete() }, { reply("Undid last sent tag.", event, ephemeral = true) })
         } else {
-            addLastMessage(author, message)
-            message.replyWithConsumer("No last tag to undo found!") { consumer ->
-                addLastMessage(author, consumer.message)
-            }
-            Utils.runDelayed(2.seconds) {
-                undo(author)
-            }
+            doWhen(
+                event, {
+                    addLastMessage(author, it.message)
+                    it.message.replyWithConsumer("No last tag to undo found!") { consumer ->
+                        addLastMessage(author, consumer.message)
+                    }
+                    runDelayed(2.seconds) {
+                        undo(author)
+                    }
+                }, {
+                    sendError("No last tag to undo found!", event)
+                }
+            )
         }
     }
+}
 
-    private fun undo(author: String): Boolean {
-        return lastMessages[author]?.let {
-            for (message in it) {
-                message.messageDelete()
-            }
-            lastMessages.remove(author)
-            true
-        } ?: false
-    }
-
+fun undo(author: String): Boolean {
+    return lastMessages[author]?.let {
+        for (message in it) {
+            message.messageDelete()
+        }
+        lastMessages.remove(author)
+        true
+    } ?: false
 }

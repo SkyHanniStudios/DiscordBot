@@ -3,6 +3,7 @@ package at.hannibal2.skyhanni.discord.command
 import at.hannibal2.skyhanni.discord.BOT
 import at.hannibal2.skyhanni.discord.Option
 import at.hannibal2.skyhanni.discord.Utils
+import at.hannibal2.skyhanni.discord.Utils.doWhen
 import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.Utils.sendMessageToBotChannel
@@ -11,6 +12,7 @@ import at.hannibal2.skyhanni.discord.github.GitHubClient
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.interactions.commands.OptionType
 import kotlin.time.Duration.Companion.milliseconds
 
 object ServerCommands {
@@ -115,7 +117,7 @@ object ServerCommands {
         }
     }
 
-    internal fun getServer(name: String): Server? {
+    fun getServer(name: String): Server? {
         for (server in servers) {
             if (server.keyword.equals(name, ignoreCase = true)) {
                 return server
@@ -138,13 +140,24 @@ object ServerCommands {
     fun isKnownServerUrl(event: MessageReceivedEvent, message: String): Boolean {
         val server = getServerByInviteUrl(message) ?: run {
             if (isDiscordInvite(message)) {
-                event.logAction("sends unknown discord invite '$message'")
+                logAction("sends unknown discord invite '$message'", event)
             }
             return false
         }
 
-        event.reply(server.print(tutorial = true))
+        reply(server.print(tutorial = true), event)
         return true
+    }
+
+    fun listServers(): String {
+        if (servers.isEmpty()) return "No servers found."
+
+        val list = servers.joinToString("\n") { server ->
+            val aliases = server.aliases
+            if (aliases.isNotEmpty()) "${server.keyword} [${aliases.joinToString(", ")}]"
+            else server.keyword
+        }
+        return "Server list:\n$list"
     }
 }
 
@@ -153,26 +166,37 @@ class ServerCommand : BaseCommand() {
     override val name: String = "server"
     override val description: String = "Displays information about a server from our 'useful server list'."
     override val options: List<Option> = listOf(
-        Option("keyword", "Keyword of the server you want to display."),
-        Option("debug", "Display even more useful information (-d to use).", required = false)
+        Option("keyword", "Keyword of the server you want to display.", autoComplete = true),
+        Option(
+            "debug",
+            "Display even more useful information (-d to use).",
+            required = false,
+            type = OptionType.BOOLEAN
+        )
     )
     override val userCommand: Boolean = true
 
-    override fun MessageReceivedEvent.execute(args: List<String>) {
-        if (args.size !in 1..2) {
-            wrongUsage("<keyword>")
-        }
-        val keyword = args.first()
-        val debug = args.getOrNull(1) == "-d"
+    override fun execute(args: List<String>, event: Any) {
+        val keyword = doWhen(event, {
+            if (args.size !in 1..2) {
+                wrongUsage("<keyword>", event)
+            }
+
+            args.first()
+        }, {
+            it.getOption("keyword")?.asString
+        }) ?: return
+
+
+        val debug = doWhen(event, { args.getOrNull(1) == "-d" }, { it.getOption("debug")?.asBoolean == true }) ?: false
         val server = ServerCommands.getServer(keyword.lowercase())
         if (server == null) {
-            userError("Server with keyword '$keyword' not found.")
+            userError("Server with keyword '$keyword' not found.", event, ephemeral = true)
             return
         }
-        if (debug) reply(server.printDebug())
-        else reply(server.print())
+        if (debug) reply(server.printDebug(), event)
+        else reply(server.print(), event)
     }
-
 }
 
 @Suppress("unused")
@@ -181,12 +205,14 @@ class ServerUpdate : BaseCommand() {
     override val description: String = "Updates the server list."
     override val aliases: List<String> = listOf("updateservers")
 
-    override fun MessageReceivedEvent.execute(args: List<String>) {
+    override fun execute(args: List<String>, event: Any) {
         ServerCommands.loadServers(startup = false)
-        reply("Updated server list from [GitHub](<https://github.com/SkyHanniStudios/DiscordBot/blob/master/data/discord_servers.json>).")
-        logAction("updated server list from github")
+        reply(
+            "Updated server list from [GitHub](<https://github.com/SkyHanniStudios/DiscordBot/blob/master/data/discord_servers.json>).",
+            event
+        )
+        logAction("updated server list from github", event)
     }
-
 }
 
 @Suppress("unused")
@@ -195,16 +221,7 @@ class ServerList : BaseCommand() {
     override val description: String = "Displays all servers in the database."
     override val aliases: List<String> = listOf("servers")
 
-    override fun MessageReceivedEvent.execute(args: List<String>) {
-        if (ServerCommands.servers.isEmpty()) {
-            reply("No servers found.")
-            return
-        }
-        val list = ServerCommands.servers.joinToString("\n") { server ->
-            val aliases = server.aliases
-            if (aliases.isNotEmpty()) "${server.keyword} [${aliases.joinToString(", ")}]"
-            else server.keyword
-        }
-        reply("Server list:\n$list")
+    override fun execute(args: List<String>, event: Any) {
+        reply(ServerCommands.listServers(), event, ephemeral = true)
     }
 }
