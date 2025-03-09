@@ -7,7 +7,18 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.requests.GatewayIntent
 import java.util.Scanner
 
-class DiscordBot(val config: BotConfig, private val commands: CommandListener) : ListenerAdapter() {
+object DiscordBot : ListenerAdapter() {
+
+    lateinit var config: BotConfig
+        private set
+
+    fun setConfig(config: BotConfig): DiscordBot {
+        this.config = config
+        this.commands = CommandListener(config)
+        return this
+    }
+    private lateinit var commands: CommandListener
+
     override fun onMessageReceived(event: MessageReceivedEvent) {
         commands.onMessage(this, event)
     }
@@ -16,10 +27,9 @@ class DiscordBot(val config: BotConfig, private val commands: CommandListener) :
 fun main() {
     val config = ConfigLoader.load("config.json")
     val token = config.token
-    val commands = CommandListener(config)
 
     val jda = JDABuilder.createDefault(token)
-        .addEventListeners(DiscordBot(config, commands))
+        .addEventListeners(DiscordBot.setConfig(config))
         .enableIntents(GatewayIntent.MESSAGE_CONTENT)
         .build()
     jda.awaitReady()

@@ -24,6 +24,15 @@ object Utils {
         message.messageReply(text)
     }
 
+    fun MessageReceivedEvent.userError(text: String) {
+        message.messageReply("❌ $text")
+    }
+
+    fun MessageReceivedEvent.sendError(text: String) {
+        message.messageReply("❌ An error occurred: $text")
+        logAction("Error: $text")
+    }
+
     fun MessageReceivedEvent.reply(embed: MessageEmbed) {
         message.messageReply(embed)
     }

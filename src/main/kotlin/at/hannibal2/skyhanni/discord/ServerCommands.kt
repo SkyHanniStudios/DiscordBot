@@ -5,6 +5,7 @@ import at.hannibal2.skyhanni.discord.Utils.messageDeleteAndThen
 import at.hannibal2.skyhanni.discord.Utils.reply
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
+
 @Suppress("UNUSED_PARAMETER")
 class ServerCommands(private val config: BotConfig, commands: CommandListener) {
     init {
