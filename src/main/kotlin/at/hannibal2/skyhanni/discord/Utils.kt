@@ -1,14 +1,15 @@
 package at.hannibal2.skyhanni.discord
 
 import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.utils.FileUpload
-import org.slf4j.LoggerFactory
 import java.awt.Color
 import java.io.File
 import java.util.zip.ZipFile
@@ -18,19 +19,45 @@ import kotlin.time.Duration.Companion.nanoseconds
 @Suppress("MemberVisibilityCanBePrivate", "TooManyFunctions")
 object Utils {
 
-    private val logger = LoggerFactory.getLogger(DiscordBot::class.java)
+    private inline val logger get() = BOT.logger
 
-    fun MessageReceivedEvent.reply(text: String) {
-        message.messageReply(text)
+    fun reply(text: String, event: Any, ephemeral: Boolean = false) {
+        doWhen(event, {
+            it.message.messageReply(text)
+        }, {
+            it.reply(text).setEphemeral(ephemeral).queue()
+        })
     }
 
-    fun MessageReceivedEvent.reply(embed: MessageEmbed) {
-        message.messageReply(embed)
+    fun reply(embed: MessageEmbed, event: Any, ephemeral: Boolean = false) {
+        doWhen(event, {
+            it.message.messageReply(embed)
+        }, {
+            it.replyEmbeds(embed).setEphemeral(ephemeral).queue()
+        })
+    }
+
+    fun userError(text: String, event: Any, ephemeral: Boolean = true) {
+        doWhen(event, {
+            it.message.messageReply("❌ $text")
+        }, {
+            it.reply("❌ $text").setEphemeral(ephemeral).queue()
+        })
+    }
+
+    fun sendError(text: String, event: Any, ephemeral: Boolean = true) {
+        doWhen(event, {
+            it.message.messageReply("❌ $text")
+        }, {
+            it.reply("❌ $text").setEphemeral(ephemeral).queue()
+        })
+
+        logAction("Error: $text", event)
     }
 
     fun MessageReceivedEvent.replyWithConsumer(text: String, consumer: (MessageReceivedEvent) -> Unit) {
         BotMessageHandler.log(text, consumer)
-        reply(text)
+        reply(text, this)
     }
 
     fun Message.messageDelete() {
@@ -65,22 +92,71 @@ object Utils {
         messageSend(text)
     }
 
-    fun MessageReceivedEvent.logAction(action: String, raw: Boolean = false) {
+    fun sendMessageToBotChannel(text: String) {
+        BOT.jda.getTextChannelById(BOT.config.botCommandChannelId)?.messageSend(text)
+    }
+
+    fun logAction(action: String, event: Any, raw: Boolean = false) {
+        val author = when (event) {
+            is MessageReceivedEvent -> event.author
+            is SlashCommandInteractionEvent -> event.user
+            else -> throw IllegalArgumentException("Unknown event type")
+        }
+
+        val member = when (event) {
+            is MessageReceivedEvent -> event.member
+            is SlashCommandInteractionEvent -> event.member
+            else -> throw IllegalArgumentException("Unknown event type")
+        }
+
+        val channel = when (event) {
+            is MessageReceivedEvent -> event.channel
+            is SlashCommandInteractionEvent -> event.channel
+            else -> throw IllegalArgumentException("Unknown event type")
+        }
+
         if (raw) {
             logger.info(action)
             return
         }
+
         val name = author.name
         val id = author.id
+        val nickString = member?.nickname?.takeIf { it != "null" }?.let { " (`$it`)" } ?: ""
+        val isFromGuild =
+            (event as? MessageReceivedEvent)?.isFromGuild ?: (event as? SlashCommandInteractionEvent)?.isFromGuild
+            ?: false
+        val channelSuffix = if (isFromGuild) " in channel '${channel.name}'" else ""
 
-        val nick = member?.nickname?.takeIf { it != "null" }
-        val nickString = nick?.let { " (`$nick`)" } ?: ""
-
-        val channelSuffix = if (isFromGuild) {
-            val channelName = channel.name
-            " in channel '$channelName'"
-        } else ""
         logger.info("$id/$name$nickString $action$channelSuffix")
+    }
+
+    fun hasAdminPermissions(event: Any): Boolean {
+        val member = doWhen(
+            event,
+            { it.member },
+            { it.member }
+        ) as Member
+
+        val allowedRoleIds = BOT.config.editPermissionRoleIds.values
+        return !member.roles.none { it.id in allowedRoleIds }
+    }
+
+    fun <T> doWhen(
+        event: Any,
+        consumer: (MessageReceivedEvent) -> T?,
+        consumer2: (SlashCommandInteractionEvent) -> T?
+    ): T? {
+        return when (event) {
+            is MessageReceivedEvent -> consumer(event)
+            is SlashCommandInteractionEvent -> consumer2(event)
+            else -> null
+        }
+    }
+
+    fun inBotCommandChannel(event: Any): Boolean {
+        val id = doWhen(event, { it.channel.id }, { it.channel.id })
+        return id == BOT.config.botCommandChannelId
     }
 
     fun runDelayed(duration: Duration, consumer: () -> Unit) {
