@@ -14,10 +14,10 @@ import okhttp3.Response
 import okhttp3.ResponseBody
 import java.io.File
 
-class GitHubClient(owner: String, repo: String, private val token: String) {
+class GitHubClient(user: String, repo: String, private val token: String) {
     private val client = OkHttpClient()
     private val gson = Gson()
-    private val base = "https://api.github.com/repos/$owner/$repo"
+    private val base = "https://api.github.com/repos/$user/$repo"
 
     fun findArtifact(lastCommit: String): Artifact? {
         return readJson<ArtifactResponse, Artifact?>("$base/actions/artifacts") { response ->

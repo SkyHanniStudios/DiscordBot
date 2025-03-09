@@ -26,7 +26,10 @@ import kotlin.time.Duration.Companion.seconds
 @Suppress("ReturnCount")
 class PullRequestCommands(config: BotConfig, commands: CommandListener) {
 
-    private val github = GitHubClient("hannibal002", "SkyHanni", config.githubToken)
+    private val user = "hannibal002"
+    private val repo = "SkyHanni"
+    private val github = GitHubClient(user, repo, config.githubToken)
+    private val base = "https://github.com/$user/$repo"
 
     init {
         commands.add(Command("pr", userCommand = true) { event, args -> event.pullRequestCommand(args) })
@@ -54,7 +57,7 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
     private fun MessageReceivedEvent.loadPrInfos(prNumber: Int) {
         logAction("loads pr infos for #$prNumber")
 
-        val prLink = "https://github.com/hannibal002/SkyHanni/pull/$prNumber"
+        val prLink = "$base/pull/$prNumber"
 
         val pr = try {
             github.findPullRequest(prNumber) ?: run {
@@ -63,7 +66,7 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
             }
         } catch (e: IllegalStateException) {
             if (e.message?.contains(" code:404 ") == true) {
-                val issueUrl = "https://github.com/hannibal002/SkyHanni/issues/$prNumber"
+                val issueUrl = "$base/issues/$prNumber"
                 val issue = "issue".linkTo(issueUrl)
                 val text = "This pull request does not yet exist or is an $issue"
                 reply(embed("Not found $PLEADING_FACE", text, Color.red))
@@ -122,8 +125,8 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
         val match = job.htmlUrl?.let { runIdRegex.matchEntire(it) }
         val runId = match?.groups?.get("RunId")?.value
 
-        val artifactLink = "https://github.com/hannibal002/SkyHanni/actions/runs/$runId?pr=$prNumber"
-        val nightlyLink = "https://nightly.link/hannibal002/SkyHanni/actions/runs/$runId/Development%20Build.zip"
+        val artifactLink = "$base/actions/runs/$runId?pr=$prNumber"
+        val nightlyLink = "https://nightly.link/$user/$repo/actions/runs/$runId/Development%20Build.zip"
         val artifactLine = "GitHub".linkTo(artifactLink)
         val nightlyLine = "Nightly".linkTo(nightlyLink)
 
@@ -166,7 +169,7 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
             return
         }
 
-        val prLink = "https://github.com/hannibal002/SkyHanni/pull/$prNumber"
+        val prLink = "$base/pull/$prNumber"
         reply("Looking for pr <$prLink..")
 
         val pr = github.findPullRequest(prNumber) ?: run {
@@ -197,7 +200,7 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
         Utils.unzipFile(fileRaw, fileUnzipped)
         fileRaw.delete()
 
-        val displayUrl = "https://github.com/hannibal002/SkyHanni/actions/runs/$artifactId?pr=$prNumber"
+        val displayUrl = "$base/actions/runs/$artifactId?pr=$prNumber"
 
         val modJar = findJarFile(fileUnzipped) ?: run {
             reply("mod jar not found!")
@@ -216,7 +219,7 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
     }
 
     fun isPullRequest(event: MessageReceivedEvent, message: String): Boolean {
-        val matcher = "https://github.com/hannibal002/SkyHanni/pull/(?<pr>\\d+)".toPattern().matcher(message)
+        val matcher = "$base/pull/(?<pr>\\d+)".toPattern().matcher(message)
         if (!matcher.matches()) return false
         val pr = matcher.group("pr")?.toIntOrNull() ?: return false
         event.replyWithConsumer("Next time just type `!pr $pr` $PLEADING_FACE") { consumer ->
