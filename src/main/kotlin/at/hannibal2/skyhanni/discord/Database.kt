@@ -48,4 +48,6 @@ object Database {
     }
 
     fun listKeywords(): List<String> = keywordCache.keys.toList()
+
+    fun containsKeyword(keyword: String): Boolean = keywordCache.containsKey(keyword.lowercase())
 }
