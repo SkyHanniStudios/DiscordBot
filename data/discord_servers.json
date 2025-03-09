@@ -260,7 +260,6 @@
       "invite": "https://discord.gg/9pqyhhd28V",
       "description": "A Hypixel resource pack with many SkyBlock items. <https://modrinth.com/resourcepack/hypixel-plus/>",
       "aliases": [
-        "HypixelPlus",
         "Hypixel+",
         "Hypixel +"
       ]
@@ -411,8 +410,7 @@
       "description": "Official Hunters Discord is a community focused on discovering new SkyBlock secrets.",
       "aliases": [
         "Official Hunters",
-        "Official Hunter",
-        "Hunter"
+        "Official Hunter"
       ]
     },
     "splash": {

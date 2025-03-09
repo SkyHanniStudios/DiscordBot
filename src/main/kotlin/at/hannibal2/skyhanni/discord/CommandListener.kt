@@ -10,14 +10,14 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import java.awt.Color
 import kotlin.time.Duration.Companion.seconds
 
-class CommandListener(private val config: BotConfig) {
-
+class CommandListener(bot: DiscordBot) {
     private val botId = "1343351725381128193"
 
     private val commands = mutableSetOf<Command>()
 
+    private val config = bot.config
     private val tagCommands = TagCommands(config, this)
-    private val serversCommands = ServerCommands(config, this)
+    private val serversCommands = ServerCommands(bot, this)
     private val pullRequestCommands = PullRequestCommands(config, this)
 
     init {

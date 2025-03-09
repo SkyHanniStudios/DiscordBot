@@ -6,10 +6,11 @@ import at.hannibal2.skyhanni.discord.github.GitHubClient
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import kotlin.time.Duration.Companion.milliseconds
 
 @Suppress("UNUSED_PARAMETER")
-class ServerCommands(private val config: BotConfig, commands: CommandListener) {
-    private val github = GitHubClient("SkyHanniStudios", "DiscordBot", config.githubToken)
+class ServerCommands(private val bot: DiscordBot, commands: CommandListener) {
+    private val github = GitHubClient("SkyHanniStudios", "DiscordBot", bot.config.githubToken)
 
     class Server(
         val keyword: String,
@@ -36,12 +37,11 @@ class ServerCommands(private val config: BotConfig, commands: CommandListener) {
         commands.add(Command("serverlist") { event, args -> event.serverList(args) })
         commands.add(Command("servers") { event, args -> event.serverList(args) })
 
-        loadServers()
+        loadServers(startup = true)
     }
 
-    private fun loadServers() {
-        val json = github.getFileContent("data/discord_servers.json")
-            ?: error("Error loading discord_servers")
+    private fun loadServers(startup: Boolean) {
+        val json = github.getFileContent("data/discord_servers.json") ?: error("Error loading discord_servers")
 
         // Parse JSON as a map of maps.
         val type = object : TypeToken<Map<String, Map<String, ServerJson>>>() {}.type
@@ -57,11 +57,52 @@ class ServerCommands(private val config: BotConfig, commands: CommandListener) {
                     data.aliases?.map { it.lowercase() } ?: emptyList())
             }
         }
+
+        checkForDuplicates(startup)
+    }
+
+    private fun checkForDuplicates(startup: Boolean) {
+        val keyToServers = mutableMapOf<String, MutableList<Server>>()
+        servers.forEach { server ->
+            val keys = listOf(server.keyword, server.name) + server.aliases
+            keys.forEach { key ->
+                keyToServers.getOrPut(key.lowercase()) { mutableListOf() }.add(server)
+            }
+        }
+
+        val duplicates = mutableSetOf<String>()
+        for ((key, serverList) in keyToServers.filter { it.value.size > 1 }) {
+            if (serverList.size == 2) {
+                val nameA = serverList[0].name
+                val nameB = serverList[1].name
+                if (nameA == nameB && key == nameA.lowercase()) {
+                    // skip if the  server name is the same as the key name
+                    continue
+                }
+            }
+            duplicates.add("'$key' found in ${serverList.map { it.name }}")
+            println("Duplicate key '$key' found in servers: ${serverList.map { it.name }}")
+        }
+        val count = duplicates.size
+        if (count > 0) {
+            println("$count duplicate servers found!")
+            val message = "Found $count duplicate servers:\n${duplicates.joinToString("\n")}"
+            if (startup) {
+                Utils.runDelayed(500.milliseconds) {
+                    bot.sendMessageToBotChannel(message)
+                }
+            } else {
+                bot.sendMessageToBotChannel(message)
+            }
+        } else {
+            println("no duplicate servers found.")
+        }
     }
 
     private fun MessageReceivedEvent.updateServers(args: List<String>) {
-        loadServers()
+        loadServers(startup = false)
         reply("Updated server list from [GitHub](<https://github.com/SkyHanniStudios/DiscordBot/blob/master/data/discord_servers.json>).")
+        logAction("updated server list from github")
     }
 
     private fun MessageReceivedEvent.serverCommand(args: List<String>) {
