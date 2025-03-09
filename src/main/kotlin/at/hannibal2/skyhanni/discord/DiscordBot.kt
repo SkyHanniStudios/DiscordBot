@@ -24,14 +24,14 @@ object DiscordBot : ListenerAdapter() {
     }
 }
 
+const val PLEADING_FACE = "\uD83E\uDD7A"
+
 fun main() {
     val config = ConfigLoader.load("config.json")
     val token = config.token
 
-    val jda = JDABuilder.createDefault(token)
-        .addEventListeners(DiscordBot.setConfig(config))
-        .enableIntents(GatewayIntent.MESSAGE_CONTENT)
-        .build()
+    val jda = JDABuilder.createDefault(token).addEventListeners(DiscordBot.setConfig(config))
+        .enableIntents(GatewayIntent.MESSAGE_CONTENT).build()
     jda.awaitReady()
 
     fun sendMessageToBotChannel(message: String) {

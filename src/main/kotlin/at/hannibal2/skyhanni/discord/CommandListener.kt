@@ -16,11 +16,11 @@ class CommandListener(private val config: BotConfig) {
 
     private val commands = mutableSetOf<Command>()
 
-    private var tagCommands = TagCommands(config, this)
+    private val tagCommands = TagCommands(config, this)
+    private val serversCommands = ServerCommands(config, this)
+    private val pullRequestCommands = PullRequestCommands(config, this)
 
     init {
-        ServerCommands(config, this)
-        PullRequestCommands(config, this)
         add(Command("help", userCommand = true) { event, args -> event.helpCommand(args) })
     }
 
@@ -46,6 +46,9 @@ class CommandListener(private val config: BotConfig) {
             tagCommands.lastMessages.remove(this.author.id)
         }
 
+        if (serversCommands.isKnownServerUrl(this, content)) return
+        if (pullRequestCommands.isPullRequest(this, content)) return
+
         if (!isCommand(content)) return
 
         val args = content.substring(1).split(" ")
@@ -58,12 +61,12 @@ class CommandListener(private val config: BotConfig) {
 
         if (!command.userCommand) {
             if (!hasAdminPermissions()) {
-                reply("No permissions \uD83E\uDD7A")
+                reply("No permissions $PLEADING_FACE")
                 return
             }
 
             if (!inBotCommandChannel()) {
-                reply("Wrong channel \uD83E\uDD7A")
+                reply("Wrong channel $PLEADING_FACE")
                 return
             }
         }
@@ -122,12 +125,12 @@ class CommandListener(private val config: BotConfig) {
 
     private fun MessageReceivedEvent.sendUsageReply(commandName: String) {
         val command = CommandsData.getCommand(commandName) ?: run {
-            reply("Unknown command `!$commandName` \uD83E\uDD7A")
+            reply("Unknown command `!$commandName` $PLEADING_FACE")
             return
         }
 
         if (!command.userCommand && !hasAdminPermissions()) {
-            reply("No permissions for command `!$commandName` \uD83E\uDD7A")
+            reply("No permissions for command `!$commandName` $PLEADING_FACE")
             return
         }
 

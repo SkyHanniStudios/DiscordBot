@@ -45,26 +45,20 @@ Removes the last tag message the user has sent.
 
 ### Server
 
-Shows information about another, previously defined Discord server.  
+Shows information about skyblock related Discord server.
+The list is saved as JSON in this repo under `data/discord_servers.json`.  
+We remind users when they send the server url directly that they could use `!server keyword` instead,
+and we log unknown server links to easily add them for the future.  
 
 `!server <server>`  
 Shows information about a server.  
 Allows the parameter `-d` to show debug info for this server.  
 
-`!serveradd <server> <display name> <invite url> <description>`  
-Adds a server.  
-
-`!serverdelete <server>`  
-Deletes a server.  
-
 `!serverlist`  
-Lists all servers.  
+Lists all servers.
 
-`!serveraliasadd <server> <alias>`  
-Adds an alias for a server.  
-
-`!serveraliasremove <server> <alias>`  
-Removes an alias for a server.
+`!updateservers`  
+Admin command to reload the locally stored discord servers list json file.
 
 ### Pull Request
 

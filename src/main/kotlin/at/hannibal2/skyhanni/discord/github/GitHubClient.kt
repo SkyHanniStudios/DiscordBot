@@ -13,11 +13,12 @@ import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody
 import java.io.File
+import java.util.Base64
 
-class GitHubClient(owner: String, repo: String, private val token: String) {
+class GitHubClient(user: String, repo: String, private val token: String) {
     private val client = OkHttpClient()
     private val gson = Gson()
-    private val base = "https://api.github.com/repos/$owner/$repo"
+    private val base = "https://api.github.com/repos/$user/$repo"
 
     fun findArtifact(lastCommit: String): Artifact? {
         return readJson<ArtifactResponse, Artifact?>("$base/actions/artifacts") { response ->
@@ -35,6 +36,17 @@ class GitHubClient(owner: String, repo: String, private val token: String) {
 
     fun findPullRequest(prNumber: Int): PullRequestJson? {
         return readJson<PullRequestJson, PullRequestJson?>("$base/pulls/$prNumber") { it }
+    }
+
+    fun getFileContent(filePath: String, branch: String = "master"): String? {
+        val url = "$base/contents/$filePath?ref=$branch"
+        return readJson<Map<String, Any>, String?>(url) { response ->
+            val content = response["content"] as? String
+            val encoding = response["encoding"] as? String
+            if (content != null && encoding == "base64") {
+                String(Base64.getMimeDecoder().decode(content))
+            } else null
+        }
     }
 
     fun getRun(commitSha: String, checkName: String): CheckRun? {
