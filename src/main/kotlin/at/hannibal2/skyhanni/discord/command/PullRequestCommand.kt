@@ -1,5 +1,6 @@
-package at.hannibal2.skyhanni.discord
+package at.hannibal2.skyhanni.discord.command
 
+import at.hannibal2.skyhanni.discord.*
 import at.hannibal2.skyhanni.discord.SimpleTimeMark.Companion.asTimeMark
 import at.hannibal2.skyhanni.discord.Utils.createParentDirIfNotExist
 import at.hannibal2.skyhanni.discord.Utils.embed
@@ -12,6 +13,7 @@ import at.hannibal2.skyhanni.discord.Utils.replyWithConsumer
 import at.hannibal2.skyhanni.discord.Utils.runDelayed
 import at.hannibal2.skyhanni.discord.Utils.timeExecution
 import at.hannibal2.skyhanni.discord.Utils.uploadFile
+import at.hannibal2.skyhanni.discord.Utils.userError
 import at.hannibal2.skyhanni.discord.github.GitHubClient
 import at.hannibal2.skyhanni.discord.json.discord.PullRequestJson
 import at.hannibal2.skyhanni.discord.json.discord.Status
@@ -23,41 +25,47 @@ import java.time.format.DateTimeFormatter
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
 
-@Suppress("ReturnCount")
-class PullRequestCommands(config: BotConfig, commands: CommandListener) {
+object PullRequestCommand : BaseCommand() {
 
-    private val user = "hannibal002"
-    private val repo = "SkyHanni"
-    private val github = GitHubClient(user, repo, config.githubToken)
-    private val base = "https://github.com/$user/$repo"
+    override val name: String = "pr"
 
-    init {
-        commands.add(Command("pr", userCommand = true) { event, args -> event.pullRequestCommand(args) })
-    }
+    override val description: String = "Displays useful information about a pull request on Github."
+    override val options: List<Option> = listOf(
+        Option("number", "Number of the pull request you want to display.")
+    )
+
+    override val userCommand: Boolean = true
+
+    private const val USER = "hannibal002"
+    private const val REPO = "SkyHanni"
+    private val github = GitHubClient(USER, REPO, BOT.config.githubToken)
+    private const val BASE = "https://github.com/$USER/$REPO"
 
     private val runIdRegex =
         Regex("https://github\\.com/[\\w.]+/[\\w.]+/actions/runs/(?<RunId>\\d+)/job/(?<JobId>\\d+)")
 
-    private fun MessageReceivedEvent.pullRequestCommand(args: List<String>) {
-        if (args.size != 2) {
-            reply("Usage: `!pr <number>`")
+    override fun MessageReceivedEvent.execute(args: List<String>) {
+        if (args.size != 1) {
+            wrongUsage("<number>")
             return
         }
-        val prNumber = args[1].toIntOrNull() ?: run {
-            reply("unknown number $PLEADING_FACE (${args[1]})")
+        val first = args.first()
+        val prNumber = first.toIntOrNull() ?: run {
+            userError("Unknown number $PLEADING_FACE ($first})")
             return
         }
         if (prNumber < 1) {
-            reply("PR number needs to be positive $PLEADING_FACE")
+            userError("PR number needs to be positive $PLEADING_FACE")
             return
         }
         loadPrInfos(prNumber)
     }
 
+
     private fun MessageReceivedEvent.loadPrInfos(prNumber: Int) {
         logAction("loads pr infos for #$prNumber")
 
-        val prLink = "$base/pull/$prNumber"
+        val prLink = "$BASE/pull/$prNumber"
 
         val pr = try {
             github.findPullRequest(prNumber) ?: run {
@@ -66,7 +74,7 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
             }
         } catch (e: IllegalStateException) {
             if (e.message?.contains(" code:404 ") == true) {
-                val issueUrl = "$base/issues/$prNumber"
+                val issueUrl = "$BASE/issues/$prNumber"
                 val issue = "issue".linkTo(issueUrl)
                 val text = "This pull request does not yet exist or is an $issue"
                 reply(embed("Not found $PLEADING_FACE", text, Color.red))
@@ -125,8 +133,8 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
         val match = job.htmlUrl?.let { runIdRegex.matchEntire(it) }
         val runId = match?.groups?.get("RunId")?.value
 
-        val artifactLink = "$base/actions/runs/$runId?pr=$prNumber"
-        val nightlyLink = "https://nightly.link/$user/$repo/actions/runs/$runId/Development%20Build.zip"
+        val artifactLink = "$BASE/actions/runs/$runId?pr=$prNumber"
+        val nightlyLink = "https://nightly.link/$USER/$REPO/actions/runs/$runId/Development%20Build.zip"
         val artifactLine = "GitHub".linkTo(artifactLink)
         val nightlyLine = "Nightly".linkTo(nightlyLink)
 
@@ -144,7 +152,7 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
         reply(embed(embedTitle, "$title$time$artifactDisplay", readColor(pr)))
     }
 
-    // colors picked from github
+    // Colors picked from GitHub
     private fun readColor(pr: PullRequestJson): Color = when {
         pr.draft -> Color(101, 108, 118)
         pr.merged -> Color(130, 86, 208)
@@ -169,7 +177,7 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
             return
         }
 
-        val prLink = "$base/pull/$prNumber"
+        val prLink = "$BASE/pull/$prNumber"
         reply("Looking for pr <$prLink..")
 
         val pr = github.findPullRequest(prNumber) ?: run {
@@ -200,7 +208,7 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
         Utils.unzipFile(fileRaw, fileUnzipped)
         fileRaw.delete()
 
-        val displayUrl = "$base/actions/runs/$artifactId?pr=$prNumber"
+        val displayUrl = "$BASE/actions/runs/$artifactId?pr=$prNumber"
 
         val modJar = findJarFile(fileUnzipped) ?: run {
             reply("mod jar not found!")
@@ -219,7 +227,7 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
     }
 
     fun isPullRequest(event: MessageReceivedEvent, message: String): Boolean {
-        val matcher = "$base/pull/(?<pr>\\d+)".toPattern().matcher(message)
+        val matcher = "$BASE/pull/(?<pr>\\d+)".toPattern().matcher(message)
         if (!matcher.matches()) return false
         val pr = matcher.group("pr")?.toIntOrNull() ?: return false
         event.replyWithConsumer("Next time just type `!pr $pr` $PLEADING_FACE") { consumer ->

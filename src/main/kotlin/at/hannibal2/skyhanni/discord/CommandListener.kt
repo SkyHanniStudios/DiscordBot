@@ -1,32 +1,25 @@
 package at.hannibal2.skyhanni.discord
 
+import at.hannibal2.skyhanni.discord.Utils.hasAdminPermissions
+import at.hannibal2.skyhanni.discord.Utils.inBotCommandChannel
 import at.hannibal2.skyhanni.discord.Utils.logAction
-import at.hannibal2.skyhanni.discord.Utils.messageDelete
 import at.hannibal2.skyhanni.discord.Utils.reply
-import at.hannibal2.skyhanni.discord.Utils.replyWithConsumer
-import at.hannibal2.skyhanni.discord.Utils.runDelayed
-import net.dv8tion.jda.api.EmbedBuilder
-import net.dv8tion.jda.api.entities.MessageEmbed
+import at.hannibal2.skyhanni.discord.command.*
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
-import java.awt.Color
-import kotlin.time.Duration.Companion.seconds
+import org.reflections.Reflections
+import java.lang.reflect.Modifier
 
-class CommandListener(bot: DiscordBot) {
-    private val botId = "1343351725381128193"
+object CommandListener {
+    private const val BOT_ID = "1343351725381128193"
 
-    private val commands = mutableSetOf<Command>()
+    private val commands = mutableMapOf<String, BaseCommand>()
+    private val commandsAliases = mutableMapOf<String, BaseCommand>()
 
-    private val config = bot.config
-    private val tagCommands = TagCommands(config, this)
-    private val serversCommands = ServerCommands(bot, this)
-    private val pullRequestCommands = PullRequestCommands(config, this)
+    fun getCommands(): Collection<BaseCommand> = commands.values
 
-    init {
-        add(Command("help", userCommand = true) { event, args -> event.helpCommand(args) })
-    }
-
-    fun add(element: Command) {
-        commands.add(element)
+    fun init() {
+        loadCommands()
+        loadAliases()
     }
 
     fun onMessage(bot: DiscordBot, event: MessageReceivedEvent) {
@@ -42,25 +35,26 @@ class CommandListener(bot: DiscordBot) {
         if (guild.id != bot.config.allowedServerId) return
 
         if (this.author.isBot) {
-            if (this.author.id == botId) {
+            if (this.author.id == BOT_ID) {
                 BotMessageHandler.handle(this)
             }
             return
         }
         if (message != "!undo") {
-            tagCommands.lastMessages.remove(this.author.id)
+            TagCommands.lastMessages.remove(this.author.id)
         }
 
-        if (serversCommands.isKnownServerUrl(this, message)) return
-        if (pullRequestCommands.isPullRequest(this, message)) return
+        if (ServerCommands.isKnownServerUrl(this, message)) return
+        if (PullRequestCommand.isPullRequest(this, message)) return
 
         if (!isCommand(message)) return
 
-        val args = message.substring(1).split(" ")
-        val literal = args[0].lowercase()
+        val split = message.substring(1).split(" ")
+        val literal = split[0].lowercase()
+        val args = split.drop(1)
 
-        val command = commands.find { it.name == literal } ?: run {
-            tagCommands.handleTag(this)
+        val command = getCommand(literal) ?: run {
+            TagCommands.handleTag(this)
             return
         }
 
@@ -77,14 +71,18 @@ class CommandListener(bot: DiscordBot) {
         }
 
         // allows to use `!<command> -help` instaed of `!help -<command>`
-        if (args.size == 2) {
-            if (args[1] == "-help") {
-                sendUsageReply(literal)
+        if (args.size == 1) {
+            if (args.first() == "-help") {
+                with(HelpCommand) {
+                    this@onMessage.sendUsageReply(literal)
+                }
                 return
             }
         }
         try {
-            command.consumer(this, args)
+            with(command) {
+                this@onMessage.execute(args)
+            }
         } catch (e: Exception) {
             reply("Error: ${e.message}")
         }
@@ -97,78 +95,35 @@ class CommandListener(bot: DiscordBot) {
         return commandPattern.matcher(message).matches()
     }
 
-    private fun MessageReceivedEvent.inBotCommandChannel() = channel.id == config.botCommandChannelId
+    fun getCommand(name: String): BaseCommand? = commands[name] ?: commandsAliases[name]
 
-    private fun MessageReceivedEvent.helpCommand(args: List<String>) {
-        if (args.size > 2) {
-            reply("Usage: !help <command>")
-            return
-        }
+    fun existsCommand(name: String): Boolean = getCommand(name) != null
 
-        if (args.size == 2) {
-            sendUsageReply(args[1].lowercase())
-        } else {
-            val commands = if (hasAdminPermissions() && inBotCommandChannel()) {
-                commands
-            } else {
-                commands.filter { it.userCommand }
-            }
-            val list = commands.joinToString(", !", prefix = "!") { it.name }
-            reply("Supported commands: $list")
-
-            if (hasAdminPermissions() && !inBotCommandChannel()) {
-                val id = config.botCommandChannelId
-                val botCommandChannel = "https://discord.com/channels/$id/$id"
-                replyWithConsumer("You wanna see the cool admin only commands? visit $botCommandChannel") { consumer ->
-                    runDelayed(3.seconds) {
-                        consumer.message.messageDelete()
-                    }
-                }
+    private fun loadCommands() {
+        val reflections = Reflections("at.hannibal2")
+        val classes: Set<Class<out BaseCommand>> = reflections.getSubTypesOf(BaseCommand::class.java)
+        for (clazz in classes) {
+            try {
+                if (Modifier.isAbstract(clazz.modifiers)) continue
+                val command = clazz.kotlin.objectInstance ?: clazz.getConstructor().newInstance()
+                require(command.name !in commands) { "Duplicate command name: ${command.name}" }
+                commands[command.name] = command
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }
 
-    private fun MessageReceivedEvent.sendUsageReply(commandName: String) {
-        val command = CommandsData.getCommand(commandName) ?: run {
-            reply("Unknown command `!$commandName` $PLEADING_FACE")
-            return
+
+    private fun loadAliases() {
+        for (command in commands.values) {
+            for (alias in command.aliases) {
+                require(alias !in commandsAliases) { "Duplicate command alias: $alias" }
+                require(alias !in commands) { "Duplicate command alias: $alias" }
+                commandsAliases[alias] = command
+            }
         }
-
-        if (!command.userCommand && !hasAdminPermissions()) {
-            reply("No permissions for command `!$commandName` $PLEADING_FACE")
-            return
-        }
-
-        this.reply(command.createHelpEmbed(commandName))
-    }
-
-    private fun MessageReceivedEvent.hasAdminPermissions(): Boolean {
-        val member = member ?: return false
-        val allowedRoleIds = config.editPermissionRoleIds.values
-        return !member.roles.none { it.id in allowedRoleIds }
-    }
-
-    fun existCommand(text: String): Boolean = commands.find { it.name.equals(text, ignoreCase = true) } != null
-
-    private fun CommandData.createHelpEmbed(commandName: String): MessageEmbed {
-        val em = EmbedBuilder()
-
-        em.setTitle("Usage: /$commandName <" + this.options.joinToString("> <") { it.name } + ">")
-        em.setDescription("📋 **${this.description}**")
-        em.setColor(Color.GREEN)
-
-        for (option in this.options) {
-            em.addField(option.name, option.description, true)
-            em.addField("Required", if (option.required) "✅" else "❌", true)
-            em.addBlankField(true)
-        }
-
-        return em.build()
     }
 }
 
-class Command(
-    val name: String,
-    val userCommand: Boolean = false,
-    val consumer: (MessageReceivedEvent, List<String>) -> Unit,
-)
+data class Option(val name: String, val description: String, val required: Boolean = true)
