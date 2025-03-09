@@ -146,7 +146,7 @@ class TagAdd : BaseCommand() {
     override fun MessageReceivedEvent.execute(args: List<String>) {
         if (args.size < 2) return wrongUsage("<keyword> <response>")
         val keyword = args.first()
-        if (DiscordBot.commands.existsCommand(keyword)) {
+        if (CommandListener.existsCommand(keyword)) {
             return userError("❌ Can not create keyword `!$keyword`. There is already a command with that name")
         }
         val response = args.drop(1).joinToString(" ")

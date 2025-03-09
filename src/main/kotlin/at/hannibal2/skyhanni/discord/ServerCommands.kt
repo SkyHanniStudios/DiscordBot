@@ -10,7 +10,7 @@ import kotlin.time.Duration.Companion.milliseconds
 
 
 @Suppress("UNUSED_PARAMETER")
-class ServerCommands(private val bot: DiscordBot, commands: CommandListener) {
+class ServerCommands(commands: CommandListener) {
     private val github = GitHubClient("SkyHanniStudios", "DiscordBot", bot.config.githubToken)
 
     class Server(

@@ -38,7 +38,7 @@ object PullRequestCommand : BaseCommand() {
 
     private const val USER = "hannibal002"
     private const val REPO = "SkyHanni"
-    private val github = GitHubClient(USER, REPO, DiscordBot.config.githubToken)
+    private val github = GitHubClient(USER, REPO, BOT.config.githubToken)
     private const val BASE = "https://github.com/$USER/$REPO"
 
     private val runIdRegex =

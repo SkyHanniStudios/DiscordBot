@@ -3,10 +3,7 @@ package at.hannibal2.skyhanni.discord
 import at.hannibal2.skyhanni.discord.Utils.hasAdminPermissions
 import at.hannibal2.skyhanni.discord.Utils.inBotCommandChannel
 import at.hannibal2.skyhanni.discord.Utils.logAction
-import at.hannibal2.skyhanni.discord.Utils.messageDelete
 import at.hannibal2.skyhanni.discord.Utils.reply
-import at.hannibal2.skyhanni.discord.Utils.replyWithConsumer
-import at.hannibal2.skyhanni.discord.Utils.runDelayed
 import at.hannibal2.skyhanni.discord.command.BaseCommand
 import at.hannibal2.skyhanni.discord.command.HelpCommand
 import at.hannibal2.skyhanni.discord.command.PullRequestCommand
@@ -14,19 +11,18 @@ import at.hannibal2.skyhanni.discord.command.TagCommands
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.reflections.Reflections
 import java.lang.reflect.Modifier
-import kotlin.time.Duration.Companion.seconds
 
-class CommandListener(bot: DiscordBot) {
-    private val botId = "1343351725381128193"
+object CommandListener {
+    private const val BOT_ID = "1343351725381128193"
 
     private val commands = mutableMapOf<String, BaseCommand>()
     private val commandsAliases = mutableMapOf<String, BaseCommand>()
 
     fun getCommands(): Collection<BaseCommand> = commands.values
 
-    private val serversCommands = ServerCommands(config, this)
+    private val serversCommands = ServerCommands(this)
 
-    init {
+    fun init() {
         loadCommands()
         loadAliases()
     }
@@ -44,7 +40,7 @@ class CommandListener(bot: DiscordBot) {
         if (guild.id != bot.config.allowedServerId) return
 
         if (this.author.isBot) {
-            if (this.author.id == botId) {
+            if (this.author.id == BOT_ID) {
                 BotMessageHandler.handle(this)
             }
             return

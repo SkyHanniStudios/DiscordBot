@@ -31,15 +31,15 @@ object HelpCommand : BaseCommand() {
             sendUsageReply(args.first().lowercase())
         } else {
             val commands = if (hasAdminPermissions() && inBotCommandChannel()) {
-                DiscordBot.commands.getCommands()
+                CommandListener.getCommands()
             } else {
-                DiscordBot.commands.getCommands().filter { it.userCommand }
+                CommandListener.getCommands().filter { it.userCommand }
             }
             val list = commands.joinToString(", !", prefix = "!") { it.name }
             reply("Supported commands: $list")
 
             if (hasAdminPermissions() && !inBotCommandChannel()) {
-                val id = DiscordBot.config.botCommandChannelId
+                val id = BOT.config.botCommandChannelId
                 val botCommandChannel = "https://discord.com/channels/$id/$id"
                 replyWithConsumer("You wanna see the cool admin only commands? visit $botCommandChannel") { consumer ->
                     runDelayed(3.seconds) {
@@ -52,7 +52,7 @@ object HelpCommand : BaseCommand() {
 
 
     fun MessageReceivedEvent.sendUsageReply(commandName: String) {
-        val command = DiscordBot.commands.getCommand(commandName) ?: run {
+        val command = CommandListener.getCommand(commandName) ?: run {
             reply("Unknown command `!$commandName` $PLEADING_FACE")
             return
         }
