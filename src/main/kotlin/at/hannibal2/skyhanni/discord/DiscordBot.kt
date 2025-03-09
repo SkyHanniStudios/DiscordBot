@@ -6,6 +6,7 @@ import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.requests.GatewayIntent
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.Scanner
 
@@ -13,7 +14,12 @@ lateinit var BOT: DiscordBot
     private set
 
 class DiscordBot(val jda: JDA, val config: BotConfig) {
-    val logger = LoggerFactory.getLogger(this::class.java)
+    val logger: Logger = LoggerFactory.getLogger(this::class.java)
+
+    init {
+        BOT = this
+        CommandListener.init()
+    }
 
     var manualShutdown = false
 
@@ -21,12 +27,6 @@ class DiscordBot(val jda: JDA, val config: BotConfig) {
         sendMessageToBotChannel("Manually shutting down \uD83D\uDC4B")
         manualShutdown = true
         jda.shutdown()
-    }
-}
-
-class MessageListener(val sendMessage: (MessageReceivedEvent) -> Unit) : ListenerAdapter() {
-    override fun onMessageReceived(event: MessageReceivedEvent) {
-        sendMessage(event)
     }
 }
 
@@ -69,6 +69,11 @@ private fun startBot(): DiscordBot {
 
     val bot = DiscordBot(jda, config)
     jda.awaitReady()
-    jda.addEventListener(MessageListener { CommandListener.onMessage(bot, it) })
+    val messageListener = object : ListenerAdapter() {
+        override fun onMessageReceived(event: MessageReceivedEvent) {
+            CommandListener.onMessage(bot, event)
+        }
+    }
+    jda.addEventListener(messageListener)
     return bot
 }

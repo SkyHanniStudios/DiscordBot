@@ -4,10 +4,7 @@ import at.hannibal2.skyhanni.discord.Utils.hasAdminPermissions
 import at.hannibal2.skyhanni.discord.Utils.inBotCommandChannel
 import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.reply
-import at.hannibal2.skyhanni.discord.command.BaseCommand
-import at.hannibal2.skyhanni.discord.command.HelpCommand
-import at.hannibal2.skyhanni.discord.command.PullRequestCommand
-import at.hannibal2.skyhanni.discord.command.TagCommands
+import at.hannibal2.skyhanni.discord.command.*
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.reflections.Reflections
 import java.lang.reflect.Modifier
@@ -19,8 +16,6 @@ object CommandListener {
     private val commandsAliases = mutableMapOf<String, BaseCommand>()
 
     fun getCommands(): Collection<BaseCommand> = commands.values
-
-    private val serversCommands = ServerCommands(this)
 
     fun init() {
         loadCommands()
@@ -49,7 +44,7 @@ object CommandListener {
             TagCommands.lastMessages.remove(this.author.id)
         }
 
-        if (serversCommands.isKnownServerUrl(this, message)) return
+        if (ServerCommands.isKnownServerUrl(this, message)) return
         if (PullRequestCommand.isPullRequest(this, message)) return
 
         if (!isCommand(message)) return
@@ -131,8 +126,4 @@ object CommandListener {
     }
 }
 
-class Command(
-    val name: String,
-    val userCommand: Boolean = false,
-    val consumer: (MessageReceivedEvent, List<String>) -> Unit,
-)
+data class Option(val name: String, val description: String, val required: Boolean = true)
