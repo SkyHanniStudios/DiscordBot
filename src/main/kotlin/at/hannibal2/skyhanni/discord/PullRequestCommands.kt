@@ -13,8 +13,9 @@ import at.hannibal2.skyhanni.discord.Utils.runDelayed
 import at.hannibal2.skyhanni.discord.Utils.timeExecution
 import at.hannibal2.skyhanni.discord.Utils.uploadFile
 import at.hannibal2.skyhanni.discord.github.GitHubClient
+import at.hannibal2.skyhanni.discord.json.discord.Conclusion
 import at.hannibal2.skyhanni.discord.json.discord.PullRequestJson
-import at.hannibal2.skyhanni.discord.json.discord.Status
+import at.hannibal2.skyhanni.discord.json.discord.RunStatus
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import java.awt.Color
 import java.io.File
@@ -43,7 +44,7 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
             reply("Usage: `!pr <number>`")
             return
         }
-        val prNumber = args[1].toIntOrNull() ?: run {
+        val prNumber = args[1].removePrefix("#").toLongOrNull() ?: run {
             reply("unknown number $PLEADING_FACE (${args[1]})")
             return
         }
@@ -54,7 +55,7 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
         loadPrInfos(prNumber)
     }
 
-    private fun MessageReceivedEvent.loadPrInfos(prNumber: Int) {
+    private fun MessageReceivedEvent.loadPrInfos(prNumber: Long) {
         logAction("loads pr infos for #$prNumber")
 
         val prLink = "$base/pull/$prNumber"
@@ -87,6 +88,8 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
             append("\n")
         }
 
+        val labels = pr.labels.map { it.name }.toSet()
+
         val time = buildString {
             val lastUpdate = passedSince(pr.updatedAt)
             val created = passedSince(pr.createdAt)
@@ -94,31 +97,48 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
             append("\n")
             append("> Last Updated: $lastUpdate")
             append("\n")
+            appendLabelCategory("Type", labels, this)
+            appendLabelCategory("State", labels, this)
+            appendLabelCategory("Milestone", labels, this,
+                if (pr.milestone != null) " `${pr.milestone.title}`" else "")
+        }
+
+        if (toTimeMark(pr.updatedAt).passedSince() > 400.days) {
+            val text = "${title}${time} \nBuild data no longer exists $PLEADING_FACE"
+            reply(embed(embedTitle, text, readColor(pr)))
+            return
         }
 
         val lastCommit = head.sha
 
         val job = github.getRun(lastCommit, "Build and test") ?: run {
-            val text = "${title}${time} \nArtifact does not exist $PLEADING_FACE (expired or first pr of contributor)"
+            val text = "${title}${time} \nBuild needs approval $PLEADING_FACE"
+
             reply(embed(embedTitle, text, readColor(pr)))
             return
         }
 
         if (job.startedAt?.let { toTimeMark(it).passedSince() > 90.days } == true) {
-            reply(embed(embedTitle, "${title}${time} \nartifact has expired $PLEADING_FACE", readColor(pr)))
+            reply(embed(embedTitle, "${title}${time} \nBuild download has expired $PLEADING_FACE", readColor(pr)))
+            
             return
         }
 
-        if (job.status != Status.COMPLETED) {
+        if (job.status != RunStatus.COMPLETED) {
             val text = when (job.status) {
-                Status.REQUESTED -> "Run has been requested $PLEADING_FACE"
-                Status.QUEUED -> "Run is in queue $PLEADING_FACE"
-                Status.IN_PROGRESS -> "Run is in progress $PLEADING_FACE"
-                Status.WAITING -> "Run is waiting $PLEADING_FACE"
-                Status.PENDING -> "Run is pending $PLEADING_FACE"
+                RunStatus.REQUESTED -> "Build has been requested $PLEADING_FACE"
+                RunStatus.QUEUED -> "Build is in queue $PLEADING_FACE"
+                RunStatus.IN_PROGRESS -> "Build is in progress $PLEADING_FACE"
+                RunStatus.WAITING -> "Build is waiting $PLEADING_FACE"
+                RunStatus.PENDING -> "Build is pending $PLEADING_FACE"
                 else -> ""
             }
             reply(embed(embedTitle, "${title}${time} \n $text", readColor(pr)))
+            return
+        }
+
+        if (job.conclusion != Conclusion.SUCCESS) {
+            reply(embed(embedTitle, "$title$time\nLast development build failed $PLEADING_FACE", Color.red))
             return
         }
 
@@ -144,6 +164,19 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
         reply(embed(embedTitle, "$title$time$artifactDisplay", readColor(pr)))
     }
 
+    private val labelTypes: Map<String, Set<String>> = mapOf(
+        Pair("Type", setOf("Backend", "Bug Fix")),
+        Pair("State", setOf("Detekt", "Merge Conflicts", "Waiting on Dependency PR", "Waiting on Hypixel", "Wrong Title/Changelog")),
+        Pair("Milestone", setOf("Soon")),
+        Pair("Misc", setOf("Good First Issue"))
+    )
+
+    private fun appendLabelCategory(labelType: String, labels: Set<String>, stringBuilder: StringBuilder, suffix: String = ""): StringBuilder {
+        val labelsWithType = labels.intersect(labelTypes[labelType] ?: setOf())
+        if (labelsWithType.isEmpty()) return stringBuilder.append(if (suffix.isNotEmpty()) "> $labelType: $suffix\n" else "")
+        return stringBuilder.append("> $labelType: `${labelsWithType.joinToString("` `")}`$suffix\n")
+    }
+
     // colors picked from github
     private fun readColor(pr: PullRequestJson): Color = when {
         pr.draft -> Color(101, 108, 118)
@@ -164,7 +197,7 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
             reply("Usage: `!prupload <number>`")
             return
         }
-        val prNumber = args[1].toIntOrNull() ?: run {
+        val prNumber = args[1].toLongOrNull() ?: run {
             reply("unknwon number $PLEADING_FACE (${args[1]})")
             return
         }
@@ -221,7 +254,7 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
     fun isPullRequest(event: MessageReceivedEvent, message: String): Boolean {
         val matcher = "$base/pull/(?<pr>\\d+)".toPattern().matcher(message)
         if (!matcher.matches()) return false
-        val pr = matcher.group("pr")?.toIntOrNull() ?: return false
+        val pr = matcher.group("pr")?.toLongOrNull() ?: return false
         event.replyWithConsumer("Next time just type `!pr $pr` $PLEADING_FACE") { consumer ->
             runDelayed(3.seconds) {
                 consumer.message.messageDelete()
