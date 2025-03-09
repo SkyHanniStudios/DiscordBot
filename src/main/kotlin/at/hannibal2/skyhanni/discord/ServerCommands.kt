@@ -2,13 +2,14 @@ package at.hannibal2.skyhanni.discord
 
 import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.reply
+import at.hannibal2.skyhanni.discord.github.GitHubClient
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
-import java.io.File
 
 @Suppress("UNUSED_PARAMETER")
 class ServerCommands(private val config: BotConfig, commands: CommandListener) {
+    private val github = GitHubClient("SkyHanniStudios", "DiscordBot", config.githubToken)
 
     class Server(
         val keyword: String,
@@ -39,11 +40,8 @@ class ServerCommands(private val config: BotConfig, commands: CommandListener) {
     }
 
     private fun loadServers() {
-        val json = try {
-            File("data/discord_servers.json").readText()
-        } catch (ex: Exception) {
-            error("Could not load server data config.")
-        }
+        val json = github.getFileContent("data/discord_servers.json")
+            ?: error("Error loading discord_servers")
 
         // Parse JSON as a map of maps.
         val type = object : TypeToken<Map<String, Map<String, ServerJson>>>() {}.type
