@@ -1,6 +1,7 @@
 package at.hannibal2.skyhanni.discord
 
-import at.hannibal2.skyhanni.discord.Utils.messageSend
+import at.hannibal2.skyhanni.discord.Utils.sendMessageToBotChannel
+import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
@@ -12,19 +13,28 @@ object DiscordBot : ListenerAdapter() {
     lateinit var config: BotConfig
         private set
 
+    lateinit var jda: JDA
+        private set
+
+    lateinit var commands: CommandListener
+        private set
+
+    fun setJda(jda: JDA) {
+        this.jda = jda
+    }
+
     fun setConfig(config: BotConfig): DiscordBot {
         this.config = config
         this.commands = CommandListener(config)
         return this
     }
-    private lateinit var commands: CommandListener
 
     override fun onMessageReceived(event: MessageReceivedEvent) {
         commands.onMessage(this, event)
     }
 }
 
-const val PLEADING_FACE = "\uD83E\uDD7A"
+const val PLEADING_FACE = "🥺"
 
 fun main() {
     val config = ConfigLoader.load("config.json")
@@ -34,18 +44,16 @@ fun main() {
         .enableIntents(GatewayIntent.MESSAGE_CONTENT).build()
     jda.awaitReady()
 
-    fun sendMessageToBotChannel(message: String) {
-        jda.getTextChannelById(config.botCommandChannelId)?.messageSend(message)
-    }
+    DiscordBot.setJda(jda)
 
-    sendMessageToBotChannel("I'm awake \uD83D\uDE42")
+    sendMessageToBotChannel("I'm awake 🙂")
 
     Thread {
         val scanner = Scanner(System.`in`)
         while (scanner.hasNextLine()) {
             when (scanner.nextLine().trim().lowercase()) {
                 "close", "stop", "exit", "end" -> {
-                    sendMessageToBotChannel("Manually shutting down \uD83D\uDC4B")
+                    sendMessageToBotChannel("Manually shutting down 👋")
                     jda.shutdown()
                     break
                 }
@@ -54,6 +62,6 @@ fun main() {
     }.start()
 
     Runtime.getRuntime().addShutdownHook(Thread {
-        sendMessageToBotChannel("I am the shutdown hook and I say bye \uD83D\uDC4B")
+        sendMessageToBotChannel("I am the shutdown hook and I say bye 👋")
     })
 }

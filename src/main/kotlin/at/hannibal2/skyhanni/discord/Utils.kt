@@ -74,6 +74,10 @@ object Utils {
         messageSend(text)
     }
 
+    fun sendMessageToBotChannel(text: String) {
+        DiscordBot.jda.getTextChannelById(DiscordBot.config.botCommandChannelId)?.messageSend(text)
+    }
+
     fun MessageReceivedEvent.logAction(action: String, raw: Boolean = false) {
         if (raw) {
             logger.info(action)
@@ -88,6 +92,14 @@ object Utils {
 
         logger.info("$id/$name$nickString $action in channel '$channelName'")
     }
+
+    fun MessageReceivedEvent.hasAdminPermissions(): Boolean {
+        val member = member ?: return false
+        val allowedRoleIds = DiscordBot.config.editPermissionRoleIds.values
+        return !member.roles.none { it.id in allowedRoleIds }
+    }
+
+    fun MessageReceivedEvent.inBotCommandChannel() = channel.id == DiscordBot.config.botCommandChannelId
 
     fun runDelayed(duration: Duration, consumer: () -> Unit) {
         Thread {
