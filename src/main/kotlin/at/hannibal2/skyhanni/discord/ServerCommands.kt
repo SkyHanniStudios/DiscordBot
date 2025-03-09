@@ -76,7 +76,7 @@ class ServerCommands(private val bot: DiscordBot, commands: CommandListener) {
                 val nameA = serverList[0].name
                 val nameB = serverList[1].name
                 if (nameA == nameB && key == nameA.lowercase()) {
-                    // skip if the  server name is the same as the key name
+                    // skip if the server name is the same as the key name
                     continue
                 }
             }

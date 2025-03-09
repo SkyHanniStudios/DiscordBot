@@ -50,6 +50,8 @@ fun main() {
     Runtime.getRuntime().addShutdownHook(Thread {
         if (!bot.manualShutdown) {
             bot.sendMessageToBotChannel("I am the shutdown hook and I say bye \uD83D\uDC4B")
+            // since we disable the JDA shutdown hook we need to call shutdown manually to make everything clean
+            bot.shutdown()
         }
     })
 }
@@ -60,6 +62,7 @@ private fun startBot(): DiscordBot {
 
     val jda = JDABuilder.createDefault(token).also { builder ->
         builder.enableIntents(GatewayIntent.MESSAGE_CONTENT)
+        builder.setEnableShutdownHook(false)
     }.build()
 
     val bot = DiscordBot(jda, config)
