@@ -1,21 +1,108 @@
 package at.hannibal2.skyhanni.discord
 
 import at.hannibal2.skyhanni.discord.Utils.logAction
-import at.hannibal2.skyhanni.discord.Utils.messageDeleteAndThen
 import at.hannibal2.skyhanni.discord.Utils.reply
+import at.hannibal2.skyhanni.discord.github.GitHubClient
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import kotlin.time.Duration.Companion.milliseconds
 
 @Suppress("UNUSED_PARAMETER")
-class ServerCommands(private val config: BotConfig, commands: CommandListener) {
+class ServerCommands(private val bot: DiscordBot, commands: CommandListener) {
+    private val github = GitHubClient("SkyHanniStudios", "DiscordBot", bot.config.githubToken)
+
+    class Server(
+        val keyword: String,
+        val name: String,
+        val invite: String,
+        val description: String,
+        val aliases: List<String>,
+    )
+
+    class ServerJson(
+        val name: String,
+        val size: String,
+        val invite: String,
+        val description: String,
+        val aliases: List<String>? = null,
+    )
+
+    private var servers = listOf<Server>()
+    private val disordServerPattern = "(https?://)?(www\\.)?(discord\\.gg|discord\\.com/invite)/[\\w-]+".toPattern()
+
     init {
         commands.add(Command("server", userCommand = true) { event, args -> event.serverCommand(args) })
+        commands.add(Command("updateservers") { event, args -> event.updateServers(args) })
         commands.add(Command("serverlist") { event, args -> event.serverList(args) })
         commands.add(Command("servers") { event, args -> event.serverList(args) })
-        commands.add(Command("serveradd") { event, args -> event.serverAdd(args) })
-        commands.add(Command("serveredit") { event, args -> event.serverEdit(args) })
-        commands.add(Command("serveraddalias") { event, args -> event.serverAddAlias(args) })
-        commands.add(Command("serveraliasdelete") { event, args -> event.serverAliasDelete(args) })
-        commands.add(Command("serverdelete") { event, args -> event.serverDelete(args) })
+
+        loadServers(startup = true)
+    }
+
+    private fun loadServers(startup: Boolean) {
+        val json = github.getFileContent("data/discord_servers.json") ?: error("Error loading discord_servers")
+
+        // Parse JSON as a map of maps.
+        val type = object : TypeToken<Map<String, Map<String, ServerJson>>>() {}.type
+        val data: Map<String, Map<String, ServerJson>> = Gson().fromJson(json, type)
+
+        // Flatten into a list of Mods (ignoring category)
+        servers = data.flatMap { (_, serverCategories) ->
+            serverCategories.map { (id, data) ->
+                Server(id.lowercase(),
+                    data.name,
+                    data.invite,
+                    data.description,
+                    data.aliases?.map { it.lowercase() } ?: emptyList())
+            }
+        }
+
+        checkForDuplicates(startup)
+    }
+
+    private fun checkForDuplicates(startup: Boolean) {
+        val keyToServers = mutableMapOf<String, MutableList<Server>>()
+        servers.forEach { server ->
+            val keys = listOf(server.keyword, server.name) + server.aliases
+            keys.forEach { key ->
+                keyToServers.getOrPut(key.lowercase()) { mutableListOf() }.add(server)
+            }
+        }
+
+        val duplicates = mutableSetOf<String>()
+        for ((key, serverList) in keyToServers.filter { it.value.size > 1 }) {
+            if (serverList.size == 2) {
+                val nameA = serverList[0].name
+                val nameB = serverList[1].name
+                if (nameA == nameB && key == nameA.lowercase()) {
+                    // skip if the server name is the same as the key name
+                    continue
+                }
+            }
+            duplicates.add("'$key' found in ${serverList.map { it.name }}")
+            println("Duplicate key '$key' found in servers: ${serverList.map { it.name }}")
+        }
+        val count = duplicates.size
+        if (count > 0) {
+            bot.logger.warn("$count duplicate servers found!")
+            val message = "Found $count duplicate servers:\n${duplicates.joinToString("\n")}"
+            if (startup) {
+                Utils.runDelayed(500.milliseconds) {
+                    bot.sendMessageToBotChannel(message)
+                }
+            } else {
+                bot.sendMessageToBotChannel(message)
+            }
+        } else {
+            bot.logger.info("no duplicate servers found.")
+        }
+    }
+
+    private fun MessageReceivedEvent.updateServers(args: List<String>) {
+        loadServers(startup = false)
+        reply("Updated server list from [GitHub](<https://github.com/SkyHanniStudios/DiscordBot/blob/master/data/discord_servers.json>).")
+        logAction("updated server list from github")
     }
 
     private fun MessageReceivedEvent.serverCommand(args: List<String>) {
@@ -25,7 +112,7 @@ class ServerCommands(private val config: BotConfig, commands: CommandListener) {
         }
         val keyword = args[1]
         val debug = args.getOrNull(2) == "-d"
-        val server = Database.getServer(keyword)
+        val server = getServer(keyword.lowercase())
         if (server != null) {
             if (debug) {
                 reply(server.printDebug())
@@ -37,125 +124,58 @@ class ServerCommands(private val config: BotConfig, commands: CommandListener) {
         }
     }
 
-    private fun MessageReceivedEvent.serverAdd(args: List<String>) {
-        if (args.size < 4) {
-            reply("Usage: !serveradd <keyword> <displayName> <invite link> <description>")
-            return
-        }
-        val keyword = args[1]
-        if (Database.getServer(keyword) != null) {
-            reply("❌ Server already exists. Use `!serveredit` instead.")
-            return
-        }
-        val server = createServer(keyword, args) ?: return
-        if (Database.addServer(server)) {
-            message.messageDeleteAndThen {
-                val id = author.id
-                reply("✅ Server '$keyword' added by <@$id>:")
-                reply(server.print())
-                logAction("added server '$keyword'")
+    private fun getServer(name: String): Server? {
+        for (server in servers) {
+            if (server.keyword.equals(name, ignoreCase = true)) {
+                return server
             }
-        } else {
-            reply("❌ Failed to add server.")
-        }
-    }
-
-    private fun MessageReceivedEvent.serverEdit(args: List<String>) {
-        if (args.size < 4) {
-            reply("Usage: !serveredit <keyword> <displayName> <invite link> <description>")
-            return
-        }
-        val keyword = args[1]
-        if (Database.getServer(keyword) == null) {
-            reply("❌ Server does not exist. Use `!serveradd` instead.")
-            return
-        }
-        val server = createServer(keyword, args) ?: return
-        if (Database.addServer(server)) {
-            message.messageDeleteAndThen {
-                val id = author.id
-                reply("✅ Server '$keyword' edited by <@$id>:")
-                reply(server.print())
-                logAction("edited server '$keyword'")
+            if (server.name.equals(name, ignoreCase = true)) {
+                return server
             }
-        } else {
-            reply("❌ Failed to edit server.")
-        }
-    }
-
-    private fun MessageReceivedEvent.createServer(keyword: String, args: List<String>): Server? {
-        val inviteIndex = args.indexOfFirst { it.startsWith("https:") }
-        if (inviteIndex == -1) {
-            reply("url not found!")
-            return null
-        }
-        require(inviteIndex != -1) { "Invite link not found" }
-
-        val displayName = args.subList(2, inviteIndex).joinToString(" ")
-
-        val inviteLink = args[inviteIndex]
-        val description = if (inviteIndex + 1 < args.size) args.subList(inviteIndex + 1, args.size).joinToString(" ")
-        else ""
-
-        return Server(keyword = keyword, displayName = displayName, inviteLink = inviteLink, description = description)
-    }
-
-    private fun MessageReceivedEvent.serverAddAlias(args: List<String>) {
-        if (args.size < 3) {
-            reply("Usage: !serveraddalias <keyword> <alias>")
-            return
-        }
-        val keyword = args[1]
-        val alias = args[2]
-        if (Database.getServer(alias) != null) {
-            reply("❌ Alias already exists.")
-            return
-        }
-        if (Database.getServer(keyword) == null) {
-            reply("❌ Server with keyword '$keyword' does not exist.")
-            return
-        }
-        if (Database.addServerAlias(keyword, alias)) {
-            message.messageDeleteAndThen {
-                reply("✅ Alias '$alias' added for server '$keyword'")
-                logAction("added alias '$alias' for server '$keyword'")
+            if (name in server.aliases) {
+                return server
             }
-        } else {
-            reply("❌ Failed to add alias.")
         }
+
+        return null
     }
 
-    private fun MessageReceivedEvent.serverAliasDelete(args: List<String>) {
-        if (args.size < 3) {
-            reply("Usage: !serveraliasdelete <keyword> <alias>")
-            return
-        }
-        val keyword = args[1]
-        val alias = args[2]
-        if (Database.deleteServerAlias(keyword, alias)) {
-            message.messageDeleteAndThen {
-                reply("✅ Alias '$alias' deleted from server '$keyword'")
-                logAction("deleted alias '$alias' for server '$keyword'")
+    private fun Server.print(tutorial: Boolean = false): String = with(this) {
+        buildString {
+            append("**$name**\n")
+            if (description.isNotEmpty()) {
+                append(description)
+                append("\n")
             }
-        } else {
-            reply("❌ Failed to delete alias '$alias' for server '$keyword'.")
+            if (!tutorial) {
+                append(invite)
+            } else {
+                append("||In the future, you can do `!server $keyword`. Then you get this auto reply||")
+            }
         }
     }
 
-    private fun MessageReceivedEvent.serverDelete(args: List<String>) {
-        if (args.size != 2) {
-            reply("Usage: !serverdelete <keyword>")
+    private fun Server.printDebug(): String = with(this) {
+        buildString {
+            append("keyword: '$keyword'\n")
+            append("displayName: '$name'\n")
+            append("description: '$description'\n")
+            append("inviteLink: '<$invite>'\n")
+            append("aliases: $aliases\n")
+        }
+    }
+
+    private fun MessageReceivedEvent.serverList(args: List<String>) {
+        if (servers.isEmpty()) {
+            reply("No servers found.")
             return
         }
-        val keyword = args[1]
-        if (Database.deleteServer(keyword)) {
-            reply("✅ Server '$keyword' deleted!")
-            logAction("deleted server '$keyword'")
-        } else {
-            reply("❌ Server with keyword '$keyword' not found or deletion failed.")
+        val list = servers.joinToString("\n") { server ->
+            val aliases = server.aliases
+            if (aliases.isNotEmpty()) "${server.keyword} [${aliases.joinToString(", ")}]"
+            else server.keyword
         }
-    }
-
+        reply("Server list:\n$list")
     private fun MessageReceivedEvent.serverList(args: List<String>) = reply(listServers())
 }
 
@@ -191,5 +211,21 @@ fun listServers(): String {
         val aliases = Database.getServerAliases(server.keyword)
         if (aliases.isNotEmpty()) "${server.keyword} [${aliases.joinToString(", ")}]"
         else server.keyword
+    }
+
+    private fun isDiscordInvite(message: String): Boolean = disordServerPattern.matcher(message).find()
+
+    private fun getServerByInviteUrl(url: String): Server? = servers.firstOrNull { it.invite == url }
+
+    fun isKnownServerUrl(event: MessageReceivedEvent, message: String): Boolean {
+        val server = getServerByInviteUrl(message) ?: run {
+            if (isDiscordInvite(message)) {
+                event.logAction("sends unknown discord invite '$message'")
+            }
+            return false
+        }
+
+        event.reply(server.print(tutorial = true))
+        return true
     }
 }

@@ -20,7 +20,7 @@ object CommandsData {
         ),
         CommandData(
             name = "pr",
-            description = "Displays useful information about a pull request on Github.",
+            description = "Displays useful information about a pull request on GitHub.",
             options = listOf(
                 Option(
                     "number",

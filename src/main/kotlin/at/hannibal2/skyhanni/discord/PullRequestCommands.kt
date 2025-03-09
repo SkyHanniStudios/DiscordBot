@@ -6,7 +6,10 @@ import at.hannibal2.skyhanni.discord.Utils.embed
 import at.hannibal2.skyhanni.discord.Utils.format
 import at.hannibal2.skyhanni.discord.Utils.linkTo
 import at.hannibal2.skyhanni.discord.Utils.logAction
+import at.hannibal2.skyhanni.discord.Utils.messageDelete
 import at.hannibal2.skyhanni.discord.Utils.reply
+import at.hannibal2.skyhanni.discord.Utils.replyWithConsumer
+import at.hannibal2.skyhanni.discord.Utils.runDelayed
 import at.hannibal2.skyhanni.discord.Utils.timeExecution
 import at.hannibal2.skyhanni.discord.Utils.uploadFile
 import at.hannibal2.skyhanni.discord.github.GitHubClient
@@ -18,11 +21,15 @@ import java.io.File
 import java.time.Instant
 import java.time.format.DateTimeFormatter
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.seconds
 
 @Suppress("ReturnCount")
 class PullRequestCommands(config: BotConfig, commands: CommandListener) {
 
-    private val github = GitHubClient("hannibal002", "SkyHanni", config.githubToken)
+    private val user = "hannibal002"
+    private val repo = "SkyHanni"
+    private val github = GitHubClient(user, repo, config.githubToken)
+    private val base = "https://github.com/$user/$repo"
 
     init {
         commands.add(Command("pr", userCommand = true) { event, args -> event.pullRequestCommand(args) })
@@ -37,16 +44,20 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
             return
         }
         val prNumber = args[1].toIntOrNull() ?: run {
-            reply("unknown number \uD83E\uDD7A (${args[1]})")
+            reply("unknown number $PLEADING_FACE (${args[1]})")
             return
         }
         if (prNumber < 1) {
-            reply("PR number needs to be positive \uD83E\uDD7A")
+            reply("PR number needs to be positive $PLEADING_FACE")
             return
         }
+        loadPrInfos(prNumber)
+    }
+
+    private fun MessageReceivedEvent.loadPrInfos(prNumber: Int) {
         logAction("loads pr infos for #$prNumber")
 
-        val prLink = "https://github.com/hannibal002/SkyHanni/pull/$prNumber"
+        val prLink = "$base/pull/$prNumber"
 
         val pr = try {
             github.findPullRequest(prNumber) ?: run {
@@ -55,10 +66,10 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
             }
         } catch (e: IllegalStateException) {
             if (e.message?.contains(" code:404 ") == true) {
-                val issueUrl = "https://github.com/hannibal002/SkyHanni/issues/$prNumber"
+                val issueUrl = "$base/issues/$prNumber"
                 val issue = "issue".linkTo(issueUrl)
                 val text = "This pull request does not yet exist or is an $issue"
-                reply(embed("Not found \uD83E\uDD7A", text, Color.red))
+                reply(embed("Not found $PLEADING_FACE", text, Color.red))
                 return
             }
             reply("Could not load pull request infos for #$prNumber: ${e.message}")
@@ -88,23 +99,23 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
         val lastCommit = head.sha
 
         val job = github.getRun(lastCommit, "Build and test") ?: run {
-            val text = "${title}${time} \nArtifact does not exist \uD83E\uDD7A (expired or first pr of contributor)"
+            val text = "${title}${time} \nArtifact does not exist $PLEADING_FACE (expired or first pr of contributor)"
             reply(embed(embedTitle, text, readColor(pr)))
             return
         }
 
         if (job.startedAt?.let { toTimeMark(it).passedSince() > 90.days } == true) {
-            reply(embed(embedTitle, "${title}${time} \nartifact has expired \uD83E\uDD7A", readColor(pr)))
+            reply(embed(embedTitle, "${title}${time} \nartifact has expired $PLEADING_FACE", readColor(pr)))
             return
         }
 
         if (job.status != Status.COMPLETED) {
             val text = when (job.status) {
-                Status.REQUESTED -> "Run has been requested \uD83E\uDD7A"
-                Status.QUEUED -> "Run is in queue \uD83E\uDD7A"
-                Status.IN_PROGRESS -> "Run is in progress \uD83E\uDD7A"
-                Status.WAITING -> "Run is waiting \uD83E\uDD7A"
-                Status.PENDING -> "Run is pending \uD83E\uDD7A"
+                Status.REQUESTED -> "Run has been requested $PLEADING_FACE"
+                Status.QUEUED -> "Run is in queue $PLEADING_FACE"
+                Status.IN_PROGRESS -> "Run is in progress $PLEADING_FACE"
+                Status.WAITING -> "Run is waiting $PLEADING_FACE"
+                Status.PENDING -> "Run is pending $PLEADING_FACE"
                 else -> ""
             }
             reply(embed(embedTitle, "${title}${time} \n $text", readColor(pr)))
@@ -114,8 +125,8 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
         val match = job.htmlUrl?.let { runIdRegex.matchEntire(it) }
         val runId = match?.groups?.get("RunId")?.value
 
-        val artifactLink = "https://github.com/hannibal002/SkyHanni/actions/runs/$runId?pr=$prNumber"
-        val nightlyLink = "https://nightly.link/hannibal002/SkyHanni/actions/runs/$runId/Development%20Build.zip"
+        val artifactLink = "$base/actions/runs/$runId?pr=$prNumber"
+        val nightlyLink = "https://nightly.link/$user/$repo/actions/runs/$runId/Development%20Build.zip"
         val artifactLine = "GitHub".linkTo(artifactLink)
         val nightlyLine = "Nightly".linkTo(nightlyLink)
 
@@ -131,7 +142,6 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
         }
 
         reply(embed(embedTitle, "$title$time$artifactDisplay", readColor(pr)))
-//        reply("$title$time$artifactDisplay")
     }
 
     // colors picked from github
@@ -155,11 +165,11 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
             return
         }
         val prNumber = args[1].toIntOrNull() ?: run {
-            reply("unknown number \uD83E\uDD7A (${args[1]})")
+            reply("unknown number $PLEADING_FACE (${args[1]})")
             return
         }
 
-        val prLink = "https://github.com/hannibal002/SkyHanni/pull/$prNumber"
+        val prLink = "$base/pull/$prNumber"
         reply("Looking for pr <$prLink..")
 
         val pr = github.findPullRequest(prNumber) ?: run {
@@ -190,7 +200,7 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
         Utils.unzipFile(fileRaw, fileUnzipped)
         fileRaw.delete()
 
-        val displayUrl = "https://github.com/hannibal002/SkyHanni/actions/runs/$artifactId?pr=$prNumber"
+        val displayUrl = "$base/actions/runs/$artifactId?pr=$prNumber"
 
         val modJar = findJarFile(fileUnzipped) ?: run {
             reply("mod jar not found!")
@@ -206,5 +216,18 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
 
     private fun findJarFile(directory: File): File? {
         return directory.walkTopDown().firstOrNull { it.isFile && it.name.startsWith("SkyHanni-") }
+    }
+
+    fun isPullRequest(event: MessageReceivedEvent, message: String): Boolean {
+        val matcher = "$base/pull/(?<pr>\\d+)".toPattern().matcher(message)
+        if (!matcher.matches()) return false
+        val pr = matcher.group("pr")?.toIntOrNull() ?: return false
+        event.replyWithConsumer("Next time just type `!pr $pr` $PLEADING_FACE") { consumer ->
+            runDelayed(3.seconds) {
+                consumer.message.messageDelete()
+            }
+        }
+        event.loadPrInfos(pr)
+        return true
     }
 }

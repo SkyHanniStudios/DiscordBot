@@ -79,14 +79,17 @@ object Utils {
             logger.info(action)
             return
         }
-        val channelName = channel.name
         val name = author.name
         val id = author.id
 
         val nick = member?.nickname?.takeIf { it != "null" }
         val nickString = nick?.let { " (`$nick`)" } ?: ""
 
-        logger.info("$id/$name$nickString $action in channel '$channelName'")
+        val channelSuffix = if (isFromGuild) {
+            val channelName = channel.name
+            " in channel '$channelName'"
+        } else ""
+        logger.info("$id/$name$nickString $action$channelSuffix")
     }
 
     fun SlashCommandInteractionEvent.logAction(action: String, raw: Boolean = false) {

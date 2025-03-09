@@ -1,6 +1,7 @@
 package at.hannibal2.skyhanni.discord
 
 import at.hannibal2.skyhanni.discord.Utils.messageSend
+import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
@@ -8,57 +9,44 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.events.session.ReadyEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.requests.GatewayIntent
+import org.slf4j.LoggerFactory
 import java.util.Scanner
 
-class DiscordBot(
-    val config: BotConfig,
-    private val commands: CommandListener,
-    private val slashCommands: SlashCommandListener
-) : ListenerAdapter() {
-    override fun onMessageReceived(event: MessageReceivedEvent) {
-        commands.onMessage(this, event)
-    }
+class DiscordBot(private val jda: JDA, val config: BotConfig) {
+    val logger = LoggerFactory.getLogger(this::class.java)
 
-    override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) {
-        slashCommands.onCommand(event)
-    }
-
-    override fun onCommandAutoCompleteInteraction(event: CommandAutoCompleteInteractionEvent) {
-        slashCommands.onAutocomplete(event)
-    }
-
-    override fun onReady(event: ReadyEvent) {
-        event.jda.getGuildById(config.allowedServerId)?.let {
-            slashCommands.createSlashCommands(it)
-        }
-    }
-}
-
-fun main() {
-    val config = ConfigLoader.load("config.json")
-    val token = config.token
-    val commands = CommandListener(config)
-    val slashCommands = SlashCommandListener(config)
-
-    val jda = JDABuilder.createDefault(token)
-        .addEventListeners(DiscordBot(config, commands, slashCommands))
-        .enableIntents(GatewayIntent.MESSAGE_CONTENT)
-        .build()
-    jda.awaitReady()
+    var manualShutdown = false
 
     fun sendMessageToBotChannel(message: String) {
         jda.getTextChannelById(config.botCommandChannelId)?.messageSend(message)
     }
 
-    sendMessageToBotChannel("I'm awake \uD83D\uDE42")
+    fun shutdown() {
+        sendMessageToBotChannel("Manually shutting down \uD83D\uDC4B")
+        manualShutdown = true
+        jda.shutdown()
+    }
+}
+
+class MessageListener(val sendMessage: (MessageReceivedEvent) -> Unit) : ListenerAdapter() {
+    override fun onMessageReceived(event: MessageReceivedEvent) {
+        sendMessage(event)
+    }
+}
+
+const val PLEADING_FACE = "\uD83E\uDD7A"
+
+fun main() {
+    val bot = startBot()
+
+    bot.sendMessageToBotChannel("I'm awake \uD83D\uDE42")
 
     Thread {
         val scanner = Scanner(System.`in`)
         while (scanner.hasNextLine()) {
             when (scanner.nextLine().trim().lowercase()) {
                 "close", "stop", "exit", "end" -> {
-                    sendMessageToBotChannel("Manually shutting down \uD83D\uDC4B")
-                    jda.shutdown()
+                    bot.shutdown()
                     break
                 }
             }
@@ -66,6 +54,26 @@ fun main() {
     }.start()
 
     Runtime.getRuntime().addShutdownHook(Thread {
-        sendMessageToBotChannel("I am the shutdown hook and I say bye \uD83D\uDC4B")
+        if (!bot.manualShutdown) {
+            bot.sendMessageToBotChannel("I am the shutdown hook and I say bye \uD83D\uDC4B")
+            // since we disable the JDA shutdown hook we need to call shutdown manually to make everything clean
+            bot.shutdown()
+        }
     })
+}
+
+private fun startBot(): DiscordBot {
+    val config = ConfigLoader.load("config.json")
+    val token = config.token
+
+    val jda = JDABuilder.createDefault(token).also { builder ->
+        builder.enableIntents(GatewayIntent.MESSAGE_CONTENT)
+        builder.setEnableShutdownHook(false)
+    }.build()
+
+    val bot = DiscordBot(jda, config)
+    val commands = CommandListener(bot)
+    jda.awaitReady()
+    jda.addEventListener(MessageListener { commands.onMessage(bot, it) })
+    return bot
 }

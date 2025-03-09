@@ -1,6 +1,7 @@
 package at.hannibal2.skyhanni.discord
 
 import at.hannibal2.skyhanni.discord.Utils.createHelpEmbed
+import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.messageDelete
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.Utils.replyWithConsumer
@@ -8,17 +9,17 @@ import at.hannibal2.skyhanni.discord.Utils.runDelayed
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import kotlin.time.Duration.Companion.seconds
 
-class CommandListener(private val config: BotConfig) {
-
+class CommandListener(bot: DiscordBot) {
     private val botId = "1343351725381128193"
 
     private val commands = mutableSetOf<Command>()
 
-    private var tagCommands = TagCommands(config, this)
+    private val config = bot.config
+    private val tagCommands = TagCommands(config, this)
+    private val serversCommands = ServerCommands(bot, this)
+    private val pullRequestCommands = PullRequestCommands(config, this)
 
     init {
-        ServerCommands(config, this)
-        PullRequestCommands(config, this)
         add(Command("help", userCommand = true) { event, args -> event.helpCommand(args) })
     }
 
@@ -31,6 +32,11 @@ class CommandListener(private val config: BotConfig) {
     }
 
     private fun MessageReceivedEvent.onMessage(bot: DiscordBot) {
+        val message = message.contentRaw.trim()
+        if (!isFromGuild) {
+            logAction("private dm: '$message'")
+            return
+        }
         if (guild.id != bot.config.allowedServerId) return
 
         if (this.author.isBot) {
@@ -39,14 +45,16 @@ class CommandListener(private val config: BotConfig) {
             }
             return
         }
-        val content = message.contentRaw.trim()
-        if (content != "!undo") {
+        if (message != "!undo") {
             tagCommands.lastMessages.remove(this.author.id)
         }
 
-        if (!isCommand(content)) return
+        if (serversCommands.isKnownServerUrl(this, message)) return
+        if (pullRequestCommands.isPullRequest(this, message)) return
 
-        val args = content.substring(1).split(" ")
+        if (!isCommand(message)) return
+
+        val args = message.substring(1).split(" ")
         val literal = args[0].lowercase()
 
         val command = commands.find { it.name == literal } ?: run {
@@ -56,12 +64,12 @@ class CommandListener(private val config: BotConfig) {
 
         if (!command.userCommand) {
             if (!hasAdminPermissions()) {
-                reply("No permissions \uD83E\uDD7A")
+                reply("No permissions $PLEADING_FACE")
                 return
             }
 
             if (!inBotCommandChannel()) {
-                reply("Wrong channel \uD83E\uDD7A")
+                reply("Wrong channel $PLEADING_FACE")
                 return
             }
         }
@@ -120,12 +128,12 @@ class CommandListener(private val config: BotConfig) {
 
     private fun MessageReceivedEvent.sendUsageReply(commandName: String) {
         val command = CommandsData.getCommand(commandName) ?: run {
-            reply("Unknown command `!$commandName` \uD83E\uDD7A")
+            reply("Unknown command `!$commandName` $PLEADING_FACE")
             return
         }
 
         if (!command.userCommand && !hasAdminPermissions()) {
-            reply("No permissions for command `!$commandName` \uD83E\uDD7A")
+            reply("No permissions for command `!$commandName` $PLEADING_FACE")
             return
         }
 
