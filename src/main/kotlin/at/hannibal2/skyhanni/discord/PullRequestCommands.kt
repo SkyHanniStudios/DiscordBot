@@ -41,7 +41,7 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
             reply("Usage: `!pr <number>`")
             return
         }
-        val prNumber = args[1].toLongOrNull() ?: run {
+        val prNumber = args[1].removePrefix("#").toLongOrNull() ?: run {
             reply("unknown number $PLEADING_FACE (${args[1]})")
             return
         }
@@ -52,7 +52,7 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
         loadPrInfos(prNumber)
     }
 
-    private fun MessageReceivedEvent.loadPrInfos(prNumber: Int) {
+    private fun MessageReceivedEvent.loadPrInfos(prNumber: Long) {
         logAction("loads pr infos for #$prNumber")
 
         val prLink = "https://github.com/hannibal002/SkyHanni/pull/$prNumber"
@@ -85,23 +85,7 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
             append("\n")
         }
 
-
-        val labels: MutableMap<String, MutableList<String>> = mutableMapOf(
-            Pair("Type", mutableListOf()),
-            Pair("State", mutableListOf()),
-            Pair("Timeline", mutableListOf()),
-            Pair("Misc", mutableListOf())
-        )
-
-        for (label in pr.labels) {
-            val category = when (label.name) {
-                "Backend", "Bug Fix" -> "Type"
-                "Detekt", "Merge Conflicts", "Waiting on Dependency PR", "Waiting on Hypixel", "Wrong Title/Changelog" -> "State"
-                "Soon" -> "Timeline"
-                else -> "Misc"
-            }
-            labels[category]?.add(label.name)
-        }
+        val labels = pr.labels.map { it.name }.toSet()
 
         val time = buildString {
             val lastUpdate = passedSince(pr.updatedAt)
@@ -110,21 +94,10 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
             append("\n")
             append("> Last Updated: $lastUpdate")
             append("\n")
-            if (labels["Type"]?.isNotEmpty() == true) {
-                append("> Type: `${labels["Type"]?.joinToString("` `")}`")
-                append("\n")
-            }
-            if (labels["State"]?.isNotEmpty() == true) {
-                append("> Issues: `${labels["State"]?.joinToString("` `")}`")
-                append("\n")
-            }
-            if (labels["Timeline"]?.isNotEmpty() == true) {
-                append("> Milestone: `${labels["Timeline"]?.joinToString("` `")}` `${pr.milestone?.title}`")
-                append("\n")
-            } else if (pr.milestone?.title != null) {
-                append("> Milestone: `${pr.milestone.title}`")
-                append("\n")
-            }
+            appendLabelCategory("Type", labels, this)
+            appendLabelCategory("State", labels, this)
+            appendLabelCategory("Milestone", labels, this,
+                if (pr.milestone != null) " `${pr.milestone.title}`" else "")
         }
 
         if (toTimeMark(pr.updatedAt).passedSince() > 400.days) {
@@ -186,6 +159,19 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
         }
 
         reply(embed(embedTitle, "$title$time$artifactDisplay", readColor(pr)))
+    }
+
+    private val labelTypes: Map<String, Set<String>> = mapOf(
+        Pair("Type", setOf("Backend", "Bug Fix")),
+        Pair("State", setOf("Detekt", "Merge Conflicts", "Waiting on Dependency PR", "Waiting on Hypixel", "Wrong Title/Changelog")),
+        Pair("Milestone", setOf("Soon")),
+        Pair("Misc", setOf("Good First Issue"))
+    )
+
+    private fun appendLabelCategory(labelType: String, labels: Set<String>, stringBuilder: StringBuilder, suffix: String = ""): StringBuilder {
+        val labelsWithType = labels.intersect(labelTypes[labelType] ?: setOf())
+        if (labelsWithType.isEmpty()) return stringBuilder.append(if (suffix.isNotEmpty()) "> $labelType: $suffix\n" else "")
+        return stringBuilder.append("> $labelType: `${labelsWithType.joinToString("` `")}`$suffix\n")
     }
 
     // colors picked from github
@@ -265,7 +251,7 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
     fun isPullRequest(event: MessageReceivedEvent, message: String): Boolean {
         val matcher = "https://github.com/hannibal002/SkyHanni/pull/(?<pr>\\d+)".toPattern().matcher(message)
         if (!matcher.matches()) return false
-        val pr = matcher.group("pr")?.toIntOrNull() ?: return false
+        val pr = matcher.group("pr")?.toLongOrNull() ?: return false
         event.replyWithConsumer("Next time just type `!pr $pr` $PLEADING_FACE") { consumer ->
             runDelayed(3.seconds) {
                 consumer.message.messageDelete()
