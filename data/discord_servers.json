@@ -308,6 +308,16 @@
         "Prism Launcher",
         "PrismLauncher"
       ]
+    },
+    "pojav": {
+      "name": "PojavLauncher",
+      "size": "150k",
+      "invite": "https://discord.gg/tUbf45esjD",
+      "description": "Pojav Launcher lets you play Java Edition Minecraft on mobile.",
+      "aliases": [
+        "Pojav Launcher",
+        "Pojav"
+      ]
     }
   },
   "big_communities": {
