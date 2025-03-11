@@ -37,6 +37,7 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
 
     private val runIdRegex =
         Regex("https://github\\.com/[\\w.]+/[\\w.]+/actions/runs/(?<RunId>\\d+)/job/(?<JobId>\\d+)")
+    private val pullRequestPattern = "$base/pull/(?<pr>\\d+)".toPattern()
 
     private fun MessageReceivedEvent.pullRequestCommand(args: List<String>) {
         if (args.size != 2) {
@@ -219,11 +220,11 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
     }
 
     fun isPullRequest(event: MessageReceivedEvent, message: String): Boolean {
-        val matcher = "$base/pull/(?<pr>\\d+)".toPattern().matcher(message)
+        val matcher = pullRequestPattern.matcher(message)
         if (!matcher.matches()) return false
         val pr = matcher.group("pr")?.toIntOrNull() ?: return false
         event.replyWithConsumer("Next time just type `!pr $pr` $PLEADING_FACE") { consumer ->
-            runDelayed(3.seconds) {
+            runDelayed(10.seconds) {
                 consumer.message.messageDelete()
             }
         }
