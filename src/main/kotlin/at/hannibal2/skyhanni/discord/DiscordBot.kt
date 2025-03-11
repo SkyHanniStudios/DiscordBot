@@ -14,8 +14,8 @@ class DiscordBot(private val jda: JDA, val config: BotConfig) {
 
     var manualShutdown = false
 
-    fun sendMessageToBotChannel(message: String) {
-        jda.getTextChannelById(config.botCommandChannelId)?.messageSend(message)
+    fun sendMessageToBotChannel(message: String, instantly: Boolean = false) {
+        jda.getTextChannelById(config.botCommandChannelId)?.messageSend(message, instantly)
     }
 
     fun shutdown() {
@@ -52,7 +52,7 @@ fun main() {
 
     Runtime.getRuntime().addShutdownHook(Thread {
         if (!bot.manualShutdown) {
-            bot.sendMessageToBotChannel("I am the shutdown hook and I say bye \uD83D\uDC4B")
+            bot.sendMessageToBotChannel("I am the shutdown hook and I say bye \uD83D\uDC4B", instantly = true)
             // since we disable the JDA shutdown hook we need to call shutdown manually to make everything clean
             bot.shutdown()
         }

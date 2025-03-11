@@ -51,8 +51,12 @@ object Utils {
         replyEmbeds(embed).queue()
     }
 
-    fun MessageChannel.messageSend(text: String) {
-        sendMessage(text).queue()
+    fun MessageChannel.messageSend(text: String, instantly: Boolean = false) {
+        if (instantly) {
+            sendMessage(text).complete()
+        } else {
+            sendMessage(text).queue()
+        }
     }
 
     fun Message.replyWithConsumer(text: String, consumer: (MessageReceivedEvent) -> Unit) {
