@@ -127,7 +127,7 @@ class TagEditLast : BaseCommand() {
             return userError("No last tag found $PLEADING_FACE")
         }
         val response = Database.getResponse(lastTag) ?: run {
-            return sendError("Last tag `$lastTag` got deleted, this should not happen, therefore we ping <@239858538959077376>")
+            return sendError("Last tag `$lastTag` got deleted, this should not happen, therefore we ping $PING_HANNIBAL")
         }
         reply("```!tagedit $lastTag $response```")
     }

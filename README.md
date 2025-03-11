@@ -52,7 +52,9 @@ Displays information about a Skyblock-related Discord server.
 Excludes servers from streamers, YouTubers, and Hypixel/Skyblock guilds.  
 The list is saved as JSON in this repository under `data/discord_servers.json`.  
 When users send a server URL directly, they are reminded to use `!server <keyword>` instead, and unknown server links
-are logged for future inclusion.
+are logged for future inclusion.  
+Checks on startup of the bot via Discord API if the server id has changed, indicating a fake server that stole the
+vanity url.
 
 `!server <server>`  
 Displays information about a server.  
