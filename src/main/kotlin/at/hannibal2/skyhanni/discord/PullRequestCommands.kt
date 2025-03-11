@@ -104,7 +104,7 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
         }
 
         if (toTimeMark(pr.updatedAt).passedSince() > 400.days) {
-            val text = "${title}${time} \nBuild data no longer exists $PLEADING_FACE"
+            val text = "${title}${time} \nBuild download has expired $PLEADING_FACE"
             reply(embed(embedTitle, text, readColor(pr)))
             return
         }
