@@ -161,6 +161,7 @@ class ServerCommand : BaseCommand() {
     override fun MessageReceivedEvent.execute(args: List<String>) {
         if (args.size !in 1..2) {
             wrongUsage("<keyword>")
+            return
         }
         val keyword = args.first()
         val debug = args.getOrNull(1) == "-d"
