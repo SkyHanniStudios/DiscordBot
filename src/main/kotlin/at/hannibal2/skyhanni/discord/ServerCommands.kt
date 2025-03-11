@@ -47,7 +47,7 @@ class ServerCommands(private val bot: DiscordBot, commands: CommandListener) {
 
     private fun loadServers(startup: Boolean) {
         val servers = try {
-            val json = Utils.readStringFromClipboard()
+            val json = Utils.readStringFromClipboard() ?: "invalid json text"
             val parseStringToServers = parseStringToServers(json)
             bot.logger.info("Reading discord server list from clipboard")
             parseStringToServers

@@ -219,7 +219,7 @@ object Utils {
         return eb.build()
     }
 
-    fun readStringFromClipboard(): String {
-        return getDefaultToolkit().systemClipboard.getData(java.awt.datatransfer.DataFlavor.stringFlavor) as String
-    }
+    fun readStringFromClipboard(): String? = runCatching {
+        getDefaultToolkit().systemClipboard.getData(java.awt.datatransfer.DataFlavor.stringFlavor) as String
+    }.getOrNull()
 }
