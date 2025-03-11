@@ -3,7 +3,7 @@ package at.hannibal2.skyhanni.discord.json.discord
 import com.google.gson.annotations.SerializedName
 
 data class CheckRunsResponse (
-    @SerializedName("total_count") val totalCount: Int,
+    @SerializedName("total_count") val totalCount: Long,
     @SerializedName("check_runs") val checkRuns: List<CheckRun>
 )
 
@@ -15,7 +15,7 @@ data class CheckRun (
     @SerializedName("url") val url: String,
     @SerializedName("html_url") val htmlUrl: String?,
     @SerializedName("details_url") val detailsUrl: String?,
-    @SerializedName("status") val status: Status,
+    @SerializedName("status") val status: RunStatus,
     @SerializedName("conclusion") val conclusion: Conclusion?,
     @SerializedName("started_at") val startedAt: String?,
     @SerializedName("completed_at") val completedAt: String?,
@@ -27,7 +27,7 @@ data class CheckRun (
     @SerializedName("deployment") val deployment: Deployment
 )
 
-enum class Status {
+enum class RunStatus {
     @SerializedName("queued") QUEUED,
     @SerializedName("in_progress") IN_PROGRESS,
     @SerializedName("completed") COMPLETED,
@@ -50,7 +50,7 @@ data class Output (
     @SerializedName("title") val title: String?,
     @SerializedName("summary") val summary: String?,
     @SerializedName("text") val text: String?,
-    @SerializedName("annotations_count") val annotationsCount: Int,
+    @SerializedName("annotations_count") val annotationsCount: Long,
     @SerializedName("annotations_url") val annotationsUrl: String
 )
 
@@ -72,7 +72,7 @@ data class GitHubapp (
     @SerializedName("updated_at") val updatedAt: String,
     @SerializedName("permissions") val permissions: GitHubPermissions,
     @SerializedName("events") val events: List<String>,
-    @SerializedName("installations_count") val installationsCount: Int,
+    @SerializedName("installations_count") val installationsCount: Long,
     @SerializedName("client_secret") val clientSecret: String,
     @SerializedName("webhook_secret") val webhookSecret: String?,
     @SerializedName("pem") val pem: String
@@ -118,7 +118,7 @@ data class GitHubPermissions (
 
 data class PullRequestMinimal (
     @SerializedName("id") val id: Long,
-    @SerializedName("number") val number: Int,
+    @SerializedName("number") val number: Long,
     @SerializedName("url") val url: String,
     @SerializedName("head") val head: MinimalHead,
     @SerializedName("base") val base: MinimalBase
