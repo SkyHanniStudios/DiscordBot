@@ -156,5 +156,5 @@ data class Deployment (
     @SerializedName("repository_url") val repositoryUrl: String,
     @SerializedName("transient_environment") val transientEnvironment: Boolean,
     @SerializedName("production_environment") val productionEnvironment: Boolean,
-    @SerializedName("performed_via_github_app") val performedViaGithubApp: GitHubapp?
+    @SerializedName("performed_via_github_app") val performedViaGitHubApp: GitHubapp?
 )

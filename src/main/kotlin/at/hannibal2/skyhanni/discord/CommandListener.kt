@@ -1,5 +1,6 @@
 package at.hannibal2.skyhanni.discord
 
+import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.messageDelete
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.Utils.replyWithConsumer
@@ -10,14 +11,14 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import java.awt.Color
 import kotlin.time.Duration.Companion.seconds
 
-class CommandListener(private val config: BotConfig) {
-
+class CommandListener(bot: DiscordBot) {
     private val botId = "1343351725381128193"
 
     private val commands = mutableSetOf<Command>()
 
+    private val config = bot.config
     private val tagCommands = TagCommands(config, this)
-    private val serversCommands = ServerCommands(config, this)
+    private val serversCommands = ServerCommands(bot, this)
     private val pullRequestCommands = PullRequestCommands(config, this)
 
     init {
@@ -33,6 +34,11 @@ class CommandListener(private val config: BotConfig) {
     }
 
     private fun MessageReceivedEvent.onMessage(bot: DiscordBot) {
+        val message = message.contentRaw.trim()
+        if (!isFromGuild) {
+            logAction("private dm: '$message'")
+            return
+        }
         if (guild.id != bot.config.allowedServerId) return
 
         if (this.author.isBot) {
@@ -41,17 +47,16 @@ class CommandListener(private val config: BotConfig) {
             }
             return
         }
-        val content = message.contentRaw.trim()
-        if (content != "!undo") {
+        if (message != "!undo") {
             tagCommands.lastMessages.remove(this.author.id)
         }
 
-        if (serversCommands.isKnownServerUrl(this, content)) return
-        if (pullRequestCommands.isPullRequest(this, content)) return
+        if (serversCommands.isKnownServerUrl(this, message)) return
+        if (pullRequestCommands.isPullRequest(this, message)) return
 
-        if (!isCommand(content)) return
+        if (!isCommand(message)) return
 
-        val args = content.substring(1).split(" ")
+        val args = message.substring(1).split(" ")
         val literal = args[0].lowercase()
 
         val command = commands.find { it.name == literal } ?: run {
