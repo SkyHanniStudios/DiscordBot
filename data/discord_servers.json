@@ -32,13 +32,13 @@
       ]
     },
     "drm": {
-      "name": "Dungeon Rooms Mod",
+      "name": "Dungeons Rooms Mod",
       "size": "57k",
       "invite": "https://discord.gg/kr2M7WutgJ",
       "description": "A mod focusing on dungeon secrets and pathfinding.",
       "aliases": [
-        "DungeonRoomsMod",
-        "Room Mod",
+        "DungeonsRoomsMod",
+        "Rooms Mod",
         "RoomsMod"
       ]
     },
@@ -52,11 +52,12 @@
       ]
     },
     "dsm": {
-      "name": "Dankers SkyBlock Mod",
+      "name": "Danker's Skyblock Mod",
       "size": "19k",
       "invite": "https://discord.gg/QsEkNQS",
-      "description": "Dankers SkyBlock Mod is a general-purpose SkyBlock mod.",
+      "description": "Danker's Skyblock Mod is a general-purpose SkyBlock mod.",
       "aliases": [
+        "Dankers Skyblock Mod",
         "dankers",
         "DankersSkyBlockMod",
         "DankerSkyBlockMod",
@@ -144,10 +145,10 @@
       ]
     },
     "sbo": {
-      "name": "SkyBlockOverhaul",
+      "name": "SkyblockOverhaul",
       "size": "180",
       "invite": "https://discord.gg/QvM6b9jsJD",
-      "description": "A SkyBlock Chat Triggers module that mainly focuses on the Diana event.",
+      "description": "SkyblockOverhaul is a SkyBlock Chat Triggers module that mainly focuses on the Diana event.",
       "aliases": [
         "SkyBlock Overhaul"
       ]
@@ -155,11 +156,12 @@
   },
   "eol_mods": {
     "sba": {
-      "name": "Biscuit Bakery",
+      "name": "Biscuit's Bakery",
       "size": "60k",
       "invite": "https://discord.gg/PqTAEek",
       "description": "Biscuit Bakery is home to the end-of-life SkyBlock mod SkyBlockAddons.",
       "aliases": [
+        "Biscuit Bakery",
         "skyblockaddons",
         "SkyBlock addons",
         "Sky Block addons"
@@ -239,7 +241,7 @@
   },
   "resource_packs": {
     "fsr": {
-      "name": "Furfsky Reborn",
+      "name": "FurfSky Reborn",
       "size": "51k",
       "invite": "https://discord.gg/fsr",
       "description": "A resource pack for SkyBlock. <https://furfsky.net/downloads>",
@@ -273,10 +275,10 @@
       "description": "A Minecraft modding platform."
     },
     "jda": {
-      "name": "JDA",
+      "name": "Java Discord API",
       "size": "7k",
       "invite": "https://discord.gg/jda",
-      "description": "A Java Discord API."
+      "description": "JDA is a Java Discord API."
     }
   },
   "utility": {
@@ -322,7 +324,7 @@
       ]
     },
     "sbm": {
-      "name": "SkyBlock Maniacs",
+      "name": "Skyblock Maniacs",
       "size": "106k",
       "invite": "https://discord.gg/sbm",
       "description": "A large, general SkyBlock community.",
@@ -351,7 +353,7 @@
       "description": "A community centered on the Kuudra Fight and includes a Discord bot for Kuudra."
     },
     "farming": {
-      "name": "Elite SkyBlock Farmers",
+      "name": "Elite Skyblock Farmers",
       "size": "31k",
       "invite": "https://discord.gg/farms",
       "description": "A community for top farmers and a farming weight website. <https://elitebot.dev/>",
@@ -425,7 +427,7 @@
       ]
     },
     "fishing": {
-      "name": "Casters | SkyBlock Fishing",
+      "name": "🐟 Casters | Skyblock Fishing",
       "size": "6.1k",
       "invite": "https://discord.gg/YSXErRzYnr",
       "description": "A community around fishing.",
@@ -458,13 +460,13 @@
       ]
     },
     "dragon": {
-      "name": "Dragon's Den",
+      "name": "🐉Dragon's Den",
       "size": "3.1k",
       "invite": "https://discord.gg/Q4EwRVMtd3",
       "description": "A community around the Dragon fight in the End."
     },
     "foraging": {
-      "name": "The Foraging Islands",
+      "name": "The Foraging Islands | Foraging & Hunting",
       "size": "2.5k",
       "invite": "https://discord.gg/TZ6WT2kkwG",
       "description": "A community centered on Park Island and the upcoming foraging and hunting skills update.",
