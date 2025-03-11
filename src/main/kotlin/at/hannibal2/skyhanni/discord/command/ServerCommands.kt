@@ -245,6 +245,10 @@ class ServerUpdate : BaseCommand() {
     override val description: String = "Updates the server list."
     override val aliases: List<String> = listOf("updateservers")
 
+    init {
+        loadServers(startup = true)
+    }
+
     override fun MessageReceivedEvent.execute(args: List<String>) {
         reply("updating server list ...")
         loadServers(startup = false) { source, removed ->
