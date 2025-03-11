@@ -100,8 +100,7 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
             append("\n")
             appendLabelCategory("Type", labels, this)
             appendLabelCategory("State", labels, this)
-            appendLabelCategory("Milestone", labels, this,
-                if (pr.milestone != null) " `${pr.milestone.title}`" else "")
+            appendLabelCategory("Milestone", labels, this, pr.milestone?.let { " `${it.title}`" } ?: "")
         }
 
         if (toTimeMark(pr.updatedAt).passedSince() > 400.days) {
