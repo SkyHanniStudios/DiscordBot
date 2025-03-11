@@ -35,38 +35,38 @@ class TagCommands(private val config: BotConfig, private val commands: CommandLi
     }
 
     private fun MessageReceivedEvent.listCommand(args: List<String>) {
-        val list = Database.listKeywords()
+        val list = Database.listTags()
         if (list.isEmpty()) {
             reply("No keywords set.")
             return
         }
 
-        val keywords = if (args.size == 2 && args[1] == "-i") {
+        val tags = if (args.size == 2 && args[1] == "-i") {
             list.sortedByDescending { it.uses }.joinToString("\n") { "!${it.keyword} (${it.uses} uses)" }
         } else {
             list.joinToString(", !", prefix = "!") { it.keyword }
         }
-        reply("📌 All ${list.size} keywords:\n$keywords")
+        reply("📌 All ${list.size} tags:\n$tags")
     }
 
     private fun MessageReceivedEvent.addCommand(args: List<String>) {
         if (args.size < 3) return
         val keyword = args[1]
         if (commands.existCommand(keyword)) {
-            reply("❌ Can not create keyword `!$keyword`. There is already a command with that name")
+            reply("❌ Can not create tag `!$keyword`. There is already a command with that name")
             return
         }
         val response = args.drop(2).joinToString(" ")
-        if (Database.listKeywords().map { it.keyword }.contains(keyword.lowercase())) {
-            reply("❌ Keyword already exists. Use `!tagedit` instead.")
+        if (Database.listTags().map { it.keyword }.contains(keyword.lowercase())) {
+            reply("❌ Tag already exists. Use `!tagedit` instead.")
             return
         }
-        if (Database.addKeyword(keyword, response)) {
+        if (Database.addTag(keyword, response)) {
             message.messageDeleteAndThen {
                 val id = author.id
-                reply("✅ Keyword '$keyword' added by <@$id>:")
+                reply("✅ Tag '$keyword' added by <@$id>:")
                 reply(response)
-                logAction("added keyword '$keyword'")
+                logAction("added tag '$keyword'")
                 logAction("response: '$response'", raw = true)
                 lastTouchedTag[id] = keyword
             }
@@ -84,7 +84,7 @@ class TagCommands(private val config: BotConfig, private val commands: CommandLi
         val response = args.drop(2).joinToString(" ")
         val oldResponse = Database.getResponse(keyword)
         if (oldResponse == null) {
-            reply("❌ Keyword doesn't exist! Use `!tagadd` instead.")
+            reply("❌ Tag doesn't exist! Use `!tagadd` instead.")
             return
         }
 
@@ -92,18 +92,18 @@ class TagCommands(private val config: BotConfig, private val commands: CommandLi
             reply("Usage: `!tagedit <tag> <response>`\n```!tagedit $keyword $oldResponse```")
             return
         }
-        if (Database.addKeyword(keyword, response)) {
+        if (Database.addTag(keyword, response)) {
             message.messageDeleteAndThen {
                 val id = author.id
-                reply("✅ Keyword '$keyword' edited by <@$id>:")
+                reply("✅ Tag '$keyword' edited by <@$id>:")
                 reply(response)
-                logAction("edited keyword '$keyword'")
+                logAction("edited tags '$keyword'")
                 logAction("old response: '$oldResponse'", raw = true)
                 logAction("new response: '$response'", raw = true)
                 lastTouchedTag[id] = keyword
             }
         } else {
-            reply("❌ Failed to edit keyword.")
+            reply("❌ Failed to edit tags.")
         }
     }
 
@@ -124,14 +124,14 @@ class TagCommands(private val config: BotConfig, private val commands: CommandLi
         if (args.size < 2) return
         val keyword = args[1]
         val oldResponse = Database.getResponse(keyword)
-        if (Database.deleteKeyword(keyword)) {
-            reply("🗑️ Keyword '$keyword' deleted!")
-            logAction("deleted keyword '$keyword'")
+        if (Database.deleteTag(keyword)) {
+            reply("🗑️ Tag '$keyword' deleted!")
+            logAction("deleted tag '$keyword'")
             logAction("response was: '$oldResponse'", raw = true)
             val id = author.id
             lastTouchedTag.remove(id)
         } else {
-            reply("❌ Keyword '$keyword' not found.")
+            reply("❌ Tag '$keyword' not found.")
         }
     }
 
@@ -182,7 +182,7 @@ class TagCommands(private val config: BotConfig, private val commands: CommandLi
         }
 
         if (info) {
-            val count = Database.getKeywordCount(keyword)
+            val count = Database.getTagCount(keyword)
             event.reply("Tag `$keyword' got used $count times in total.")
             return true
         }
@@ -190,21 +190,21 @@ class TagCommands(private val config: BotConfig, private val commands: CommandLi
         val author = message.author.id
         lastTouchedTag[author] = keyword
         message.referencedMessage?.let {
-            event.logAction("used keyword '$keyword' (with reply)")
+            event.logAction("used tag '$keyword' (with reply)")
             message.messageDelete()
             it.replyWithConsumer(response) { consumer ->
                 addLastMessage(author, consumer.message)
             }
         } ?: run {
             if (deleting) {
-                event.logAction("used keyword '$keyword' (with delete)")
+                event.logAction("used tag '$keyword' (with delete)")
                 message.messageDeleteAndThen {
                     event.channel.sendMessageWithConsumer(response) { consumer ->
                         addLastMessage(author, consumer.message)
                     }
                 }
             } else {
-                event.logAction("used keyword '$keyword'")
+                event.logAction("used tag '$keyword'")
                 addLastMessage(author, message)
                 message.replyWithConsumer(response) { consumer ->
                     addLastMessage(author, consumer.message)

@@ -3,11 +3,11 @@ package at.hannibal2.skyhanni.discord
 import java.sql.Connection
 import java.sql.DriverManager
 
-data class Keyword(val keyword: String, var response: String, var uses: Int)
+data class Tag(val keyword: String, var response: String, var uses: Int)
 
 object Database {
     private val connection: Connection = DriverManager.getConnection("jdbc:sqlite:bot.db")
-    private val keywordCache = mutableMapOf<String, Keyword>()
+    private val tagCache = mutableMapOf<String, Tag>()
 
     init {
         val statement = connection.createStatement()
@@ -19,17 +19,17 @@ object Database {
             append("response TEXT, ")
             append("count INTEGER DEFAULT 0)")
         })
-        loadKeywordCache()
+        loadTagCache()
     }
 
-    private fun loadKeywordCache() {
+    private fun loadTagCache() {
         val statement = connection.prepareStatement("SELECT keyword, response, count FROM keywords")
         val resultSet = statement.executeQuery()
         while (resultSet.next()) {
             val key = resultSet.getString("keyword").lowercase()
             val response = resultSet.getString("response")
             val count = resultSet.getInt("count")
-            keywordCache[key] = Keyword(key, response, count)
+            tagCache[key] = Tag(key, response, count)
         }
         resultSet.close()
     }
@@ -51,7 +51,7 @@ object Database {
         }
     }
 
-    fun addKeyword(keyword: String, response: String): Boolean {
+    fun addTag(keyword: String, response: String): Boolean {
         val key = keyword.lowercase()
         val statement = connection.prepareStatement(
             "INSERT OR REPLACE INTO keywords (keyword, response, count) VALUES (?, ?, ?)"
@@ -61,14 +61,14 @@ object Database {
         statement.setInt(3, 0)
         val updated = statement.executeUpdate() > 0
         if (updated) {
-            keywordCache[key] = Keyword(key, response, 0)
+            tagCache[key] = Tag(key, response, 0)
         }
         return updated
     }
 
     fun getResponse(keyword: String, increment: Boolean = false): String? {
         val key = keyword.lowercase()
-        val kObj = keywordCache[key] ?: return null
+        val kObj = tagCache[key] ?: return null
         if (increment) {
             kObj.uses++
             val statement = connection.prepareStatement(
@@ -81,18 +81,18 @@ object Database {
         return kObj.response
     }
 
-    fun deleteKeyword(keyword: String): Boolean {
+    fun deleteTag(keyword: String): Boolean {
         val key = keyword.lowercase()
         val statement = connection.prepareStatement("DELETE FROM keywords WHERE keyword = ?")
         statement.setString(1, key)
         val updated = statement.executeUpdate() > 0
-        if (updated) keywordCache.remove(key)
+        if (updated) tagCache.remove(key)
         return updated
     }
 
-    fun listKeywords(): List<Keyword> = keywordCache.values.toList()
+    fun listTags(): List<Tag> = tagCache.values.toList()
 
-    fun getKeywordCount(keyword: String): Int? {
-        return keywordCache[keyword.lowercase()]?.uses
+    fun getTagCount(keyword: String): Int? {
+        return tagCache[keyword.lowercase()]?.uses
     }
 }
