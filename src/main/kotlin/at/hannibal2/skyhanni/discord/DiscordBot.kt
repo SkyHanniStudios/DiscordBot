@@ -84,12 +84,6 @@ private fun startBot(): DiscordBot {
         override fun onCommandAutoCompleteInteraction(event: CommandAutoCompleteInteractionEvent) {
             CommandListener.onAutocomplete(event)
         }
-
-        override fun onReady(event: ReadyEvent) {
-            event.jda.getGuildById(config.allowedServerId)?.let {
-                CommandListener.createCommands(it)
-            }
-        }
     }
     jda.addEventListener(slashCommandListener)
     jda.addEventListener(messageListener)
