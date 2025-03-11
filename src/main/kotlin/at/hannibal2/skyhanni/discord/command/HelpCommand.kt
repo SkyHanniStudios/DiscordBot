@@ -40,9 +40,9 @@ object HelpCommand : BaseCommand() {
             sendUsageReply(command, event)
         } else {
             val commands = if (hasAdminPermissions(event) && inBotCommandChannel(event)) {
-                CommandListener.getCommands()
+                CommandListener.commands
             } else {
-                CommandListener.getCommands().filter { it.userCommand }
+                CommandListener.commands.filter { it.userCommand }
             }
             val list = commands.joinToString(", !", prefix = "!") { it.name }
             reply("Supported commands: $list", event)
@@ -101,4 +101,3 @@ object HelpCommand : BaseCommand() {
         return em.build()
     }
 }
-

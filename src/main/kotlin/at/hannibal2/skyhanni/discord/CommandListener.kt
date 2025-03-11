@@ -5,10 +5,11 @@ import at.hannibal2.skyhanni.discord.Utils.inBotCommandChannel
 import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.command.BaseCommand
+import at.hannibal2.skyhanni.discord.command.HelpCommand
 import at.hannibal2.skyhanni.discord.command.PullRequestCommand
 import at.hannibal2.skyhanni.discord.command.ServerCommands
 import at.hannibal2.skyhanni.discord.command.TagCommands
-import at.hannibal2.skyhanni.discord.command.HelpCommand
+import at.hannibal2.skyhanni.discord.command.TagUndo
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
@@ -22,14 +23,12 @@ import java.lang.reflect.Modifier
 object CommandListener {
     private const val BOT_ID = "1343351725381128193"
 
-    private val commands = mutableMapOf<String, BaseCommand>()
-    private val commandsAliases = mutableMapOf<String, BaseCommand>()
-
-    fun getCommands(): Collection<BaseCommand> = commands.values
+    var commands = listOf<BaseCommand>()
+        private set
+    private var commandsMap = mapOf<String, BaseCommand>()
 
     fun init() {
         loadCommands()
-        loadAliases()
         BOT.jda.getGuildById(BOT.config.allowedServerId)?.let { createCommands(it) }
     }
 
@@ -59,7 +58,8 @@ object CommandListener {
             }
             return
         }
-        if (message != "!undo") {
+
+        if (TagUndo.getAllNames().none { "!$it" == message }) {
             TagCommands.lastMessages.remove(this.author.id)
         }
 
@@ -69,7 +69,7 @@ object CommandListener {
         if (!isCommand(message)) return
 
         val split = message.substring(1).split(" ")
-        val literal = split[0].lowercase()
+        val literal = split.first().lowercase()
         val args = split.drop(1)
 
         val command = getCommand(literal) ?: run {
@@ -89,6 +89,13 @@ object CommandListener {
             }
         }
 
+        // allows to use `!<command> -help` instead of `!help -<command>`
+        if (args.size == 1 && args.first() == "-help") {
+            with(HelpCommand) {
+                sendUsageReply(literal)
+            }
+            return
+        }
         // allows to use `!<command> -help` instead of `!help -<command>`
         if (args.size == 1) {
             if (args.first() == "-help") {
@@ -176,35 +183,29 @@ object CommandListener {
     private val commandPattern = "^!(?!!).+".toPattern()
 
     // ensures the command starts with ! while ignoring !!
-    private fun isCommand(message: String): Boolean {
-        return commandPattern.matcher(message).matches()
-    }
+    private fun isCommand(message: String): Boolean = commandPattern.matcher(message).matches()
 
-    fun getCommand(name: String): BaseCommand? = commands[name] ?: commandsAliases[name]
+    fun getCommand(name: String): BaseCommand? = commandsMap[name]
 
-    fun existsCommand(name: String): Boolean = getCommand(name) != null
+    fun existsCommand(name: String): Boolean = name in commandsMap
 
     private fun loadCommands() {
         val reflections = Reflections("at.hannibal2")
         val classes: Set<Class<out BaseCommand>> = reflections.getSubTypesOf(BaseCommand::class.java)
+        val commands = mutableListOf<BaseCommand>()
+        val commandsMap = mutableMapOf<String, BaseCommand>()
         for (clazz in classes) {
             try {
                 if (Modifier.isAbstract(clazz.modifiers)) continue
                 val command = clazz.kotlin.objectInstance ?: clazz.getConstructor().newInstance()
-                require(command.name !in commands) { "Duplicate command name: ${command.name}" }
-                commands[command.name] = command
+
+                for (name in command.getAllNames()) {
+                    require(name !in commandsMap) { "Duplicate command name/alias: $name" }
+                    commandsMap[name] = command
+                }
+                commands.add(command)
             } catch (e: Exception) {
                 e.printStackTrace()
-            }
-        }
-    }
-
-    private fun loadAliases() {
-        for (command in commands.values) {
-            for (alias in command.aliases) {
-                require(alias !in commandsAliases) { "Duplicate command alias: $alias" }
-                require(alias !in commands) { "Duplicate command alias: $alias" }
-                commandsAliases[alias] = command
             }
         }
     }
@@ -232,7 +233,7 @@ object CommandListener {
     }
 }
 
-open class Option(
+data class Option(
     val name: String,
     val description: String,
     val required: Boolean = true,

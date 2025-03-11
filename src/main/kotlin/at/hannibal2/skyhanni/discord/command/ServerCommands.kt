@@ -117,7 +117,7 @@ object ServerCommands {
         }
     }
 
-    fun getServer(name: String): Server? {
+    internal fun getServer(name: String): Server? {
         for (server in servers) {
             if (server.keyword.equals(name, ignoreCase = true)) {
                 return server

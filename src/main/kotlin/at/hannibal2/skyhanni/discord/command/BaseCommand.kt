@@ -13,11 +13,13 @@ abstract class BaseCommand {
 
     open val userCommand: Boolean = false
 
-    open val aliases: List<String> = emptyList()
+    protected open val aliases: List<String> = emptyList()
 
     abstract fun execute(args: List<String>, event: Any)
 
     protected fun wrongUsage(args: String, event: Any) {
         userError("Usage: `!$name $args`", event)
     }
+
+    fun getAllNames(): List<String> = aliases + name
 }

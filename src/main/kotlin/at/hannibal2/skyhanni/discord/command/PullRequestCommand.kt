@@ -5,6 +5,7 @@ import at.hannibal2.skyhanni.discord.Option
 import at.hannibal2.skyhanni.discord.PLEADING_FACE
 import at.hannibal2.skyhanni.discord.SimpleTimeMark
 import at.hannibal2.skyhanni.discord.SimpleTimeMark.Companion.asTimeMark
+import at.hannibal2.skyhanni.discord.Utils
 import at.hannibal2.skyhanni.discord.Utils.createParentDirIfNotExist
 import at.hannibal2.skyhanni.discord.Utils.doWhen
 import at.hannibal2.skyhanni.discord.Utils.embed
@@ -49,6 +50,7 @@ object PullRequestCommand : BaseCommand() {
 
     private val runIdRegex =
         Regex("https://github\\.com/[\\w.]+/[\\w.]+/actions/runs/(?<RunId>\\d+)/job/(?<JobId>\\d+)")
+    private val pullRequestPattern = "$BASE/pull/(?<pr>\\d+)".toPattern()
 
     override fun execute(args: List<String>, event: Any) {
         val prNumber = doWhen(event, {
@@ -218,11 +220,11 @@ object PullRequestCommand : BaseCommand() {
     }
 
     fun isPullRequest(event: MessageReceivedEvent, message: String): Boolean {
-        val matcher = "$BASE/pull/(?<pr>\\d+)".toPattern().matcher(message)
+        val matcher = pullRequestPattern.matcher(message)
         if (!matcher.matches()) return false
         val pr = matcher.group("pr")?.toIntOrNull() ?: return false
         event.replyWithConsumer("Next time just type `!pr $pr` $PLEADING_FACE") { consumer ->
-            runDelayed(3.seconds) {
+            runDelayed(10.seconds) {
                 consumer.message.messageDelete()
             }
         }

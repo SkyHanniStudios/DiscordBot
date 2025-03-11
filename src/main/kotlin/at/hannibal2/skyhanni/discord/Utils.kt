@@ -78,8 +78,12 @@ object Utils {
         replyEmbeds(embed).queue()
     }
 
-    fun MessageChannel.messageSend(text: String) {
-        sendMessage(text).queue()
+    fun MessageChannel.messageSend(text: String, instantly: Boolean = false) {
+        if (instantly) {
+            sendMessage(text).complete()
+        } else {
+            sendMessage(text).queue()
+        }
     }
 
     fun Message.replyWithConsumer(text: String, consumer: (MessageReceivedEvent) -> Unit) {
@@ -92,8 +96,8 @@ object Utils {
         messageSend(text)
     }
 
-    fun sendMessageToBotChannel(text: String) {
-        BOT.jda.getTextChannelById(BOT.config.botCommandChannelId)?.messageSend(text)
+    fun sendMessageToBotChannel(text: String, instantly: Boolean = false) {
+        BOT.jda.getTextChannelById(BOT.config.botCommandChannelId)?.messageSend(text, instantly)
     }
 
     fun logAction(action: String, event: Any, raw: Boolean = false) {

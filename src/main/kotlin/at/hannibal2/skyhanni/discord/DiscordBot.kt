@@ -54,7 +54,7 @@ fun main() {
 
     Runtime.getRuntime().addShutdownHook(Thread {
         if (!bot.manualShutdown) {
-            sendMessageToBotChannel("I am the shutdown hook and I say bye 👋")
+            sendMessageToBotChannel("I am the shutdown hook and I say bye 👋", instantly = true)
             // since we disable the JDA shutdown hook we need to call shutdown manually to make everything clean
             bot.shutdown()
         }
