@@ -166,13 +166,14 @@ class TagAdd : BaseCommand() {
     override val aliases = listOf("tagcreate")
 
     override fun MessageReceivedEvent.execute(args: List<String>) {
-        if (args.size < 3) return
-        val keyword = args[1]
+        if (args.size < 2) return wrongUsage("<keyword> <response>")
+
+        val keyword = args.first()
         if (CommandListener.existsCommand(keyword)) {
             reply("❌ Can not create tag `!$keyword`. There is already a command with that name")
             return
         }
-        val response = args.drop(2).joinToString(" ")
+        val response = args.drop(1).joinToString(" ")
 
         if (Database.containsKeyword(keyword)) {
             reply("❌ Tag already exists. Use `!tagedit` instead.")
@@ -203,7 +204,8 @@ class TagDelete : BaseCommand() {
     override val aliases: List<String> = listOf("tagremove")
 
     override fun MessageReceivedEvent.execute(args: List<String>) {
-        if (args.isEmpty()) return wrongUsage("<keyword>")
+        if (args.size != 1) return wrongUsage("<keyword>")
+
         val keyword = args.first()
         val oldResponse = Database.getResponse(keyword)
         if (Database.deleteTag(keyword)) {
@@ -216,7 +218,6 @@ class TagDelete : BaseCommand() {
             reply("❌ Tag '$keyword' not found.")
         }
     }
-
 }
 
 @Suppress("unused")

@@ -50,10 +50,7 @@ object PullRequestCommand : BaseCommand() {
     private val pullRequestPattern = "$BASE/pull/(?<pr>\\d+)".toPattern()
 
     override fun MessageReceivedEvent.execute(args: List<String>) {
-        if (args.size != 1) {
-            wrongUsage("<number>")
-            return
-        }
+        if (args.size != 1) return wrongUsage("<number>")
         val first = args.first()
         val prNumber = first.toIntOrNull() ?: run {
             userError("Unknown number $PLEADING_FACE ($first})")
@@ -65,7 +62,6 @@ object PullRequestCommand : BaseCommand() {
         }
         loadPrInfos(prNumber)
     }
-
 
     private fun MessageReceivedEvent.loadPrInfos(prNumber: Int) {
         logAction("loads pr infos for #$prNumber")
