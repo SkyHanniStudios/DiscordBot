@@ -19,10 +19,19 @@ import kotlin.time.Duration.Companion.nanoseconds
 @Suppress("MemberVisibilityCanBePrivate", "TooManyFunctions")
 object Utils {
 
-    private val logger = LoggerFactory.getLogger(DiscordBot::class.java)
+    private inline val logger get() = BOT.logger
 
     fun MessageReceivedEvent.reply(text: String) {
         message.messageReply(text)
+    }
+
+    fun MessageReceivedEvent.userError(text: String) {
+        message.messageReply("❌ $text")
+    }
+
+    fun MessageReceivedEvent.sendError(text: String) {
+        message.messageReply("❌ An error occurred: $text")
+        logAction("Error: $text")
     }
 
     fun MessageReceivedEvent.reply(embed: MessageEmbed) {
@@ -70,6 +79,10 @@ object Utils {
         messageSend(text)
     }
 
+    fun sendMessageToBotChannel(text: String, instantly: Boolean = false) {
+        BOT.jda.getTextChannelById(BOT.config.botCommandChannelId)?.messageSend(text, instantly)
+    }
+
     fun MessageReceivedEvent.logAction(action: String, raw: Boolean = false) {
         if (raw) {
             logger.info(action)
@@ -87,6 +100,14 @@ object Utils {
         } else ""
         logger.info("$id/$name$nickString $action$channelSuffix")
     }
+
+    fun MessageReceivedEvent.hasAdminPermissions(): Boolean {
+        val member = member ?: return false
+        val allowedRoleIds = BOT.config.editPermissionRoleIds.values
+        return !member.roles.none { it.id in allowedRoleIds }
+    }
+
+    fun MessageReceivedEvent.inBotCommandChannel() = channel.id == BOT.config.botCommandChannelId
 
     fun runDelayed(duration: Duration, consumer: () -> Unit) {
         Thread {

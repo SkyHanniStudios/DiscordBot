@@ -1,22 +1,27 @@
 package at.hannibal2.skyhanni.discord
 
-import at.hannibal2.skyhanni.discord.Utils.messageSend
+import at.hannibal2.skyhanni.discord.Utils.sendMessageToBotChannel
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.requests.GatewayIntent
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.Scanner
 
+lateinit var BOT: DiscordBot
+    private set
+
 class DiscordBot(val jda: JDA, val config: BotConfig) {
-    val logger = LoggerFactory.getLogger(this::class.java)
+    val logger: Logger = LoggerFactory.getLogger(this::class.java)
+
+    init {
+        BOT = this
+        CommandListener.init()
+    }
 
     var manualShutdown = false
-
-    fun sendMessageToBotChannel(message: String, instantly: Boolean = false) {
-        jda.getTextChannelById(config.botCommandChannelId)?.messageSend(message, instantly)
-    }
 
     fun shutdown() {
         sendMessageToBotChannel("Manually shutting down \uD83D\uDC4B")
@@ -25,19 +30,13 @@ class DiscordBot(val jda: JDA, val config: BotConfig) {
     }
 }
 
-class MessageListener(val sendMessage: (MessageReceivedEvent) -> Unit) : ListenerAdapter() {
-    override fun onMessageReceived(event: MessageReceivedEvent) {
-        sendMessage(event)
-    }
-}
-
-const val PLEADING_FACE = "\uD83E\uDD7A"
+const val PLEADING_FACE = "🥺"
 const val PING_HANNIBAL = "<@239858538959077376>"
 
 fun main() {
     val bot = startBot()
 
-    bot.sendMessageToBotChannel("I'm awake \uD83D\uDE42")
+    sendMessageToBotChannel("I'm awake \uD83D\uDE42")
 
     Thread {
         val scanner = Scanner(System.`in`)
@@ -53,7 +52,7 @@ fun main() {
 
     Runtime.getRuntime().addShutdownHook(Thread {
         if (!bot.manualShutdown) {
-            bot.sendMessageToBotChannel("I am the shutdown hook and I say bye \uD83D\uDC4B", instantly = true)
+            sendMessageToBotChannel("I am the shutdown hook and I say bye 👋", instantly = true)
             // since we disable the JDA shutdown hook we need to call shutdown manually to make everything clean
             bot.shutdown()
         }
@@ -70,8 +69,12 @@ private fun startBot(): DiscordBot {
     }.build()
 
     val bot = DiscordBot(jda, config)
-    val commands = CommandListener(bot)
     jda.awaitReady()
-    jda.addEventListener(MessageListener { commands.onMessage(bot, it) })
+    val messageListener = object : ListenerAdapter() {
+        override fun onMessageReceived(event: MessageReceivedEvent) {
+            CommandListener.onMessage(bot, event)
+        }
+    }
+    jda.addEventListener(messageListener)
     return bot
 }
