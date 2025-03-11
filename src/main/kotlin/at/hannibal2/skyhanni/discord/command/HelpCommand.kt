@@ -1,6 +1,9 @@
 package at.hannibal2.skyhanni.discord.command
 
-import at.hannibal2.skyhanni.discord.*
+import at.hannibal2.skyhanni.discord.BOT
+import at.hannibal2.skyhanni.discord.CommandListener
+import at.hannibal2.skyhanni.discord.Option
+import at.hannibal2.skyhanni.discord.PLEADING_FACE
 import at.hannibal2.skyhanni.discord.Utils.hasAdminPermissions
 import at.hannibal2.skyhanni.discord.Utils.inBotCommandChannel
 import at.hannibal2.skyhanni.discord.Utils.messageDelete
@@ -22,10 +25,7 @@ object HelpCommand : BaseCommand() {
     override val userCommand: Boolean = true
 
     override fun MessageReceivedEvent.execute(args: List<String>) {
-        if (args.size > 1) {
-            reply("Usage: !help <command>")
-            return
-        }
+        if (args.size > 1) return reply("Usage: !help <command>")
 
         if (args.size == 1) {
             sendUsageReply(args.first().lowercase())

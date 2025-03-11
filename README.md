@@ -29,7 +29,8 @@ Used to display a longer text in response to a short command.
 `!<tag>`  
 Displays the response associated with the tag.  
 Supports replying to another message, which deletes the original message and posts the response as a reply.  
-Supports the `-d` parameter to delete the user’s message.
+Supports the `-d` parameter to delete the user’s message.  
+Supports the `-i` parameter to view the tag uses count.
 
 `!tagadd <tag> <response>`  
 Creates a tag.
@@ -40,8 +41,9 @@ Edits an existing tag.
 `!tagdelete <tag>`  
 Deletes a tag.
 
-`!taglist`  
+`!taglist`/`!tags`  
 Shows a list of all tags.
+Supports the `-i` parameter to include and sort by uses.
 
 `!undo`  
 Removes the last tag message sent by the user.
@@ -58,7 +60,7 @@ are logged for future inclusion.
 Displays information about a server.  
 Supports the `-d` parameter to show debug info for the server.
 
-`!serverlist`  
+`!serverlist`/`!servers`  
 Lists all servers.
 
 `!updateservers`  
