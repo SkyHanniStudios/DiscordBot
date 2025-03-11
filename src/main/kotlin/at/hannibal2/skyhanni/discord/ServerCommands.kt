@@ -57,7 +57,7 @@ class ServerCommands(private val bot: DiscordBot, commands: CommandListener) {
         }
 
         Utils.runDelayed(if (startup) 500.milliseconds else 2.milliseconds) { // We need a delay on startup only
-            checkForDuplicates(startup)
+            checkForDuplicates(servers, startup)
             checkForFakes(servers) {
                 onFinish()
                 this.servers = servers
@@ -81,7 +81,7 @@ class ServerCommands(private val bot: DiscordBot, commands: CommandListener) {
         }.toMutableSet()
     }
 
-    private fun checkForDuplicates(startup: Boolean) {
+    private fun checkForDuplicates(servers: MutableSet<Server>, startup: Boolean) {
         val keyToServers = mutableMapOf<String, MutableList<Server>>()
         servers.forEach { server ->
             val keys = listOf(server.keyword, server.name) + server.aliases
