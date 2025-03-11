@@ -183,7 +183,7 @@ class TagCommands(private val config: BotConfig, private val commands: CommandLi
 
         if (info) {
             val count = Database.getTagCount(keyword)
-            event.reply("Tag `$keyword' got used $count times in total.")
+            event.reply("Tag `!$keyword` got used $count times in total.")
             return true
         }
 
