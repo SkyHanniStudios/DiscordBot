@@ -35,7 +35,7 @@ class TagCommands(private val config: BotConfig, private val commands: CommandLi
     }
 
     private fun MessageReceivedEvent.listCommand(args: List<String>) {
-        val list = Database.listKeywords()
+        val list = Database.listKeywords().map { it.keyword }
         val keywords = list.joinToString(", !", prefix = "!")
         reply(if (list.isNotEmpty()) "📌 All ${list.size} keywords: $keywords" else "No keywords set.")
     }
@@ -48,7 +48,7 @@ class TagCommands(private val config: BotConfig, private val commands: CommandLi
             return
         }
         val response = args.drop(2).joinToString(" ")
-        if (Database.listKeywords().contains(keyword.lowercase())) {
+        if (Database.listKeywords().map { it.keyword }.contains(keyword.lowercase())) {
             reply("❌ Keyword already exists. Use `!tagedit` instead.")
             return
         }
@@ -162,9 +162,20 @@ class TagCommands(private val config: BotConfig, private val commands: CommandLi
             keyword = keyword.dropLast(3)
             deleting = true
         }
-        val response = Database.getResponse(keyword) ?: run {
+        var info = false
+        if (keyword.endsWith(" -i")) {
+            keyword = keyword.dropLast(3)
+            info = true
+        }
+        val response = Database.getResponse(keyword, increment = !info) ?: run {
             event.reply("Unknown command $PLEADING_FACE Type `!help` for help.")
             return false
+        }
+
+        if (info) {
+            val count = Database.getKeywordCount(keyword)
+            event.reply("Tag `$keyword' got used `$count` times in total.")
+            return true
         }
 
         val author = message.author.id

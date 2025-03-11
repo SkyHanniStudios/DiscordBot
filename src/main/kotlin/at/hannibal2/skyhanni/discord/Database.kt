@@ -3,49 +3,96 @@ package at.hannibal2.skyhanni.discord
 import java.sql.Connection
 import java.sql.DriverManager
 
+data class Keyword(val keyword: String, var response: String, var count: Int)
+
 object Database {
     private val connection: Connection = DriverManager.getConnection("jdbc:sqlite:bot.db")
-    private val keywordCache = mutableMapOf<String, String>()
+    private val keywordCache = mutableMapOf<String, Keyword>()
 
     init {
-        val stmt = connection.createStatement()
-        stmt.execute(
-            "CREATE TABLE IF NOT EXISTS keywords (id INTEGER PRIMARY KEY AUTOINCREMENT, keyword TEXT UNIQUE, response TEXT)"
-        )
-        stmt.execute(
-            "CREATE TABLE IF NOT EXISTS servers (id INTEGER PRIMARY KEY AUTOINCREMENT, keyword TEXT UNIQUE, display_name TEXT, inviteLink TEXT, description TEXT)"
-        )
-        stmt.execute("CREATE TABLE IF NOT EXISTS server_aliases (alias TEXT UNIQUE, server_keyword TEXT)")
+        val statement = connection.createStatement()
+        ensureCountColumnExists()
+        statement.execute(buildString {
+            append("CREATE TABLE IF NOT EXISTS keywords (")
+            append("id INTEGER PRIMARY KEY AUTOINCREMENT, ")
+            append("keyword TEXT UNIQUE, ")
+            append("response TEXT, ")
+            append("count INTEGER DEFAULT 0)")
+        })
         loadKeywordCache()
     }
 
     private fun loadKeywordCache() {
-        val stmt = connection.prepareStatement("SELECT keyword, response FROM keywords")
-        val rs = stmt.executeQuery()
-        while (rs.next()) {
-            keywordCache[rs.getString("keyword").lowercase()] = rs.getString("response")
+        val statement = connection.prepareStatement("SELECT keyword, response, count FROM keywords")
+        val resultSet = statement.executeQuery()
+        while (resultSet.next()) {
+            val key = resultSet.getString("keyword").lowercase()
+            val response = resultSet.getString("response")
+            val count = resultSet.getInt("count")
+            keywordCache[key] = Keyword(key, response, count)
         }
-        rs.close()
+        resultSet.close()
+    }
+
+    private fun ensureCountColumnExists() {
+        val statement = connection.prepareStatement("PRAGMA table_info(keywords)")
+        val resultSet = statement.executeQuery()
+        var countExists = false
+        while (resultSet.next()) {
+            if (resultSet.getString("name") == "count") {
+                countExists = true
+                break
+            }
+        }
+        resultSet.close()
+        if (!countExists) {
+            val statement1 = connection.createStatement()
+            statement1.execute("ALTER TABLE keywords ADD COLUMN count INTEGER DEFAULT 0")
+        }
     }
 
     fun addKeyword(keyword: String, response: String): Boolean {
-        val stmt = connection.prepareStatement("INSERT OR REPLACE INTO keywords (keyword, response) VALUES (?, ?)")
-        stmt.setString(1, keyword.lowercase())
-        stmt.setString(2, response)
-        val updated = stmt.executeUpdate() > 0
-        if (updated) keywordCache[keyword.lowercase()] = response
+        val key = keyword.lowercase()
+        val statement = connection.prepareStatement(
+            "INSERT OR REPLACE INTO keywords (keyword, response, count) VALUES (?, ?, ?)"
+        )
+        statement.setString(1, key)
+        statement.setString(2, response)
+        statement.setInt(3, 0)
+        val updated = statement.executeUpdate() > 0
+        if (updated) {
+            keywordCache[key] = Keyword(key, response, 0)
+        }
         return updated
     }
 
-    fun getResponse(keyword: String): String? = keywordCache[keyword.lowercase()]
+    fun getResponse(keyword: String, increment: Boolean = false): String? {
+        val key = keyword.lowercase()
+        val kObj = keywordCache[key] ?: return null
+        if (increment) {
+            kObj.count++
+            val statement = connection.prepareStatement(
+                "UPDATE keywords SET count = ? WHERE keyword = ?"
+            )
+            statement.setInt(1, kObj.count)
+            statement.setString(2, key)
+            statement.executeUpdate()
+        }
+        return kObj.response
+    }
 
     fun deleteKeyword(keyword: String): Boolean {
-        val stmt = connection.prepareStatement("DELETE FROM keywords WHERE keyword = ?")
-        stmt.setString(1, keyword.lowercase())
-        val updated = stmt.executeUpdate() > 0
-        if (updated) keywordCache.remove(keyword.lowercase())
+        val key = keyword.lowercase()
+        val statement = connection.prepareStatement("DELETE FROM keywords WHERE keyword = ?")
+        statement.setString(1, key)
+        val updated = statement.executeUpdate() > 0
+        if (updated) keywordCache.remove(key)
         return updated
     }
 
-    fun listKeywords(): List<String> = keywordCache.keys.toList()
+    fun listKeywords(): List<Keyword> = keywordCache.values.toList()
+
+    fun getKeywordCount(keyword: String): Int? {
+        return keywordCache[keyword.lowercase()]?.count
+    }
 }
