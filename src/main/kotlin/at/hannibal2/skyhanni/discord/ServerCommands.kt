@@ -4,12 +4,11 @@ import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.github.GitHubClient
 import com.google.gson.Gson
-import com.google.gson.JsonSyntaxException
 import com.google.gson.reflect.TypeToken
 import net.dv8tion.jda.api.entities.Invite
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import java.util.concurrent.CountDownLatch
 import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
 
 @Suppress("UNUSED_PARAMETER")
 class ServerCommands(private val bot: DiscordBot, commands: CommandListener) {
@@ -45,22 +44,24 @@ class ServerCommands(private val bot: DiscordBot, commands: CommandListener) {
         loadServers(startup = true)
     }
 
-    private fun loadServers(startup: Boolean) {
+    private fun loadServers(startup: Boolean, onFinish: () -> Unit = {}) {
         val servers = try {
             val json = Utils.readStringFromClipboard() ?: "invalid json text"
             val parseStringToServers = parseStringToServers(json)
             bot.logger.info("Reading discord server list from clipboard")
             parseStringToServers
-        } catch (e: JsonSyntaxException) {
+        } catch (e: Throwable) { // JsonSyntaxException or NullPointerException
             val json = github.getFileContent("data/discord_servers.json") ?: error("Error loading discord_servers")
             bot.logger.info("Reading discord server list from github")
             parseStringToServers(json)
         }
 
-        checkForDuplicates(startup)
-        Utils.runDelayed(2.seconds) {
-            checkForFakes(servers)
-            this.servers = servers
+        Utils.runDelayed(if (startup) 500.milliseconds else 2.milliseconds) { // We need a delay on startup only
+            checkForDuplicates(startup)
+            checkForFakes(servers) {
+                onFinish()
+                this.servers = servers
+            }
         }
     }
 
@@ -95,8 +96,7 @@ class ServerCommands(private val bot: DiscordBot, commands: CommandListener) {
                 val nameA = serverList[0].name
                 val nameB = serverList[1].name
                 if (nameA == nameB && key == nameA.lowercase()) {
-                    // skip if the server name is the same as the key name
-                    continue
+                    continue // skip if the server name is the same as the key name
                 }
             }
             duplicates.add("'$key' found in ${serverList.map { it.name }}")
@@ -106,59 +106,58 @@ class ServerCommands(private val bot: DiscordBot, commands: CommandListener) {
         if (count > 0) {
             bot.logger.warn("$count duplicate servers found!")
             val message = "Found $count duplicate servers:\n${duplicates.joinToString("\n")}"
-            if (startup) {
-                Utils.runDelayed(500.milliseconds) {
-                    bot.sendMessageToBotChannel(message)
-                }
-            } else {
-                bot.sendMessageToBotChannel(message)
-            }
+            bot.sendMessageToBotChannel(message)
         } else {
             bot.logger.info("no duplicate servers found.")
         }
     }
 
-    private fun checkForFakes(servers: MutableSet<Server>) {
+    private fun checkForFakes(servers: MutableSet<Server>, onFinish: () -> Unit) {
         var removed = 0
-        for (server in servers) {
-            val removedLine = "Removed the server from the local cache!"
+        val latch = CountDownLatch(servers.size)
+
+        for (server in servers.toList()) {
             Invite.resolve(bot.jda, server.invite.split("/").last(), true).queue { t ->
                 val guild = t.guild ?: run {
                     bot.logger.info("Server not found in discord api '${server.name}'!")
                     bot.sendMessageToBotChannel(buildString {
                         append("Server not found in discord api '${server.name}'!\n")
-                        append(removedLine)
+                        append("Removed the server from the local cache!")
                     })
                     servers.remove(server)
+                    latch.countDown()
                     return@queue
                 }
                 if (server.id != guild.id) {
                     removed++
-                    PLEADING_FACE
                     bot.logger.info("Wrong server id! ${server.name} (${server.id} != ${guild.id})")
                     bot.sendMessageToBotChannel(buildString {
-                        append("$PING_HANNIBAL Wrong server id found for '${server.name}'!\n")
+                        append("Wrong server id found for '${server.name}'!\n")
                         append("json id: `${server.id}`\n")
                         append("discord api id: `${guild.id}`\n")
-                        append(removedLine)
+                        append("Removed the server from the local cache!")
                     })
-                    bot.logger.info("")
                     servers.remove(server)
                 }
+                latch.countDown()
             }
         }
+
+        latch.await() // wait for all servers to be checked
         if (removed == 0) {
             bot.logger.info("Checked for fake server with no results.")
         } else {
             bot.logger.info("Removed $removed servers from local cache because of fakes or not found!")
         }
-
+        onFinish()
     }
 
     private fun MessageReceivedEvent.updateServers(args: List<String>) {
-        loadServers(startup = false)
-        reply("Updated server list from [GitHub](<https://github.com/SkyHanniStudios/DiscordBot/blob/master/data/discord_servers.json>).")
-        logAction("updated server list from github")
+        reply("updating server list ...")
+        loadServers(startup = false) {
+            reply("Updated server list from [GitHub](<https://github.com/SkyHanniStudios/DiscordBot/blob/master/data/discord_servers.json>).")
+            logAction("updated server list from github")
+        }
     }
 
     private fun MessageReceivedEvent.serverCommand(args: List<String>) {
