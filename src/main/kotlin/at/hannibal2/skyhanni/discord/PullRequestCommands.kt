@@ -45,7 +45,7 @@ class PullRequestCommands(config: BotConfig, commands: CommandListener) {
             reply("Usage: `!pr <number>`")
             return
         }
-        val prNumber = args[1].removePrefix("#").toLongOrNull() ?: run {
+        val prNumber = args[1].toLongOrNull() ?: run {
             reply("unknown number $PLEADING_FACE (${args[1]})")
             return
         }
