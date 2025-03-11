@@ -95,4 +95,6 @@ object Database {
     fun getTagCount(keyword: String): Int? {
         return tagCache[keyword.lowercase()]?.uses
     }
+
+    fun containsKeyword(keyword: String): Boolean = tagCache.containsKey(keyword.lowercase())
 }

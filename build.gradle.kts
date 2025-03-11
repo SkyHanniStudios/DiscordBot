@@ -26,6 +26,8 @@ dependencies {
 
     runtimeOnly("com.squareup.okhttp3:okhttp:4.3.1") // Http Client
     runtimeOnly("com.google.code.gson:gson:2.11.0") // Json
+    implementation("org.reflections:reflections:0.10.2") // Reflections
+    implementation("org.jetbrains.kotlin:kotlin-reflect") // Kotlin Reflection
 }
 
 tasks.test {
