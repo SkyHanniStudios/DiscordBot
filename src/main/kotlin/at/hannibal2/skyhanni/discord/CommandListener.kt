@@ -4,7 +4,12 @@ import at.hannibal2.skyhanni.discord.Utils.hasAdminPermissions
 import at.hannibal2.skyhanni.discord.Utils.inBotCommandChannel
 import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.reply
-import at.hannibal2.skyhanni.discord.command.*
+import at.hannibal2.skyhanni.discord.command.BaseCommand
+import at.hannibal2.skyhanni.discord.command.HelpCommand
+import at.hannibal2.skyhanni.discord.command.PullRequestCommand
+import at.hannibal2.skyhanni.discord.command.ServerCommands
+import at.hannibal2.skyhanni.discord.command.TagCommands
+import at.hannibal2.skyhanni.discord.command.TagUndo
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.reflections.Reflections
 import java.lang.reflect.Modifier
@@ -74,6 +79,7 @@ object CommandListener {
             with(HelpCommand) {
                 sendUsageReply(literal)
             }
+            return
         }
         try {
             with(command) {
