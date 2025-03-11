@@ -78,8 +78,8 @@ object Utils {
         messageSend(text)
     }
 
-    fun sendMessageToBotChannel(text: String) {
-        BOT.jda.getTextChannelById(BOT.config.botCommandChannelId)?.messageSend(text)
+    fun sendMessageToBotChannel(text: String, instantly: Boolean = false) {
+        BOT.jda.getTextChannelById(BOT.config.botCommandChannelId)?.messageSend(text, instantly)
     }
 
     fun MessageReceivedEvent.logAction(action: String, raw: Boolean = false) {
