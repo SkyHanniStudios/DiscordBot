@@ -7,6 +7,7 @@ import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.Utils.sendMessageToBotChannel
 import at.hannibal2.skyhanni.discord.Utils.userError
+import at.hannibal2.skyhanni.discord.command.ServerCommands.loadServers
 import at.hannibal2.skyhanni.discord.github.GitHubClient
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -60,17 +61,17 @@ object ServerCommands {
         private set
     private val discordServerPattern = "(https?://)?(www\\.)?(discord\\.gg|discord\\.com/invite)/[\\w-]+".toPattern()
 
-    internal fun loadServers(startup: Boolean, onFinish: (String, Int) -> Unit = { _, _ -> }) {
+    fun loadServers(startup: Boolean, onFinish: (String, Int) -> Unit = { _, _ -> }) {
         var source: String
         val servers = try {
             val json = Utils.readStringFromClipboard() ?: "invalid json text"
-            val parseStringToServers = parseStringToServers(json)
-            bot.logger.info("Reading discord server list from clipboard")
+            val list = parseStringToServers(json)
+            BOT.logger.info("Reading discord server list from clipboard")
             source = "local clipboard"
-            parseStringToServers
+            list
         } catch (e: Throwable) { // JsonSyntaxException or NullPointerException
             val json = github.getFileContent("data/discord_servers.json") ?: error("Error loading discord_servers")
-            bot.logger.info("Reading discord server list from github")
+            BOT.logger.info("Reading discord server list from github")
             source = "[GitHub](<https://github.com/SkyHanniStudios/DiscordBot/blob/master/data/discord_servers.json>)"
             parseStringToServers(json)
         }
@@ -79,14 +80,49 @@ object ServerCommands {
             checkForDuplicates(servers, startup)
             checkForFakes(servers) { removed ->
                 if (removed == 0) {
-                    bot.logger.info("Checked for fake server with no results.")
+                    BOT.logger.info("Checked for fake server with no results.")
                 } else {
-                    bot.logger.info("Removed $removed servers from local cache because of fakes or not found!")
+                    BOT.logger.info("Removed $removed servers from local cache because of fakes or not found!")
                 }
                 onFinish(source, removed)
                 this.servers = servers
             }
         }
+    }
+
+    private fun checkForFakes(servers: MutableSet<Server>, onFinish: (Int) -> Unit) {
+        var removed = 0
+        val latch = CountDownLatch(servers.size)
+
+        for (server in servers.toList()) {
+            Invite.resolve(BOT.jda, server.invite.split("/").last(), true).queue { t ->
+                val guild = t.guild ?: run {
+                    BOT.logger.info("Server not found in discord api '${server.name}'!")
+                    sendMessageToBotChannel(buildString {
+                        append("Server not found in discord api '${server.name}'!\n")
+                        append("Removed the server from the local cache!")
+                    })
+                    servers.remove(server)
+                    latch.countDown()
+                    return@queue
+                }
+                if (server.id != guild.id) {
+                    removed++
+                    BOT.logger.info("Wrong server id! ${server.name} (${server.id} != ${guild.id})")
+                    sendMessageToBotChannel(buildString {
+                        append("Wrong server id found for '${server.name}'!\n")
+                        append("json id: `${server.id}`\n")
+                        append("discord api id: `${guild.id}`\n")
+                        append("Removed the server from the local cache!")
+                    })
+                    servers.remove(server)
+                }
+                latch.countDown()
+            }
+        }
+
+        latch.await() // wait for all servers to be checked
+        onFinish(removed)
     }
 
     private fun parseStringToServers(json: String): MutableSet<Server> {
@@ -124,7 +160,7 @@ object ServerCommands {
                 }
             }
             duplicates.add("'$key' found in ${serverList.map { it.name }}")
-            bot.logger.info("Duplicate key '$key' found in servers: ${serverList.map { it.name }}")
+            BOT.logger.info("Duplicate key '$key' found in servers: ${serverList.map { it.name }}")
         }
         val count = duplicates.size
         if (count > 0) {
@@ -210,9 +246,14 @@ class ServerUpdate : BaseCommand() {
     override val aliases: List<String> = listOf("updateservers")
 
     override fun MessageReceivedEvent.execute(args: List<String>) {
-        ServerCommands.loadServers(startup = false)
-        reply("Updated server list from [GitHub](<https://github.com/SkyHanniStudios/DiscordBot/blob/master/data/discord_servers.json>).")
-        logAction("updated server list from github")
+        reply("updating server list ...")
+        loadServers(startup = false) { source, removed ->
+            val removedSuffix = if (removed > 0) {
+                " (removed $removed servers)"
+            } else ""
+            reply("Updated server list from $source.$removedSuffix")
+            logAction("updated server list from github")
+        }
     }
 
 }
