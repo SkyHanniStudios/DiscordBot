@@ -1,6 +1,8 @@
 package at.hannibal2.skyhanni.discord.command
 
-import at.hannibal2.skyhanni.discord.*
+import at.hannibal2.skyhanni.discord.BOT
+import at.hannibal2.skyhanni.discord.Option
+import at.hannibal2.skyhanni.discord.Utils
 import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.sendMessageToBotChannel
 import at.hannibal2.skyhanni.discord.github.GitHubClient

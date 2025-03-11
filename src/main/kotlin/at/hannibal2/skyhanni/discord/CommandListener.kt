@@ -3,10 +3,16 @@ package at.hannibal2.skyhanni.discord
 import at.hannibal2.skyhanni.discord.Utils.hasAdminPermissions
 import at.hannibal2.skyhanni.discord.Utils.inBotCommandChannel
 import at.hannibal2.skyhanni.discord.Utils.logAction
-import at.hannibal2.skyhanni.discord.command.*
+import at.hannibal2.skyhanni.discord.command.HelpCommand
+import at.hannibal2.skyhanni.discord.command.BaseCommand
+import at.hannibal2.skyhanni.discord.command.MessageEvent
+import at.hannibal2.skyhanni.discord.command.SlashCommandEvent
+import at.hannibal2.skyhanni.discord.command.ServerCommands
 import at.hannibal2.skyhanni.discord.command.PullRequestCommand.isPullRequest
 import at.hannibal2.skyhanni.discord.command.ServerCommands.isKnownServerUrl
+import at.hannibal2.skyhanni.discord.command.TagCommands
 import at.hannibal2.skyhanni.discord.command.TagCommands.handleTag
+import at.hannibal2.skyhanni.discord.command.TagUndo
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
@@ -117,7 +123,7 @@ object CommandListener {
         with(SlashCommandEvent(this)) {
             if (guild?.id != bot.config.allowedServerId || user.isBot) return
 
-            val command = getCommand(event.fullCommandName) ?: return
+            val command = getCommand(fullCommandName) ?: return
 
             if (!command.userCommand) {
                 if (!hasAdminPermissions()) {
