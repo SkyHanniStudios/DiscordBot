@@ -7,7 +7,7 @@ data class Tag(val keyword: String, var response: String, var uses: Int)
 
 object Database {
     private val connection: Connection = DriverManager.getConnection("jdbc:sqlite:bot.db")
-    private val tagCache = mutableMapOf<String, Tag>()
+    private val tags = mutableMapOf<String, Tag>()
 
     init {
         val statement = connection.createStatement()
@@ -29,7 +29,7 @@ object Database {
             val key = resultSet.getString("keyword").lowercase()
             val response = resultSet.getString("response")
             val count = resultSet.getInt("count")
-            tagCache[key] = Tag(key, response, count)
+            tags[key] = Tag(key, response, count)
         }
         resultSet.close()
     }
@@ -61,14 +61,14 @@ object Database {
         statement.setInt(3, 0)
         val updated = statement.executeUpdate() > 0
         if (updated) {
-            tagCache[key] = Tag(key, response, 0)
+            tags[key] = Tag(key, response, 0)
         }
         return updated
     }
 
     fun getResponse(keyword: String, increment: Boolean = false): String? {
         val key = keyword.lowercase()
-        val kObj = tagCache[key] ?: return null
+        val kObj = tags[key] ?: return null
         if (increment) {
             kObj.uses++
             val statement = connection.prepareStatement(
@@ -86,15 +86,15 @@ object Database {
         val statement = connection.prepareStatement("DELETE FROM keywords WHERE keyword = ?")
         statement.setString(1, key)
         val updated = statement.executeUpdate() > 0
-        if (updated) tagCache.remove(key)
+        if (updated) tags.remove(key)
         return updated
     }
 
-    fun listTags(): List<Tag> = tagCache.values.toList()
+    fun listTags(): List<Tag> = tags.values.toList()
 
     fun getTagCount(keyword: String): Int? {
-        return tagCache[keyword.lowercase()]?.uses
+        return tags[keyword.lowercase()]?.uses
     }
 
-    fun containsKeyword(keyword: String): Boolean = tagCache.containsKey(keyword.lowercase())
+    fun containsKeyword(keyword: String): Boolean = tags.containsKey(keyword.lowercase())
 }
