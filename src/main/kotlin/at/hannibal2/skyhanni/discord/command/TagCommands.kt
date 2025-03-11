@@ -194,7 +194,7 @@ class TagDelete : BaseCommand() {
 }
 
 @Suppress("unused")
-class TagUndo : BaseCommand() {
+object TagUndo : BaseCommand() {
     override val name: String = "tagundo"
     override val description: String = "Undoes something not quite sure."
     override val userCommand: Boolean = true
