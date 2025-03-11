@@ -1,7 +1,6 @@
 package at.hannibal2.skyhanni.discord.command
 
 import at.hannibal2.skyhanni.discord.Option
-import at.hannibal2.skyhanni.discord.Utils.userError
 
 abstract class BaseCommand {
 
@@ -15,10 +14,10 @@ abstract class BaseCommand {
 
     protected open val aliases: List<String> = emptyList()
 
-    abstract fun execute(args: List<String>, event: Any)
+    abstract fun CommandEvent.execute(args: List<String>)
 
-    protected fun wrongUsage(args: String, event: Any) {
-        userError("Usage: `!$name $args`", event)
+    protected fun CommandEvent.wrongUsage(args: String) {
+        userError("Usage: `!$name $args`")
     }
 
     fun getAllNames(): List<String> = aliases + name

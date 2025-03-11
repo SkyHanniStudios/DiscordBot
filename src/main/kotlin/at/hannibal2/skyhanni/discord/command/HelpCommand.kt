@@ -1,15 +1,12 @@
 package at.hannibal2.skyhanni.discord.command
 
 import at.hannibal2.skyhanni.discord.BOT
+import at.hannibal2.skyhanni.discord.PLEADING_FACE
 import at.hannibal2.skyhanni.discord.CommandListener
 import at.hannibal2.skyhanni.discord.Option
-import at.hannibal2.skyhanni.discord.PLEADING_FACE
-import at.hannibal2.skyhanni.discord.Utils.doWhen
 import at.hannibal2.skyhanni.discord.Utils.hasAdminPermissions
 import at.hannibal2.skyhanni.discord.Utils.inBotCommandChannel
 import at.hannibal2.skyhanni.discord.Utils.messageDelete
-import at.hannibal2.skyhanni.discord.Utils.reply
-import at.hannibal2.skyhanni.discord.Utils.replyWithConsumer
 import at.hannibal2.skyhanni.discord.Utils.runDelayed
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.MessageEmbed
@@ -24,65 +21,54 @@ object HelpCommand : BaseCommand() {
 
     override val userCommand: Boolean = true
 
-    override fun execute(args: List<String>, event: Any) {
+    override fun CommandEvent.execute(args: List<String>) {
         if (args.size > 1) {
-            reply("Usage: !help <command>", event)
+            reply("Usage: !help <command>")
             return
         }
 
         val command = doWhen(
-            event,
-            { if (args.isEmpty()) null else args.first().lowercase() },
-            { it.getOption("command")?.asString }
+            isMessage = { if (args.isEmpty()) null else args.first().lowercase() },
+            isSlashCommand = { it.getOption("command")?.asString }
         )
 
         if (command != null) {
-            sendUsageReply(command, event)
+            sendUsageReply(command)
         } else {
-            val commands = if (hasAdminPermissions(event) && inBotCommandChannel(event)) {
+            val commands = if (hasAdminPermissions() && inBotCommandChannel()) {
                 CommandListener.commands
             } else {
                 CommandListener.commands.filter { it.userCommand }
             }
             val list = commands.joinToString(", !", prefix = "!") { it.name }
-            reply("Supported commands: $list", event)
+            reply("Supported commands: $list")
 
-            if (hasAdminPermissions(event) && !inBotCommandChannel(event)) {
+            if (hasAdminPermissions() && !inBotCommandChannel()) {
                 val id = BOT.config.botCommandChannelId
                 val botCommandChannel = "https://discord.com/channels/$id/$id"
 
-                doWhen(
-                    event, {
-                        it.replyWithConsumer("You wanna see the cool admin only commands? visit $botCommandChannel") { consumer ->
-                            runDelayed(3.seconds) {
-                                consumer.message.messageDelete()
-                            }
-                        }
-                    }, {
-                        it.channel.sendMessage("You wanna see the cool admin only commands? visit $botCommandChannel")
-                            .queue {
-                                runDelayed(3.seconds) {
-                                    it.channel.deleteMessageById(it.id).queue()
-                                }
-                            }
+                replyWithConsumer("You wanna see the cool admin only commands? visit $botCommandChannel") {
+                    runDelayed(3.seconds) {
+                        val message = message ?: return@runDelayed
+                        message.messageDelete()
                     }
-                )
+                }
             }
         }
     }
 
-    fun sendUsageReply(commandName: String, event: Any) {
+    fun CommandEvent.sendUsageReply(commandName: String) {
         val command = CommandListener.getCommand(commandName) ?: run {
-            reply("Unknown command `!$commandName` $PLEADING_FACE", event)
+            reply("Unknown command `!$commandName` $PLEADING_FACE")
             return
         }
 
-        if (!command.userCommand && !hasAdminPermissions(event)) {
-            reply("No permissions for command `!$commandName` $PLEADING_FACE", event)
+        if (!command.userCommand && !hasAdminPermissions()) {
+            reply("No permissions for command `!$commandName` $PLEADING_FACE")
             return
         }
 
-        reply(createHelpEmbed(commandName), event)
+        reply(createHelpEmbed(commandName))
     }
 
     private fun BaseCommand.createHelpEmbed(commandName: String): MessageEmbed {

@@ -5,26 +5,20 @@ import at.hannibal2.skyhanni.discord.Option
 import at.hannibal2.skyhanni.discord.PLEADING_FACE
 import at.hannibal2.skyhanni.discord.SimpleTimeMark
 import at.hannibal2.skyhanni.discord.SimpleTimeMark.Companion.asTimeMark
-import at.hannibal2.skyhanni.discord.Utils
 import at.hannibal2.skyhanni.discord.Utils.createParentDirIfNotExist
-import at.hannibal2.skyhanni.discord.Utils.doWhen
 import at.hannibal2.skyhanni.discord.Utils.embed
 import at.hannibal2.skyhanni.discord.Utils.format
 import at.hannibal2.skyhanni.discord.Utils.linkTo
 import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.messageDelete
-import at.hannibal2.skyhanni.discord.Utils.reply
-import at.hannibal2.skyhanni.discord.Utils.replyWithConsumer
 import at.hannibal2.skyhanni.discord.Utils.runDelayed
 import at.hannibal2.skyhanni.discord.Utils.timeExecution
 import at.hannibal2.skyhanni.discord.Utils.unzipFile
 import at.hannibal2.skyhanni.discord.Utils.uploadFile
-import at.hannibal2.skyhanni.discord.Utils.userError
 import at.hannibal2.skyhanni.discord.github.GitHubClient
 import at.hannibal2.skyhanni.discord.json.discord.PullRequestJson
 import at.hannibal2.skyhanni.discord.json.discord.Status
-import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
-import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion
 import java.awt.Color
 import java.io.File
 import java.time.Instant
@@ -52,40 +46,40 @@ object PullRequestCommand : BaseCommand() {
         Regex("https://github\\.com/[\\w.]+/[\\w.]+/actions/runs/(?<RunId>\\d+)/job/(?<JobId>\\d+)")
     private val pullRequestPattern = "$BASE/pull/(?<pr>\\d+)".toPattern()
 
-    override fun execute(args: List<String>, event: Any) {
-        val prNumber = doWhen(event, {
-            if (args.size != 1) {
-                wrongUsage("<number>", event)
-                return@doWhen null
-            }
-
-            val first = args.first()
-            first.toIntOrNull() ?: run {
-                userError("Unknown number $PLEADING_FACE ($first})", event)
-                null
-            }
-        }, {
-            it.getOption("number")?.asInt
-        }) ?: return
-
-        if (prNumber < 1) {
-            userError("PR number needs to be positive $PLEADING_FACE", event, ephemeral = true)
+    override fun CommandEvent.execute(args: List<String>) {
+        if (args.isNotEmpty() && args.size != 1) {
+            wrongUsage("<number>")
             return
         }
 
-        loadPrInfos(prNumber, event)
+        val prNumber = doWhen(
+            isMessage = {
+                val first = args.first()
+                first.toIntOrNull() ?: run {
+                    userError("Unknown number $PLEADING_FACE ($first})")
+                    null
+                }
+            },
+            isSlashCommand = {
+                it.getOption("number")?.asInt
+            }
+        ) ?: return
+
+        if (prNumber < 1) {
+            userError("PR number needs to be positive $PLEADING_FACE")
+            return
+        }
+
+        loadPrInfos(prNumber)
     }
 
-    private fun loadPrInfos(prNumber: Int, event: Any) {
-        when (event) {
-            is MessageReceivedEvent -> logAction("loads pr infos for #$prNumber", event)
-            is SlashCommandInteractionEvent -> logAction("loads pr infos for #$prNumber", event)
-        }
+    private fun CommandEvent.loadPrInfos(prNumber: Int) {
+        logAction("loads pr infos for #$prNumber")
 
         val prLink = "$BASE/pull/$prNumber"
 
         val pr =
-            runCatching { github.findPullRequest(prNumber) }.getOrElse { handlePrError(prNumber, event, it); return }
+            runCatching { github.findPullRequest(prNumber) }.getOrElse { handlePrError(prNumber, it); return }
                 ?: return
 
         val head = pr.head
@@ -102,14 +96,13 @@ object PullRequestCommand : BaseCommand() {
                     embedTitle,
                     "$title$time \nArtifact does not exist $PLEADING_FACE (expired or first PR of contributor)",
                     readColor(pr)
-                ),
-                event
+                )
             )
             return
         }
 
         if (job.startedAt?.let { toTimeMark(it).passedSince() > 90.days } == true) {
-            reply(embed(embedTitle, "$title$time \nArtifact has expired $PLEADING_FACE", readColor(pr)), event)
+            reply(embed(embedTitle, "$title$time \nArtifact has expired $PLEADING_FACE", readColor(pr)))
             return
         }
 
@@ -121,7 +114,7 @@ object PullRequestCommand : BaseCommand() {
                 Status.WAITING to "Run is waiting $PLEADING_FACE",
                 Status.PENDING to "Run is pending $PLEADING_FACE"
             )[job.status] ?: ""
-            reply(embed(embedTitle, "$title$time \n$statusText", readColor(pr)), event)
+            reply(embed(embedTitle, "$title$time \n$statusText", readColor(pr)))
             return
         }
 
@@ -133,16 +126,16 @@ object PullRequestCommand : BaseCommand() {
                 "Nightly".linkTo(nightlyLink)
             } (unofficial)\n> (updated ${passedSince(job.completedAt ?: "")})"
 
-        reply(embed(embedTitle, "$title$time$artifactDisplay", readColor(pr)), event)
+        reply(embed(embedTitle, "$title$time$artifactDisplay", readColor(pr)))
     }
 
-    private fun handlePrError(prNumber: Int, event: Any, e: Throwable) {
+    private fun CommandEvent.handlePrError(prNumber: Int, e: Throwable) {
         if (e is IllegalStateException && e.message?.contains(" code:404 ") == true) {
             val text = "This pull request does not yet exist or is an ${"issue".linkTo("$BASE/issues/$prNumber")}"
-            reply(embed("Not found $PLEADING_FACE", text, Color.red), event, ephemeral = true)
+            reply(embed("Not found $PLEADING_FACE", text, Color.red), ephemeral = true)
             return
         }
-        reply("Could not load pull request infos for #$prNumber: ${e.message}", event, ephemeral = true)
+        reply("Could not load pull request infos for #$prNumber: ${e.message}", ephemeral = true)
     }
 
     // Colors picked from GitHub
@@ -160,43 +153,43 @@ object PullRequestCommand : BaseCommand() {
     private fun passedSince(stringTime: String): String = "<t:${parseToUnixTime(stringTime)}:R>"
 
     @Suppress("unused") // TODO implement once we can upload the file
-    private fun MessageReceivedEvent.pullRequestArtifactCommand(args: List<String>) {
+    private fun CommandEvent.pullRequestArtifactCommand(args: List<String>) {
         if (args.size != 2) {
-            reply("Usage: `!prupload <number>`", this)
+            reply("Usage: `!prupload <number>`")
             return
         }
         val prNumber = args[1].toIntOrNull() ?: run {
-            reply("unknwon number $PLEADING_FACE (${args[1]})", this)
+            reply("unknwon number $PLEADING_FACE (${args[1]})")
             return
         }
 
         val prLink = "$BASE/pull/$prNumber"
-        reply("Looking for pr <$prLink..", this)
+        reply("Looking for pr <$prLink..")
 
         val pr = github.findPullRequest(prNumber) ?: run {
-            reply("pr is null!", this)
+            reply("pr is null!")
             return
         }
         val head = pr.head
-        reply("found pr `${pr.title}` (from `${head.user.login}`)", this)
+        reply("found pr `${pr.title}` (from `${head.user.login}`)")
 
-        reply("looking for artifact ..", this)
+        reply("looking for artifact ..")
         val lastCommit = head.sha
         val artifact = github.findArtifact(lastCommit) ?: run {
-            reply("artifact is null!", this)
+            reply("artifact is null!")
             return
         }
-        reply("found artifact", this)
+        reply("found artifact")
 
         val artifactId = artifact.id
         val fileRaw = File("temp/downloads/artifact-$artifactId-raw")
         fileRaw.createParentDirIfNotExist()
         val fileUnzipped = File("temp/downloads/artifact-$artifactId-unzipped")
-        reply("Downloading artifact ..", this)
+        reply("Downloading artifact ..")
         val (_, downloadTime) = timeExecution {
             github.downloadArtifact(artifactId, fileRaw)
         }
-        reply("artifact downnloaded in ${downloadTime.format()}", this)
+        reply("artifact downnloaded in ${downloadTime.format()}")
 
         unzipFile(fileRaw, fileUnzipped)
         fileRaw.delete()
@@ -204,31 +197,31 @@ object PullRequestCommand : BaseCommand() {
         val displayUrl = "$BASE/actions/runs/$artifactId?pr=$prNumber"
 
         val modJar = findJarFile(fileUnzipped) ?: run {
-            reply("mod jar not found!", this)
+            reply("mod jar not found!")
             return
         }
 
-        reply("start uploading..", this)
+        reply("start uploading..")
         val (_, uploadTime) = timeExecution {
-            channel.uploadFile(modJar, "here is the jar from <$displayUrl>")
+            (channel as MessageChannelUnion).uploadFile(modJar, "here is the jar from <$displayUrl>")
         }
-        reply("Mod jar uploaded in ${uploadTime.format()}", this)
+        reply("Mod jar uploaded in ${uploadTime.format()}")
     }
 
     private fun findJarFile(directory: File): File? {
         return directory.walkTopDown().firstOrNull { it.isFile && it.name.startsWith("SkyHanni-") }
     }
 
-    fun isPullRequest(event: MessageReceivedEvent, message: String): Boolean {
+    fun MessageEvent.isPullRequest(message: String): Boolean {
         val matcher = pullRequestPattern.matcher(message)
         if (!matcher.matches()) return false
         val pr = matcher.group("pr")?.toIntOrNull() ?: return false
-        event.replyWithConsumer("Next time just type `!pr $pr` $PLEADING_FACE") { consumer ->
+        replyWithConsumer("Next time just type `!pr $pr` $PLEADING_FACE") { consumer ->
             runDelayed(10.seconds) {
                 consumer.message.messageDelete()
             }
         }
-        loadPrInfos(pr, this)
+        loadPrInfos(pr)
         return true
     }
 }
@@ -250,7 +243,7 @@ object PullRequestCommand : BaseCommand() {
 //                return
 //            }
 //
-//            loadPrInfos(prNumber, this)
+//            loadPrInfos(prNumber)
 //        }
 //    }
 //}
