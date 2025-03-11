@@ -44,22 +44,30 @@ class ServerCommands(private val bot: DiscordBot, commands: CommandListener) {
         loadServers(startup = true)
     }
 
-    private fun loadServers(startup: Boolean, onFinish: () -> Unit = {}) {
+    private fun loadServers(startup: Boolean, onFinish: (String, Int) -> Unit = { _, _ -> }) {
+        var source: String
         val servers = try {
             val json = Utils.readStringFromClipboard() ?: "invalid json text"
             val parseStringToServers = parseStringToServers(json)
             bot.logger.info("Reading discord server list from clipboard")
+            source = "local clipboard"
             parseStringToServers
         } catch (e: Throwable) { // JsonSyntaxException or NullPointerException
             val json = github.getFileContent("data/discord_servers.json") ?: error("Error loading discord_servers")
             bot.logger.info("Reading discord server list from github")
+            source = "[GitHub](<https://github.com/SkyHanniStudios/DiscordBot/blob/master/data/discord_servers.json>)"
             parseStringToServers(json)
         }
 
         Utils.runDelayed(if (startup) 500.milliseconds else 2.milliseconds) { // We need a delay on startup only
             checkForDuplicates(servers, startup)
-            checkForFakes(servers) {
-                onFinish()
+            checkForFakes(servers) { removed ->
+                if (removed == 0) {
+                    bot.logger.info("Checked for fake server with no results.")
+                } else {
+                    bot.logger.info("Removed $removed servers from local cache because of fakes or not found!")
+                }
+                onFinish(source, removed)
                 this.servers = servers
             }
         }
@@ -112,7 +120,7 @@ class ServerCommands(private val bot: DiscordBot, commands: CommandListener) {
         }
     }
 
-    private fun checkForFakes(servers: MutableSet<Server>, onFinish: () -> Unit) {
+    private fun checkForFakes(servers: MutableSet<Server>, onFinish: (Int) -> Unit) {
         var removed = 0
         val latch = CountDownLatch(servers.size)
 
@@ -144,18 +152,16 @@ class ServerCommands(private val bot: DiscordBot, commands: CommandListener) {
         }
 
         latch.await() // wait for all servers to be checked
-        if (removed == 0) {
-            bot.logger.info("Checked for fake server with no results.")
-        } else {
-            bot.logger.info("Removed $removed servers from local cache because of fakes or not found!")
-        }
-        onFinish()
+        onFinish(removed)
     }
 
     private fun MessageReceivedEvent.updateServers(args: List<String>) {
         reply("updating server list ...")
-        loadServers(startup = false) {
-            reply("Updated server list from [GitHub](<https://github.com/SkyHanniStudios/DiscordBot/blob/master/data/discord_servers.json>).")
+        loadServers(startup = false) { source, removed ->
+            val removedSuffix = if (removed > 0) {
+                " (removed $removed servers)"
+            } else ""
+            reply("Updated server list from $source.$removedSuffix")
             logAction("updated server list from github")
         }
     }
