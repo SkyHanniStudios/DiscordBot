@@ -92,7 +92,7 @@ object CommandListener {
         // allows to use `!<command> -help` instead of `!help -<command>`
         if (args.size == 1 && args.first() == "-help") {
             with(HelpCommand) {
-                sendUsageReply(literal)
+                sendUsageReply(literal, this@onMessage)
             }
             return
         }
@@ -146,7 +146,9 @@ object CommandListener {
                 if (focusedOption.name != "command") return
 
                 replyChoiceStrings(
-                    commands.filterKeys { key -> key.startsWith(focusedOption.value) }.keys
+                    commands.filter { it.name.startsWith(focusedOption.value) }
+                        .map { it.name }
+                        .take(25)
                 ).queue()
             }
 
@@ -212,7 +214,7 @@ object CommandListener {
 
     fun createCommands(guild: Guild) {
         guild.retrieveCommands().queue {
-            val commandData = commands.values.map { value -> convertToData(value) }
+            val commandData = commands.map { value -> convertToData(value) }
 
             guild.updateCommands().addCommands(commandData).queue()
         }
