@@ -4,9 +4,12 @@ import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.github.GitHubClient
 import com.google.gson.Gson
+import com.google.gson.JsonSyntaxException
 import com.google.gson.reflect.TypeToken
+import net.dv8tion.jda.api.entities.Invite
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 @Suppress("UNUSED_PARAMETER")
 class ServerCommands(private val bot: DiscordBot, commands: CommandListener) {
@@ -14,6 +17,7 @@ class ServerCommands(private val bot: DiscordBot, commands: CommandListener) {
 
     class Server(
         val keyword: String,
+        val id: String,
         val name: String,
         val invite: String,
         val description: String,
@@ -22,13 +26,14 @@ class ServerCommands(private val bot: DiscordBot, commands: CommandListener) {
 
     class ServerJson(
         val name: String,
+        val id: String,
         val size: String,
         val invite: String,
         val description: String,
         val aliases: List<String>? = null,
     )
 
-    private var servers = listOf<Server>()
+    private var servers = setOf<Server>()
     private val disordServerPattern = "(https?://)?(www\\.)?(discord\\.gg|discord\\.com/invite)/[\\w-]+".toPattern()
 
     init {
@@ -41,24 +46,38 @@ class ServerCommands(private val bot: DiscordBot, commands: CommandListener) {
     }
 
     private fun loadServers(startup: Boolean) {
-        val json = github.getFileContent("data/discord_servers.json") ?: error("Error loading discord_servers")
+        val servers = try {
+            val json = Utils.readStringFromClipboard()
+            val parseStringToServers = parseStringToServers(json)
+            bot.logger.info("Reading discord server list from clipboard")
+            parseStringToServers
+        } catch (e: JsonSyntaxException) {
+            val json = github.getFileContent("data/discord_servers.json") ?: error("Error loading discord_servers")
+            bot.logger.info("Reading discord server list from github")
+            parseStringToServers(json)
+        }
 
-        // Parse JSON as a map of maps.
+        checkForDuplicates(startup)
+        Utils.runDelayed(2.seconds) {
+            checkForFakes(servers)
+            this.servers = servers
+        }
+    }
+
+    private fun parseStringToServers(json: String): MutableSet<Server> {
         val type = object : TypeToken<Map<String, Map<String, ServerJson>>>() {}.type
         val data: Map<String, Map<String, ServerJson>> = Gson().fromJson(json, type)
 
-        // Flatten into a list of Mods (ignoring category)
-        servers = data.flatMap { (_, serverCategories) ->
+        return data.flatMap { (_, serverCategories) ->
             serverCategories.map { (id, data) ->
                 Server(id.lowercase(),
+                    data.id,
                     data.name,
                     data.invite,
                     data.description,
                     data.aliases?.map { it.lowercase() } ?: emptyList())
             }
-        }
-
-        checkForDuplicates(startup)
+        }.toMutableSet()
     }
 
     private fun checkForDuplicates(startup: Boolean) {
@@ -81,7 +100,7 @@ class ServerCommands(private val bot: DiscordBot, commands: CommandListener) {
                 }
             }
             duplicates.add("'$key' found in ${serverList.map { it.name }}")
-            println("Duplicate key '$key' found in servers: ${serverList.map { it.name }}")
+            bot.logger.info("Duplicate key '$key' found in servers: ${serverList.map { it.name }}")
         }
         val count = duplicates.size
         if (count > 0) {
@@ -97,6 +116,43 @@ class ServerCommands(private val bot: DiscordBot, commands: CommandListener) {
         } else {
             bot.logger.info("no duplicate servers found.")
         }
+    }
+
+    private fun checkForFakes(servers: MutableSet<Server>) {
+        var removed = 0
+        for (server in servers) {
+            val removedLine = "Removed the server from the local cache!"
+            Invite.resolve(bot.jda, server.invite.split("/").last(), true).queue { t ->
+                val guild = t.guild ?: run {
+                    bot.logger.info("Server not found in discord api '${server.name}'!")
+                    bot.sendMessageToBotChannel(buildString {
+                        append("Server not found in discord api '${server.name}'!\n")
+                        append(removedLine)
+                    })
+                    servers.remove(server)
+                    return@queue
+                }
+                if (server.id != guild.id) {
+                    removed++
+                    PLEADING_FACE
+                    bot.logger.info("Wrong server id! ${server.name} (${server.id} != ${guild.id})")
+                    bot.sendMessageToBotChannel(buildString {
+                        append("$PING_HANNIBAL Wrong server id found for '${server.name}'!\n")
+                        append("json id: `${server.id}`\n")
+                        append("discord api id: `${guild.id}`\n")
+                        append(removedLine)
+                    })
+                    bot.logger.info("")
+                    servers.remove(server)
+                }
+            }
+        }
+        if (removed == 0) {
+            bot.logger.info("Checked for fake server with no results.")
+        } else {
+            bot.logger.info("Removed $removed servers from local cache because of fakes or not found!")
+        }
+
     }
 
     private fun MessageReceivedEvent.updateServers(args: List<String>) {

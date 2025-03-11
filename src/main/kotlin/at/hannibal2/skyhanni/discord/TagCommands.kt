@@ -105,7 +105,7 @@ class TagCommands(private val config: BotConfig, private val commands: CommandLi
             return
         }
         val response = Database.getResponse(lastTag) ?: run {
-            reply("Last tag `$lastTag` got deleted, this should not happen, therefore we ping <@239858538959077376>")
+            reply("Last tag `$lastTag` got deleted, this should not happen, therefore we ping $PING_HANNIBAL")
             return
         }
         reply("```!tagedit $lastTag $response```")

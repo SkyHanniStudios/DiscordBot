@@ -9,7 +9,7 @@ import net.dv8tion.jda.api.requests.GatewayIntent
 import org.slf4j.LoggerFactory
 import java.util.Scanner
 
-class DiscordBot(private val jda: JDA, val config: BotConfig) {
+class DiscordBot(val jda: JDA, val config: BotConfig) {
     val logger = LoggerFactory.getLogger(this::class.java)
 
     var manualShutdown = false
@@ -32,6 +32,7 @@ class MessageListener(val sendMessage: (MessageReceivedEvent) -> Unit) : Listene
 }
 
 const val PLEADING_FACE = "\uD83E\uDD7A"
+const val PING_HANNIBAL = "<@239858538959077376>"
 
 fun main() {
     val bot = startBot()

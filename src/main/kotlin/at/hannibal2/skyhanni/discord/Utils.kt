@@ -10,6 +10,7 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.utils.FileUpload
 import org.slf4j.LoggerFactory
 import java.awt.Color
+import java.awt.Toolkit.getDefaultToolkit
 import java.io.File
 import java.util.zip.ZipFile
 import kotlin.time.Duration
@@ -216,5 +217,9 @@ object Utils {
 //        eb.setThumbnail("https://github.com/zekroTJA/DiscordBot/blob/master/.websrc/logo%20-%20title.png")
 
         return eb.build()
+    }
+
+    fun readStringFromClipboard(): String {
+        return getDefaultToolkit().systemClipboard.getData(java.awt.datatransfer.DataFlavor.stringFlavor) as String
     }
 }
