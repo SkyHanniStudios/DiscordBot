@@ -3,7 +3,7 @@ package at.hannibal2.skyhanni.discord
 import java.sql.Connection
 import java.sql.DriverManager
 
-data class Keyword(val keyword: String, var response: String, var count: Int)
+data class Keyword(val keyword: String, var response: String, var uses: Int)
 
 object Database {
     private val connection: Connection = DriverManager.getConnection("jdbc:sqlite:bot.db")
@@ -70,11 +70,11 @@ object Database {
         val key = keyword.lowercase()
         val kObj = keywordCache[key] ?: return null
         if (increment) {
-            kObj.count++
+            kObj.uses++
             val statement = connection.prepareStatement(
                 "UPDATE keywords SET count = ? WHERE keyword = ?"
             )
-            statement.setInt(1, kObj.count)
+            statement.setInt(1, kObj.uses)
             statement.setString(2, key)
             statement.executeUpdate()
         }
@@ -93,6 +93,6 @@ object Database {
     fun listKeywords(): List<Keyword> = keywordCache.values.toList()
 
     fun getKeywordCount(keyword: String): Int? {
-        return keywordCache[keyword.lowercase()]?.count
+        return keywordCache[keyword.lowercase()]?.uses
     }
 }

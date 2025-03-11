@@ -35,9 +35,18 @@ class TagCommands(private val config: BotConfig, private val commands: CommandLi
     }
 
     private fun MessageReceivedEvent.listCommand(args: List<String>) {
-        val list = Database.listKeywords().map { it.keyword }
-        val keywords = list.joinToString(", !", prefix = "!")
-        reply(if (list.isNotEmpty()) "📌 All ${list.size} keywords: $keywords" else "No keywords set.")
+        val list = Database.listKeywords()
+        if (list.isEmpty()) {
+            reply("No keywords set.")
+            return
+        }
+
+        val keywords = if (args.size == 2 && args[1] == "-i") {
+            list.sortedByDescending { it.uses }.joinToString("\n") { "!${it.keyword} (${it.uses} uses)" }
+        } else {
+            list.joinToString(", !", prefix = "!") { it.keyword }
+        }
+        reply("📌 All ${list.size} keywords:\n$keywords")
     }
 
     private fun MessageReceivedEvent.addCommand(args: List<String>) {
@@ -174,7 +183,7 @@ class TagCommands(private val config: BotConfig, private val commands: CommandLi
 
         if (info) {
             val count = Database.getKeywordCount(keyword)
-            event.reply("Tag `$keyword' got used `$count` times in total.")
+            event.reply("Tag `$keyword' got used $count times in total.")
             return true
         }
 
