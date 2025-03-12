@@ -1,8 +1,6 @@
 package at.hannibal2.skyhanni.discord.command
 
 import at.hannibal2.skyhanni.discord.Option
-import at.hannibal2.skyhanni.discord.Utils.userError
-import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
 abstract class BaseCommand {
 
@@ -16,9 +14,9 @@ abstract class BaseCommand {
 
     protected open val aliases: List<String> = emptyList()
 
-    abstract fun MessageReceivedEvent.execute(args: List<String>)
+    abstract fun CommandEvent.execute(args: List<String>)
 
-    protected fun MessageReceivedEvent.wrongUsage(args: String) {
+    protected fun CommandEvent.wrongUsage(args: String) {
         userError("Usage: `!$name $args`")
     }
 
