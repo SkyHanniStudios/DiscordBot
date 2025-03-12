@@ -38,11 +38,11 @@ object CommandListener {
         BOT.jda.getGuildById(BOT.config.allowedServerId)?.let { createCommands(it) }
     }
 
-    fun onMessage(bot: DiscordBot, event: MessageReceivedEvent) {
+    fun onMessage(bot: DiscordBot, event: MessageEvent) {
         event.onMessage(bot)
     }
 
-    fun onInteraction(bot: DiscordBot, event: SlashCommandInteractionEvent) {
+    fun onInteraction(bot: DiscordBot, event: SlashCommandEvent) {
         event.onInteraction(bot)
     }
 
@@ -50,100 +50,96 @@ object CommandListener {
         event.onCompletion()
     }
 
-    private fun MessageReceivedEvent.onMessage(bot: DiscordBot) {
-        with(MessageEvent(this)) {
-            val message = message.contentRaw.trim()
-            if (!isFromGuild) {
-                logAction("private dm: '$message'")
+    private fun MessageEvent.onMessage(bot: DiscordBot) {
+        val message = message.contentRaw.trim()
+        if (!isFromGuild) {
+            logAction("private dm: '$message'")
+            return
+        }
+        if (event.guild.id != bot.config.allowedServerId) return
+
+        if (author.isBot) {
+            if (author.id == BOT_ID) {
+                BotMessageHandler.handle(event)
+            }
+            return
+        }
+
+        if (TagUndo.getAllNames().none { "!$it" == message }) {
+            TagCommands.lastMessages.remove(author.id)
+        }
+
+        if (isKnownServerUrl(message) || isPullRequest(message) || !isCommand(message)) return
+
+        val split = message.substring(1).split(" ")
+        val literal = split.first().lowercase()
+        val args = split.drop(1)
+
+        val command = getCommand(literal) ?: run {
+            handleTag()
+            return
+        }
+
+        if (!command.userCommand) {
+            if (!hasAdminPermissions()) {
+                reply("No permissions $PLEADING_FACE")
                 return
             }
-            if (guild.id != bot.config.allowedServerId) return
 
-            if (author.isBot) {
-                if (author.id == BOT_ID) {
-                    BotMessageHandler.handle(event)
-                }
+            if (!inBotCommandChannel()) {
+                reply("Wrong channel $PLEADING_FACE")
                 return
             }
+        }
 
-            if (TagUndo.getAllNames().none { "!$it" == message }) {
-                TagCommands.lastMessages.remove(author.id)
+        // allows to use `!<command> -help` instead of `!help -<command>`
+        if (args.size == 1 && args.first() == "-help") {
+            with(HelpCommand) {
+                sendUsageReply(literal)
             }
-
-            if (isKnownServerUrl(message) || isPullRequest(message) || !isCommand(message)) return
-
-            val split = message.substring(1).split(" ")
-            val literal = split.first().lowercase()
-            val args = split.drop(1)
-
-            val command = getCommand(literal) ?: run {
-                handleTag()
-                return
-            }
-
-            if (!command.userCommand) {
-                if (!hasAdminPermissions()) {
-                    reply("No permissions $PLEADING_FACE")
-                    return
-                }
-
-                if (!inBotCommandChannel()) {
-                    reply("Wrong channel $PLEADING_FACE")
-                    return
-                }
-            }
-
-            // allows to use `!<command> -help` instead of `!help -<command>`
-            if (args.size == 1 && args.first() == "-help") {
+            return
+        }
+        // allows to use `!<command> -help` instead of `!help -<command>`
+        if (args.size == 1) {
+            if (args.first() == "-help") {
                 with(HelpCommand) {
                     sendUsageReply(literal)
                 }
                 return
             }
-            // allows to use `!<command> -help` instead of `!help -<command>`
-            if (args.size == 1) {
-                if (args.first() == "-help") {
-                    with(HelpCommand) {
-                        sendUsageReply(literal)
-                    }
-                    return
-                }
+        }
+        try {
+            with(command) {
+                execute(args)
             }
-            try {
-                with(command) {
-                    execute(args)
-                }
-            } catch (e: Exception) {
-                reply("Error: ${e.message}")
-            }
+        } catch (e: Exception) {
+            reply("Error: ${e.message}")
         }
     }
 
-    private fun SlashCommandInteractionEvent.onInteraction(bot: DiscordBot) {
-        with(SlashCommandEvent(this)) {
-            if (guild?.id != bot.config.allowedServerId || user.isBot) return
+    private fun SlashCommandEvent.onInteraction(bot: DiscordBot) {
+        if (event.guild?.id != bot.config.allowedServerId || author.isBot) return
 
-            val command = getCommand(fullCommandName) ?: return
+        val command = getCommand(event.fullCommandName) ?: return
 
-            if (!command.userCommand) {
-                if (!hasAdminPermissions()) {
-                    reply("No permissions $PLEADING_FACE")
-                    return
-                }
-
-                if (!inBotCommandChannel()) {
-                    reply("Wrong channel $PLEADING_FACE")
-                    return
-                }
+        if (!command.userCommand) {
+            if (!hasAdminPermissions()) {
+                reply("No permissions $PLEADING_FACE")
+                return
             }
 
-            try {
-                with(command) {
-                    execute(listOf())
-                }
-            } catch (e: Exception) {
-                reply("Error: ${e.message}")
+            if (!inBotCommandChannel()) {
+                reply("Wrong channel $PLEADING_FACE")
+                return
             }
+        }
+
+        try {
+            with(command) {
+                execute(listOf())
+            }
+        } catch (e: Exception) {
+            reply("Error: ${e.message}")
         }
     }
 
@@ -224,10 +220,6 @@ object CommandListener {
     private fun createCommands(guild: Guild) {
         guild.retrieveCommands().queue {
             val commandData = commands.map { value -> convertToData(value) }
-            println(getCommand("server"))
-
-            println(commandsMap)
-            println(commandData)
 
             guild.updateCommands().addCommands(commandData).queue()
         }

@@ -1,12 +1,13 @@
 package at.hannibal2.skyhanni.discord
 
 import at.hannibal2.skyhanni.discord.Utils.sendMessageToBotChannel
+import at.hannibal2.skyhanni.discord.command.MessageEvent
+import at.hannibal2.skyhanni.discord.command.SlashCommandEvent
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
-import net.dv8tion.jda.api.events.session.ReadyEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.requests.GatewayIntent
 import org.slf4j.Logger
@@ -73,12 +74,12 @@ private fun startBot(): DiscordBot {
     val bot = DiscordBot(jda, config)
     val messageListener = object : ListenerAdapter() {
         override fun onMessageReceived(event: MessageReceivedEvent) {
-            CommandListener.onMessage(bot, event)
+            CommandListener.onMessage(bot, MessageEvent(event))
         }
     }
     val slashCommandListener = object : ListenerAdapter() {
         override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) {
-            CommandListener.onInteraction(bot, event)
+            CommandListener.onInteraction(bot, SlashCommandEvent(event))
         }
 
         override fun onCommandAutoCompleteInteraction(event: CommandAutoCompleteInteractionEvent) {
