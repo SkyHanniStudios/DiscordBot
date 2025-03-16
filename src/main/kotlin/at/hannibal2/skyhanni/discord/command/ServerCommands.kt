@@ -222,10 +222,7 @@ class ServerCommand : BaseCommand() {
     override val userCommand: Boolean = true
 
     override fun MessageReceivedEvent.execute(args: List<String>) {
-        if (args.size !in 1..2) {
-            wrongUsage("<keyword>")
-            return
-        }
+        if (args.size !in 1..2) return wrongUsage("<keyword>")
         val keyword = args.first()
         val debug = args.getOrNull(1) == "-d"
         val server = ServerCommands.getServer(keyword.lowercase())
