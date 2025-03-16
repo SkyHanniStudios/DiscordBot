@@ -53,7 +53,7 @@ object PullRequestCommand : BaseCommand() {
         if (args.size != 1) return wrongUsage("<number>")
         val first = args.first()
         val prNumber = first.toIntOrNull() ?: run {
-            userError("Unknown number $PLEADING_FACE ($first})")
+            userError("Unknown number $PLEADING_FACE ($first)")
             return
         }
         if (prNumber < 1) {
