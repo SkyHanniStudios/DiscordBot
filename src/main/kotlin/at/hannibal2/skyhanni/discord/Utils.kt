@@ -10,6 +10,7 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.utils.FileUpload
 import org.slf4j.LoggerFactory
 import java.awt.Color
+import java.awt.Toolkit.getDefaultToolkit
 import java.io.File
 import java.util.zip.ZipFile
 import kotlin.time.Duration
@@ -238,4 +239,8 @@ object Utils {
 
         return eb.build()
     }
+
+    fun readStringFromClipboard(): String? = runCatching {
+        getDefaultToolkit().systemClipboard.getData(java.awt.datatransfer.DataFlavor.stringFlavor) as String
+    }.getOrNull()
 }

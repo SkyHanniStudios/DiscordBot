@@ -1,6 +1,12 @@
 package at.hannibal2.skyhanni.discord.command
 
-import at.hannibal2.skyhanni.discord.*
+import at.hannibal2.skyhanni.discord.CommandListener
+import at.hannibal2.skyhanni.discord.Database
+import at.hannibal2.skyhanni.discord.Option
+import at.hannibal2.skyhanni.discord.PING_HANNIBAL
+import at.hannibal2.skyhanni.discord.PLEADING_FACE
+import at.hannibal2.skyhanni.discord.Tag
+import at.hannibal2.skyhanni.discord.Utils
 import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.messageDelete
 import at.hannibal2.skyhanni.discord.Utils.messageDeleteAndThen
@@ -34,29 +40,40 @@ object TagCommands {
             keyword = keyword.dropLast(3)
             deleting = true
         }
-        val response = Database.getResponse(keyword) ?: run {
+        var info = false
+        if (keyword.endsWith(" -i")) {
+            keyword = keyword.dropLast(3)
+            info = true
+        }
+        val response = Database.getResponse(keyword, increment = !info) ?: run {
             event.reply("Unknown command $PLEADING_FACE Type `!help` for help.")
             return false
+        }
+
+        if (info) {
+            val count = Database.getTagCount(keyword)
+            event.reply("Tag `!$keyword` got used $count times in total.")
+            return true
         }
 
         val author = message.author.id
         lastTouchedTag[author] = keyword
         message.referencedMessage?.let {
-            event.logAction("used keyword '$keyword' (with reply)")
+            event.logAction("used tag '$keyword' (with reply)")
             message.messageDelete()
             it.replyWithConsumer(response) { consumer ->
                 addLastMessage(author, consumer.message)
             }
         } ?: run {
             if (deleting) {
-                event.logAction("used keyword '$keyword' (with delete)")
+                event.logAction("used tag '$keyword' (with delete)")
                 message.messageDeleteAndThen {
                     event.channel.sendMessageWithConsumer(response) { consumer ->
                         addLastMessage(author, consumer.message)
                     }
                 }
             } else {
-                event.logAction("used keyword '$keyword'")
+                event.logAction("used tag '$keyword'")
                 addLastMessage(author, message)
                 message.replyWithConsumer(response) { consumer ->
                     addLastMessage(author, consumer.message)
@@ -75,9 +92,20 @@ class TagList : BaseCommand() {
     override val userCommand: Boolean = true
 
     override fun MessageReceivedEvent.execute(args: List<String>) {
-        val list = Database.listKeywords()
-        val keywords = list.joinToString(", !", prefix = "!")
-        reply(if (list.isNotEmpty()) "📌 All ${list.size} keywords: $keywords" else "No keywords set.")
+        val list = Database.listTags()
+        if (list.isEmpty()) {
+            reply("No tags set.")
+            return
+        }
+
+        val tags = if (args.firstOrNull() == "-i") {
+            val sortedList = list.sortedWith(compareByDescending<Tag> { it.uses }.thenBy { it.keyword })
+            sortedList.joinToString("\n") { "!${it.keyword} (${it.uses} uses)" }
+
+        } else {
+            list.joinToString(", !", prefix = "!") { it.keyword }
+        }
+        reply("📌 All ${list.size} tags:\n$tags")
     }
 }
 
@@ -86,8 +114,7 @@ class TagEdit : BaseCommand() {
     override val name = "tagedit"
     override val description = "Edits a tag in the database."
     override val options: List<Option> = listOf(
-        Option("tag", "The tag you want to edit."),
-        Option("response", "Response you want the tag to have.")
+        Option("tag", "The tag you want to edit."), Option("response", "Response you want the tag to have.")
     )
     override val aliases = listOf("tagchange")
 
@@ -97,21 +124,21 @@ class TagEdit : BaseCommand() {
         val response = args.drop(1).joinToString(" ")
         val oldResponse = Database.getResponse(keyword)
         if (oldResponse == null) {
-            userError("❌ Keyword doesn't exist! Use `!tagadd` instead.")
+            userError("❌ Tag doesn't exist! Use `!tagadd` instead.")
             return
         }
-        if (Database.addKeyword(keyword, response)) {
+        if (Database.addTag(keyword, response)) {
             message.messageDeleteAndThen {
                 val id = author.id
-                reply("✅ Keyword '$keyword' edited by <@$id>:")
+                reply("✅ Tag '$keyword' edited by <@$id>:")
                 reply(response)
-                logAction("edited keyword '$keyword'")
+                logAction("edited tags '$keyword'")
                 logAction("old response: '$oldResponse'", raw = true)
                 logAction("new response: '$response'", raw = true)
                 lastTouchedTag[id] = keyword
             }
         } else {
-            sendError("❌ Failed to edit keyword.")
+            reply("❌ Failed to edit tags.")
         }
     }
 }
@@ -127,7 +154,7 @@ class TagEditLast : BaseCommand() {
             return userError("No last tag found $PLEADING_FACE")
         }
         val response = Database.getResponse(lastTag) ?: run {
-            return sendError("Last tag `$lastTag` got deleted, this should not happen, therefore we ping <@239858538959077376>")
+            return sendError("Last tag `$lastTag` got deleted, this should not happen, therefore we ping $PING_HANNIBAL")
         }
         reply("```!tagedit $lastTag $response```")
     }
@@ -138,31 +165,35 @@ class TagAdd : BaseCommand() {
     override val name = "tagadd"
     override val description = "Adds a tag to the database."
     override val options: List<Option> = listOf(
-        Option("keyword", "Keyword you want the tag to have."),
-        Option("response", "Response you want the tag to have.")
+        Option("keyword", "Keyword you want the tag to have."), Option("response", "Response you want the tag to have.")
     )
     override val aliases = listOf("tagcreate")
 
     override fun MessageReceivedEvent.execute(args: List<String>) {
         if (args.size < 2) return wrongUsage("<keyword> <response>")
+
         val keyword = args.first()
         if (CommandListener.existsCommand(keyword)) {
-            return userError("❌ Can not create keyword `!$keyword`. There is already a command with that name")
+            reply("❌ Can not create tag `!$keyword`. There is already a command with that name")
+            return
         }
         val response = args.drop(1).joinToString(" ")
+
         if (Database.containsKeyword(keyword)) {
-            return userError("❌ Keyword already exists. Use `!tagedit` instead.")
+            reply("❌ Tag already exists. Use `!tagedit` instead.")
+            return
         }
-        if (Database.addKeyword(keyword, response)) {
+        if (Database.addTag(keyword, response)) {
             message.messageDeleteAndThen {
-                reply("✅ Keyword '$keyword' added by ${author.asMention}:")
+                val id = author.id
+                reply("✅ Tag '$keyword' added by <@$id>:")
                 reply(response)
-                logAction("added keyword '$keyword'")
+                logAction("added tag '$keyword'")
                 logAction("response: '$response'", raw = true)
-                lastTouchedTag[author.id] = keyword
+                lastTouchedTag[id] = keyword
             }
         } else {
-            sendError("❌ Failed to add keyword.")
+            reply("❌ Failed to add keyword.")
         }
     }
 }
@@ -177,20 +208,20 @@ class TagDelete : BaseCommand() {
     override val aliases: List<String> = listOf("tagremove")
 
     override fun MessageReceivedEvent.execute(args: List<String>) {
-        if (args.isEmpty()) return wrongUsage("<keyword>")
+        if (args.size != 1) return wrongUsage("<keyword>")
+
         val keyword = args.first()
         val oldResponse = Database.getResponse(keyword)
-        if (Database.deleteKeyword(keyword)) {
-            reply("🗑️ Keyword '$keyword' deleted!")
-            logAction("deleted keyword '$keyword'")
+        if (Database.deleteTag(keyword)) {
+            reply("🗑️ Tag '$keyword' deleted!")
+            logAction("deleted tag '$keyword'")
             logAction("response was: '$oldResponse'", raw = true)
             val id = author.id
             lastTouchedTag.remove(id)
         } else {
-            userError("❌ Keyword '$keyword' not found.")
+            reply("❌ Tag '$keyword' not found.")
         }
     }
-
 }
 
 @Suppress("unused")
