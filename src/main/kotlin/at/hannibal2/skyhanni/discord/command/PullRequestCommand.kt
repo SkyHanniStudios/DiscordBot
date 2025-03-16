@@ -99,11 +99,12 @@ object PullRequestCommand : BaseCommand() {
         val time = buildString {
             val lastUpdate = passedSince(pr.updatedAt)
             val created = passedSince(pr.createdAt)
-            append("> Created: $created")
-            append("\n")
-            append("> Last Updated: $lastUpdate")
-            append("\n")
-            if (pr.merged) {
+            if (!pr.merged) {
+                append("> Created: $created")
+                append("\n")
+                append("> Last Updated: $lastUpdate")
+                append("\n")
+            } else {
                 val merged = passedSince(pr.mergedAt ?: "")
                 append("> Merged: $merged")
                 append("\n")
