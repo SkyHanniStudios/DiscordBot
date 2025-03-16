@@ -18,6 +18,7 @@ import at.hannibal2.skyhanni.discord.github.GitHubClient
 import at.hannibal2.skyhanni.discord.json.discord.Conclusion
 import at.hannibal2.skyhanni.discord.json.discord.PullRequestJson
 import at.hannibal2.skyhanni.discord.json.discord.RunStatus
+import net.dv8tion.jda.api.entities.channel.ChannelType
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import java.awt.Color
 import java.io.File
@@ -32,7 +33,8 @@ object PullRequestCommand : BaseCommand() {
 
     override val description: String = "Displays useful information about a pull request on Github."
     override val options: List<Option> = listOf(
-        Option("number", "Number of the pull request you want to display.")
+        Option("number", "Number of the pull request you want to display."),
+        Option("link", "Use -l to link a forum post to this pr.", required = false)
     )
 
     override val userCommand: Boolean = true
@@ -47,8 +49,10 @@ object PullRequestCommand : BaseCommand() {
     private val pullRequestPattern = "$BASE/pull/(?<pr>\\d+)".toPattern()
 
     override fun MessageReceivedEvent.execute(args: List<String>) {
-        if (args.size != 1) return wrongUsage("<number>")
+        if (args.size !in 1..2) return wrongUsage("<number>")
         val first = args.first()
+        val link = args.getOrNull(1) == "-l"
+        println(link)
         val prNumber = first.toLongOrNull() ?: run {
             userError("Unknown number $PLEADING_FACE ($first})")
             return
@@ -57,10 +61,10 @@ object PullRequestCommand : BaseCommand() {
             userError("PR number needs to be positive $PLEADING_FACE")
             return
         }
-        loadPrInfos(prNumber)
+        loadPrInfos(prNumber, link)
     }
 
-    private fun MessageReceivedEvent.loadPrInfos(prNumber: Long) {
+    private fun MessageReceivedEvent.loadPrInfos(prNumber: Long, link: Boolean = false) {
         logAction("loads pr infos for #$prNumber")
 
         val prLink = "$BASE/pull/$prNumber"
@@ -93,7 +97,7 @@ object PullRequestCommand : BaseCommand() {
             append("\n")
         }
 
-        var inBeta: Boolean = false
+        var inBeta = false
 
         val labels = pr.labels.map { it.name }.toSet()
 
@@ -216,17 +220,51 @@ object PullRequestCommand : BaseCommand() {
         }
 
         reply(embed(embedTitle, embedBody, readColor(pr)))
+
+        if (link && isFromType(ChannelType.GUILD_PUBLIC_THREAD)) {
+            val post = channel.asThreadChannel()
+            val manager = post.manager
+
+            if (post.name.contains("(PR #")) {
+                reply("Post already linked.")
+                return
+            }
+
+            manager.setName("${post.name} (PR #$prNumber)").queue()
+
+            val tags = post.appliedTags
+            if (tags.any { it.id == OPEN_PR_TAG }) return
+
+            val tag = post.parentChannel.asForumChannel().getAvailableTagById(OPEN_PR_TAG) ?: return
+            manager.setAppliedTags(tags + tag).queue()
+
+            logAction("${author.name} linked pr $prNumber")
+        }
     }
 
     private val labelTypes: Map<String, Set<String>> = mapOf(
         Pair("Type", setOf("Backend", "Bug Fix")),
-        Pair("State", setOf("Detekt", "Merge Conflicts", "Waiting on Dependency PR", "Waiting on Hypixel", "Wrong Title/Changelog")),
+        Pair(
+            "State",
+            setOf(
+                "Detekt",
+                "Merge Conflicts",
+                "Waiting on Dependency PR",
+                "Waiting on Hypixel",
+                "Wrong Title/Changelog"
+            )
+        ),
         Pair("Milestone", setOf("Soon")),
         Pair("Misc", setOf("Good First Issue"))
     )
 
-    private fun appendLabelCategory(labelType: String, labels: Set<String>, stringBuilder: StringBuilder, suffix: String = ""): StringBuilder {
-        val labelsWithType = labels.intersect(labelTypes[labelType] ?: setOf())
+    private fun appendLabelCategory(
+        labelType: String,
+        labels: Set<String>,
+        stringBuilder: StringBuilder,
+        suffix: String = ""
+    ): StringBuilder {
+        val labelsWithType = labels.intersect((labelTypes[labelType] ?: setOf()).toSet())
         if (labelsWithType.isEmpty()) return stringBuilder.append(if (suffix.isNotEmpty()) "> $labelType: $suffix\n" else "")
         return stringBuilder.append("> $labelType: `${labelsWithType.joinToString("` `")}`$suffix\n")
     }
@@ -258,7 +296,7 @@ object PullRequestCommand : BaseCommand() {
             return
         }
         val prNumber = args[1].toLongOrNull() ?: run {
-            reply("unknwon number $PLEADING_FACE (${args[1]})")
+            reply("unknown number $PLEADING_FACE (${args[1]})")
             return
         }
 
@@ -288,7 +326,7 @@ object PullRequestCommand : BaseCommand() {
         val (_, downloadTime) = timeExecution {
             github.downloadArtifact(artifactId, fileRaw)
         }
-        reply("artifact downnloaded in ${downloadTime.format()}")
+        reply("artifact downloaded in ${downloadTime.format()}")
 
         Utils.unzipFile(fileRaw, fileUnzipped)
         fileRaw.delete()

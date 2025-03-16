@@ -34,6 +34,7 @@ const val PLEADING_FACE = "🥺"
 const val BIG_X = "❌"
 const val CHECK_MARK = "✅"
 const val PING_HANNIBAL = "<@239858538959077376>"
+const val OPEN_PR_TAG = "1350893914768277624"
 
 fun main() {
     val bot = startBot()
@@ -63,6 +64,7 @@ fun main() {
 
 private fun startBot(): DiscordBot {
     val config = ConfigLoader.load("config.json")
+    val config = ConfigLoader.load("src/main/kotlin/at/hannibal2/skyhanni/discord/config.json")
     val token = config.token
 
     val jda = JDABuilder.createDefault(token).also { builder ->
