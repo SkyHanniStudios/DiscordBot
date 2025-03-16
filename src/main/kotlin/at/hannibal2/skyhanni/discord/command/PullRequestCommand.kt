@@ -5,23 +5,20 @@ import at.hannibal2.skyhanni.discord.Option
 import at.hannibal2.skyhanni.discord.PLEADING_FACE
 import at.hannibal2.skyhanni.discord.SimpleTimeMark
 import at.hannibal2.skyhanni.discord.SimpleTimeMark.Companion.asTimeMark
-import at.hannibal2.skyhanni.discord.Utils
 import at.hannibal2.skyhanni.discord.Utils.createParentDirIfNotExist
 import at.hannibal2.skyhanni.discord.Utils.embed
 import at.hannibal2.skyhanni.discord.Utils.format
 import at.hannibal2.skyhanni.discord.Utils.linkTo
 import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.messageDelete
-import at.hannibal2.skyhanni.discord.Utils.reply
-import at.hannibal2.skyhanni.discord.Utils.replyWithConsumer
 import at.hannibal2.skyhanni.discord.Utils.runDelayed
 import at.hannibal2.skyhanni.discord.Utils.timeExecution
+import at.hannibal2.skyhanni.discord.Utils.unzipFile
 import at.hannibal2.skyhanni.discord.Utils.uploadFile
-import at.hannibal2.skyhanni.discord.Utils.userError
 import at.hannibal2.skyhanni.discord.github.GitHubClient
 import at.hannibal2.skyhanni.discord.json.discord.PullRequestJson
 import at.hannibal2.skyhanni.discord.json.discord.Status
-import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion
 import java.awt.Color
 import java.io.File
 import java.time.Instant
@@ -49,112 +46,96 @@ object PullRequestCommand : BaseCommand() {
         Regex("https://github\\.com/[\\w.]+/[\\w.]+/actions/runs/(?<RunId>\\d+)/job/(?<JobId>\\d+)")
     private val pullRequestPattern = "$BASE/pull/(?<pr>\\d+)".toPattern()
 
-    override fun MessageReceivedEvent.execute(args: List<String>) {
-        if (args.size != 1) {
+    override fun CommandEvent.execute(args: List<String>) {
+        if (args.isNotEmpty() && args.size != 1) {
             wrongUsage("<number>")
             return
         }
-        val first = args.first()
-        val prNumber = first.toIntOrNull() ?: run {
-            userError("Unknown number $PLEADING_FACE ($first})")
-            return
-        }
+
+        val prNumber = doWhen(
+            isMessage = {
+                val first = args.first()
+                first.toIntOrNull() ?: run {
+                    userError("Unknown number $PLEADING_FACE ($first})")
+                    null
+                }
+            },
+            isSlashCommand = {
+                it.getOption("number")?.asInt
+            }
+        ) ?: return
+
         if (prNumber < 1) {
             userError("PR number needs to be positive $PLEADING_FACE")
             return
         }
+
         loadPrInfos(prNumber)
     }
 
-
-    private fun MessageReceivedEvent.loadPrInfos(prNumber: Int) {
+    private fun CommandEvent.loadPrInfos(prNumber: Int) {
         logAction("loads pr infos for #$prNumber")
 
         val prLink = "$BASE/pull/$prNumber"
 
-        val pr = try {
-            github.findPullRequest(prNumber) ?: run {
-                reply("pr is null!")
-                return
-            }
-        } catch (e: IllegalStateException) {
-            if (e.message?.contains(" code:404 ") == true) {
-                val issueUrl = "$BASE/issues/$prNumber"
-                val issue = "issue".linkTo(issueUrl)
-                val text = "This pull request does not yet exist or is an $issue"
-                reply(embed("Not found $PLEADING_FACE", text, Color.red))
-                return
-            }
-            reply("Could not load pull request infos for #$prNumber: ${e.message}")
-            return
-        }
+        val pr =
+            runCatching { github.findPullRequest(prNumber) }.getOrElse { handlePrError(prNumber, it); return }
+                ?: return
 
         val head = pr.head
         val userName = head.user.login
-        val userProfile = "https://github.com/$userName"
         val prNumberDisplay = "#$prNumber".linkTo(prLink)
-        val userNameDisplay = userName.linkTo(userProfile)
+        val userNameDisplay = userName.linkTo("https://github.com/$userName")
         val embedTitle = pr.title
-        val title = buildString {
-            append("> $prNumberDisplay by $userNameDisplay")
-            append("\n")
-        }
+        val title = "> $prNumberDisplay by $userNameDisplay\n"
+        val time = "> Created: ${passedSince(pr.createdAt)}\n> Last Updated: ${passedSince(pr.updatedAt)}\n"
 
-        val time = buildString {
-            val lastUpdate = passedSince(pr.updatedAt)
-            val created = passedSince(pr.createdAt)
-            append("> Created: $created")
-            append("\n")
-            append("> Last Updated: $lastUpdate")
-            append("\n")
-        }
-
-        val lastCommit = head.sha
-
-        val job = github.getRun(lastCommit, "Build and test") ?: run {
-            val text = "${title}${time} \nArtifact does not exist $PLEADING_FACE (expired or first pr of contributor)"
-            reply(embed(embedTitle, text, readColor(pr)))
+        val job = github.getRun(head.sha, "Build and test") ?: run {
+            reply(
+                embed(
+                    embedTitle,
+                    "$title$time \nArtifact does not exist $PLEADING_FACE (expired or first PR of contributor)",
+                    readColor(pr)
+                )
+            )
             return
         }
 
         if (job.startedAt?.let { toTimeMark(it).passedSince() > 90.days } == true) {
-            reply(embed(embedTitle, "${title}${time} \nartifact has expired $PLEADING_FACE", readColor(pr)))
+            reply(embed(embedTitle, "$title$time \nArtifact has expired $PLEADING_FACE", readColor(pr)))
             return
         }
 
         if (job.status != Status.COMPLETED) {
-            val text = when (job.status) {
-                Status.REQUESTED -> "Run has been requested $PLEADING_FACE"
-                Status.QUEUED -> "Run is in queue $PLEADING_FACE"
-                Status.IN_PROGRESS -> "Run is in progress $PLEADING_FACE"
-                Status.WAITING -> "Run is waiting $PLEADING_FACE"
-                Status.PENDING -> "Run is pending $PLEADING_FACE"
-                else -> ""
-            }
-            reply(embed(embedTitle, "${title}${time} \n $text", readColor(pr)))
+            val statusText = mapOf(
+                Status.REQUESTED to "Run has been requested $PLEADING_FACE",
+                Status.QUEUED to "Run is in queue $PLEADING_FACE",
+                Status.IN_PROGRESS to "Run is in progress $PLEADING_FACE",
+                Status.WAITING to "Run is waiting $PLEADING_FACE",
+                Status.PENDING to "Run is pending $PLEADING_FACE"
+            )[job.status] ?: ""
+            reply(embed(embedTitle, "$title$time \n$statusText", readColor(pr)))
             return
         }
 
-        val match = job.htmlUrl?.let { runIdRegex.matchEntire(it) }
-        val runId = match?.groups?.get("RunId")?.value
-
+        val runId = job.htmlUrl?.let { runIdRegex.matchEntire(it)?.groups?.get("RunId")?.value }
         val artifactLink = "$BASE/actions/runs/$runId?pr=$prNumber"
         val nightlyLink = "https://nightly.link/$USER/$REPO/actions/runs/$runId/Development%20Build.zip"
-        val artifactLine = "GitHub".linkTo(artifactLink)
-        val nightlyLine = "Nightly".linkTo(nightlyLink)
-
-        val artifactDisplay = buildString {
-            append(" \n")
-            append("Download the latest development build of this pr!")
-            append("\n")
-            append("> From $artifactLine (requires a GitHub Account)")
-            append("\n")
-            append("> From $nightlyLine (unofficial)")
-            append("\n")
-            append("> (updated ${passedSince(job.completedAt ?: "")})")
-        }
+        val artifactDisplay =
+            "\nDownload the latest development build of this PR!\n> From ${"GitHub".linkTo(artifactLink)} (requires a GitHub Account)\n> From ${
+                "Nightly".linkTo(nightlyLink)
+            } (unofficial)\n> (updated ${passedSince(job.completedAt ?: "")})"
 
         reply(embed(embedTitle, "$title$time$artifactDisplay", readColor(pr)))
+    }
+
+    private fun CommandEvent.handlePrError(prNumber: Int, e: Throwable) {
+        if (e is IllegalStateException && e.message?.contains(" code:404 ") == true) {
+            val text = "This pull request does not yet exist or is an ${"issue".linkTo("$BASE/issues/$prNumber")}"
+            reply(embed("Not found $PLEADING_FACE", text, Color.red), ephemeral = true)
+            return
+        }
+        reply("Could not load pull request infos for #$prNumber: ${e.message}", ephemeral = true)
     }
 
     // Colors picked from GitHub
@@ -172,7 +153,7 @@ object PullRequestCommand : BaseCommand() {
     private fun passedSince(stringTime: String): String = "<t:${parseToUnixTime(stringTime)}:R>"
 
     @Suppress("unused") // TODO implement once we can upload the file
-    private fun MessageReceivedEvent.pullRequestArtifactCommand(args: List<String>) {
+    private fun CommandEvent.pullRequestArtifactCommand(args: List<String>) {
         if (args.size != 2) {
             reply("Usage: `!prupload <number>`")
             return
@@ -210,7 +191,7 @@ object PullRequestCommand : BaseCommand() {
         }
         reply("artifact downnloaded in ${downloadTime.format()}")
 
-        Utils.unzipFile(fileRaw, fileUnzipped)
+        unzipFile(fileRaw, fileUnzipped)
         fileRaw.delete()
 
         val displayUrl = "$BASE/actions/runs/$artifactId?pr=$prNumber"
@@ -222,7 +203,7 @@ object PullRequestCommand : BaseCommand() {
 
         reply("start uploading..")
         val (_, uploadTime) = timeExecution {
-            channel.uploadFile(modJar, "here is the jar from <$displayUrl>")
+            (channel as MessageChannelUnion).uploadFile(modJar, "here is the jar from <$displayUrl>")
         }
         reply("Mod jar uploaded in ${uploadTime.format()}")
     }
@@ -231,17 +212,38 @@ object PullRequestCommand : BaseCommand() {
         return directory.walkTopDown().firstOrNull { it.isFile && it.name.startsWith("SkyHanni-") }
     }
 
-    fun isPullRequest(event: MessageReceivedEvent, message: String): Boolean {
+    fun MessageEvent.isPullRequest(message: String): Boolean {
         val matcher = pullRequestPattern.matcher(message)
         if (!matcher.matches()) return false
         val pr = matcher.group("pr")?.toIntOrNull() ?: return false
-        event.replyWithConsumer("Next time just type `!pr $pr` $PLEADING_FACE") { consumer ->
+        replyWithConsumer("Next time just type `!pr $pr` $PLEADING_FACE") { consumer ->
             runDelayed(10.seconds) {
                 consumer.message.messageDelete()
             }
         }
-        event.loadPrInfos(pr)
+        loadPrInfos(pr)
         return true
     }
-
 }
+
+//object SlashPullRequestCommand : SlashCommand() {
+//    override val name = "pr"
+//    override val description = "Displays useful information about a pull request on GitHub."
+//    override val options: List<SlashOption> = listOf(
+//        SlashOption("number", "Number of the pull request you want to display.", type = OptionType.INTEGER)
+//    )
+//
+//    override val userCommand: Boolean = true
+//
+//    override fun SlashCommandInteractionEvent.execute() {
+//        getOption("number")?.let {
+//            val prNumber = it.asInt
+//            if (prNumber < 1) {
+//                replyT("PR number needs to be positive $PLEADING_FACE")
+//                return
+//            }
+//
+//            loadPrInfos(prNumber)
+//        }
+//    }
+//}
