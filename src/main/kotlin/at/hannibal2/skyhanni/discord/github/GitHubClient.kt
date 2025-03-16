@@ -22,13 +22,13 @@ class GitHubClient(user: String, repo: String, private val token: String) {
         }
     }
 
-    fun downloadArtifact(artifactId: Int, outputFile: File) {
+    fun downloadArtifact(artifactId: Long, outputFile: File) {
         readBody("$base/actions/artifacts/$artifactId/zip") { body ->
             outputFile.writeBytes(body.bytes())
         }
     }
 
-    fun findPullRequest(prNumber: Int): PullRequestJson? {
+    fun findPullRequest(prNumber: Long): PullRequestJson? {
         return readJson<PullRequestJson, PullRequestJson?>("$base/pulls/$prNumber") { it }
     }
 
@@ -46,11 +46,7 @@ class GitHubClient(user: String, repo: String, private val token: String) {
     fun getRun(commitSha: String, checkName: String): CheckRun? {
         val url = "$base/commits/$commitSha/check-runs?check_name=$checkName"
         return readJson<CheckRunsResponse, CheckRun?>(url) { response ->
-            if (response.totalCount == 0) {
-                null
-            } else {
-                response.checkRuns.firstOrNull()
-            }
+            response.checkRuns.firstOrNull()
         }
     }
 

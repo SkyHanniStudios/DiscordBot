@@ -15,8 +15,9 @@ import at.hannibal2.skyhanni.discord.Utils.timeExecution
 import at.hannibal2.skyhanni.discord.Utils.uploadFile
 import at.hannibal2.skyhanni.discord.Utils.userError
 import at.hannibal2.skyhanni.discord.github.GitHubClient
+import at.hannibal2.skyhanni.discord.json.discord.Conclusion
 import at.hannibal2.skyhanni.discord.json.discord.PullRequestJson
-import at.hannibal2.skyhanni.discord.json.discord.Status
+import at.hannibal2.skyhanni.discord.json.discord.RunStatus
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import java.awt.Color
 import java.io.File
@@ -48,8 +49,8 @@ object PullRequestCommand : BaseCommand() {
     override fun MessageReceivedEvent.execute(args: List<String>) {
         if (args.size != 1) return wrongUsage("<number>")
         val first = args.first()
-        val prNumber = first.toIntOrNull() ?: run {
-            userError("Unknown number $PLEADING_FACE ($first)")
+        val prNumber = first.toLongOrNull() ?: run {
+            userError("Unknown number $PLEADING_FACE ($first})")
             return
         }
         if (prNumber < 1) {
@@ -94,9 +95,24 @@ object PullRequestCommand : BaseCommand() {
 
         var inBeta: Boolean = false
 
+        val labels = pr.labels.map { it.name }.toSet()
+
         val time = buildString {
             val lastUpdate = passedSince(pr.updatedAt)
             val created = passedSince(pr.createdAt)
+            append("> Created: $created")
+            append("\n")
+            append("> Last Updated: $lastUpdate")
+            append("\n")
+            appendLabelCategory("Type", labels, this)
+            appendLabelCategory("State", labels, this)
+            appendLabelCategory("Milestone", labels, this, pr.milestone?.let { " `${it.title}`" } ?: "")
+        }
+
+        if (toTimeMark(pr.updatedAt).passedSince() > 400.days) {
+            val text = "${title}${time} \nBuild download has expired $PLEADING_FACE"
+            reply(embed(embedTitle, text, readColor(pr)))
+            return
             if (!pr.merged) {
                 append("> Created: $created")
                 append("\n")
@@ -136,22 +152,25 @@ object PullRequestCommand : BaseCommand() {
                     append("Artifact does not exist $PLEADING_FACE (expired or first pr of contributor)")
                 }
             }
+            val text = "${title}${time} \nBuild needs approval $PLEADING_FACE"
+
             reply(embed(embedTitle, text, readColor(pr)))
             return
         }
 
         if (job.startedAt?.let { toTimeMark(it).passedSince() > 90.days } == true) {
-            reply(embed(embedTitle, "${title}${time} \nartifact has expired $PLEADING_FACE", readColor(pr)))
+            reply(embed(embedTitle, "${title}${time} \nBuild download has expired $PLEADING_FACE", readColor(pr)))
+
             return
         }
 
-        if (job.status != Status.COMPLETED) {
+        if (job.status != RunStatus.COMPLETED) {
             val text = when (job.status) {
-                Status.REQUESTED -> "Run has been requested $PLEADING_FACE"
-                Status.QUEUED -> "Run is in queue $PLEADING_FACE"
-                Status.IN_PROGRESS -> "Run is in progress $PLEADING_FACE"
-                Status.WAITING -> "Run is waiting $PLEADING_FACE"
-                Status.PENDING -> "Run is pending $PLEADING_FACE"
+                RunStatus.REQUESTED -> "Build has been requested $PLEADING_FACE"
+                RunStatus.QUEUED -> "Build is in queue $PLEADING_FACE"
+                RunStatus.IN_PROGRESS -> "Build is in progress $PLEADING_FACE"
+                RunStatus.WAITING -> "Build is waiting $PLEADING_FACE"
+                RunStatus.PENDING -> "Build is pending $PLEADING_FACE"
                 else -> ""
             }
 
@@ -168,11 +187,16 @@ object PullRequestCommand : BaseCommand() {
             return
         }
 
+        if (job.conclusion != Conclusion.SUCCESS) {
+            reply(embed(embedTitle, "$title$time\nLast development build failed $PLEADING_FACE", Color.red))
+            return
+        }
+
         val match = job.htmlUrl?.let { runIdRegex.matchEntire(it) }
         val runId = match?.groups?.get("RunId")?.value
 
-        val artifactLink = "$BASE/actions/runs/$runId?pr=$prNumber"
-        val nightlyLink = "https://nightly.link/$USER/$REPO/actions/runs/$runId/Development%20Build.zip"
+        val artifactLink = "$base/actions/runs/$runId?pr=$prNumber"
+        val nightlyLink = "https://nightly.link/$user/$repo/actions/runs/$runId/Development%20Build.zip"
         val artifactLine = "GitHub".linkTo(artifactLink)
         val nightlyLine = "Nightly".linkTo(nightlyLink)
 
@@ -196,6 +220,19 @@ object PullRequestCommand : BaseCommand() {
         }
 
         reply(embed(embedTitle, embedBody, readColor(pr)))
+    }
+
+    private val labelTypes: Map<String, Set<String>> = mapOf(
+        Pair("Type", setOf("Backend", "Bug Fix")),
+        Pair("State", setOf("Detekt", "Merge Conflicts", "Waiting on Dependency PR", "Waiting on Hypixel", "Wrong Title/Changelog")),
+        Pair("Milestone", setOf("Soon")),
+        Pair("Misc", setOf("Good First Issue"))
+    )
+
+    private fun appendLabelCategory(labelType: String, labels: Set<String>, stringBuilder: StringBuilder, suffix: String = ""): StringBuilder {
+        val labelsWithType = labels.intersect(labelTypes[labelType] ?: setOf())
+        if (labelsWithType.isEmpty()) return stringBuilder.append(if (suffix.isNotEmpty()) "> $labelType: $suffix\n" else "")
+        return stringBuilder.append("> $labelType: `${labelsWithType.joinToString("` `")}`$suffix\n")
     }
 
     // Colors picked from GitHub
@@ -224,7 +261,7 @@ object PullRequestCommand : BaseCommand() {
             reply("Usage: `!prupload <number>`")
             return
         }
-        val prNumber = args[1].toIntOrNull() ?: run {
+        val prNumber = args[1].toLongOrNull() ?: run {
             reply("unknwon number $PLEADING_FACE (${args[1]})")
             return
         }
@@ -281,7 +318,7 @@ object PullRequestCommand : BaseCommand() {
     fun isPullRequest(event: MessageReceivedEvent, message: String): Boolean {
         val matcher = pullRequestPattern.matcher(message)
         if (!matcher.matches()) return false
-        val pr = matcher.group("pr")?.toIntOrNull() ?: return false
+        val pr = matcher.group("pr")?.toLongOrNull() ?: return false
         event.replyWithConsumer("Next time just type `!pr $pr` $PLEADING_FACE") { consumer ->
             runDelayed(10.seconds) {
                 consumer.message.messageDelete()
