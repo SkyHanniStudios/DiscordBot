@@ -3,6 +3,7 @@ package at.hannibal2.skyhanni.discord.command
 import at.hannibal2.skyhanni.discord.CommandListener
 import at.hannibal2.skyhanni.discord.Database
 import at.hannibal2.skyhanni.discord.Option
+import at.hannibal2.skyhanni.discord.PING_HANNIBAL
 import at.hannibal2.skyhanni.discord.PLEADING_FACE
 import at.hannibal2.skyhanni.discord.Utils
 import at.hannibal2.skyhanni.discord.Utils.logAction
