@@ -291,6 +291,16 @@
         "Official Hypixel"
       ]
     },
+    "pojav": {
+      "name": "PojavLauncher",
+      "id": "724163890803638273",
+      "size": "150k",
+      "invite": "https://discord.gg/tUbf45esjD",
+      "description": "Pojav Launcher lets you play Java Edition Minecraft on mobile.",
+      "aliases": [
+        "Pojav Launcher"
+      ]
+    },
     "skyclient": {
       "name": "SkyClient by Polyfrost",
       "size": "40k",
