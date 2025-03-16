@@ -5,6 +5,7 @@ import at.hannibal2.skyhanni.discord.Database
 import at.hannibal2.skyhanni.discord.Option
 import at.hannibal2.skyhanni.discord.PING_HANNIBAL
 import at.hannibal2.skyhanni.discord.PLEADING_FACE
+import at.hannibal2.skyhanni.discord.Tag
 import at.hannibal2.skyhanni.discord.Utils
 import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.messageDelete
@@ -98,7 +99,9 @@ class TagList : BaseCommand() {
         }
 
         val tags = if (args.firstOrNull() == "-i") {
-            list.sortedByDescending { it.uses }.joinToString("\n") { "!${it.keyword} (${it.uses} uses)" }
+            val sortedList = list.sortedWith(compareByDescending<Tag> { it.uses }.thenBy { it.keyword })
+            sortedList.joinToString("\n") { "!${it.keyword} (${it.uses} uses)" }
+
         } else {
             list.joinToString(", !", prefix = "!") { it.keyword }
         }
