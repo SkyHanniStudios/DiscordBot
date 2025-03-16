@@ -103,6 +103,11 @@ object PullRequestCommand : BaseCommand() {
             append("\n")
             append("> Last Updated: $lastUpdate")
             append("\n")
+            if (pr.merged) {
+                val merged = passedSince(pr.mergedAt ?: "")
+                append("> Merged: $merged")
+                append("\n")
+            }
         }
 
         val lastCommit = head.sha
