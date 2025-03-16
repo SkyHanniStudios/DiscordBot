@@ -107,6 +107,24 @@ object PullRequestCommand : BaseCommand() {
                 val merged = passedSince(pr.mergedAt ?: "")
                 append("> Merged: $merged")
                 append("\n")
+
+                val releases = try {
+                    github.getReleases()
+                } catch (e: Exception) {
+                    null
+                }
+                val lastRelease = releases?.firstOrNull()
+                val lastReleaseTime = passedSince(lastRelease?.publishedAt ?: "")
+                append("> Last Release: $lastReleaseTime")
+                append("\n")
+
+                if (releaseSinceMerge(pr.mergedAt ?: "", lastRelease?.publishedAt ?: "")) {
+                    append("> This PR is in the latest beta.")
+                    append("\n")
+                } else {
+                    append("> This PR is not in the latest beta.")
+                    append("\n")
+                }
             }
         }
 
@@ -171,6 +189,12 @@ object PullRequestCommand : BaseCommand() {
     private fun toTimeMark(stringTime: String): SimpleTimeMark = (parseToUnixTime(stringTime) * 1000).asTimeMark()
 
     private fun passedSince(stringTime: String): String = "<t:${parseToUnixTime(stringTime)}:R>"
+
+    private fun releaseSinceMerge(stringTimeMerge: String, stringTimeLastRelease: String): Boolean {
+        val timeMerge = parseToUnixTime(stringTimeMerge)
+        val timeLastRelease = parseToUnixTime(stringTimeLastRelease)
+        return timeMerge < timeLastRelease
+    }
 
     @Suppress("unused") // TODO implement once we can upload the file
     private fun MessageReceivedEvent.pullRequestArtifactCommand(args: List<String>) {
