@@ -60,7 +60,7 @@ object PullRequestCommand : BaseCommand() {
         loadPrInfos(prNumber)
     }
 
-    private fun MessageReceivedEvent.loadPrInfos(prNumber: Int) {
+    private fun MessageReceivedEvent.loadPrInfos(prNumber: Long) {
         logAction("loads pr infos for #$prNumber")
 
         val prLink = "$BASE/pull/$prNumber"
@@ -102,22 +102,12 @@ object PullRequestCommand : BaseCommand() {
             val created = passedSince(pr.createdAt)
             append("> Created: $created")
             append("\n")
-            append("> Last Updated: $lastUpdate")
-            append("\n")
-            appendLabelCategory("Type", labels, this)
-            appendLabelCategory("State", labels, this)
-            appendLabelCategory("Milestone", labels, this, pr.milestone?.let { " `${it.title}`" } ?: "")
-        }
-
-        if (toTimeMark(pr.updatedAt).passedSince() > 400.days) {
-            val text = "${title}${time} \nBuild download has expired $PLEADING_FACE"
-            reply(embed(embedTitle, text, readColor(pr)))
-            return
             if (!pr.merged) {
-                append("> Created: $created")
-                append("\n")
                 append("> Last Updated: $lastUpdate")
                 append("\n")
+                appendLabelCategory("Type", labels, this)
+                appendLabelCategory("State", labels, this)
+                appendLabelCategory("Milestone", labels, this, pr.milestone?.let { " `${it.title}`" } ?: "")
             } else {
                 val merged = passedSince(pr.mergedAt ?: "")
                 append("> Merged: $merged")
@@ -128,6 +118,7 @@ object PullRequestCommand : BaseCommand() {
                 } catch (e: Exception) {
                     null
                 }
+
                 val lastRelease = releases?.firstOrNull()
 
                 if (releaseSinceMerge(pr.mergedAt ?: "", lastRelease?.publishedAt ?: "")) {
@@ -141,6 +132,12 @@ object PullRequestCommand : BaseCommand() {
             }
         }
 
+        if (toTimeMark(pr.updatedAt).passedSince() > 400.days && !inBeta) {
+            val text = "${title}${time} \nBuild download has expired $PLEADING_FACE"
+            reply(embed(embedTitle, text, readColor(pr)))
+            return
+        }
+
         val lastCommit = head.sha
 
         val job = github.getRun(lastCommit, "Build and test") ?: run {
@@ -149,16 +146,15 @@ object PullRequestCommand : BaseCommand() {
                 append(time)
                 if (!inBeta) {
                     append("\n")
-                    append("Artifact does not exist $PLEADING_FACE (expired or first pr of contributor)")
+                    append("Build needs approval $PLEADING_FACE")
                 }
             }
-            val text = "${title}${time} \nBuild needs approval $PLEADING_FACE"
 
             reply(embed(embedTitle, text, readColor(pr)))
             return
         }
 
-        if (job.startedAt?.let { toTimeMark(it).passedSince() > 90.days } == true) {
+        if (job.startedAt?.let { toTimeMark(it).passedSince() > 90.days } == true && !inBeta) {
             reply(embed(embedTitle, "${title}${time} \nBuild download has expired $PLEADING_FACE", readColor(pr)))
 
             return
@@ -187,7 +183,7 @@ object PullRequestCommand : BaseCommand() {
             return
         }
 
-        if (job.conclusion != Conclusion.SUCCESS) {
+        if (job.conclusion != Conclusion.SUCCESS && !inBeta) {
             reply(embed(embedTitle, "$title$time\nLast development build failed $PLEADING_FACE", Color.red))
             return
         }
@@ -195,8 +191,8 @@ object PullRequestCommand : BaseCommand() {
         val match = job.htmlUrl?.let { runIdRegex.matchEntire(it) }
         val runId = match?.groups?.get("RunId")?.value
 
-        val artifactLink = "$base/actions/runs/$runId?pr=$prNumber"
-        val nightlyLink = "https://nightly.link/$user/$repo/actions/runs/$runId/Development%20Build.zip"
+        val artifactLink = "$BASE/actions/runs/$runId?pr=$prNumber"
+        val nightlyLink = "https://nightly.link/$USER/$REPO/actions/runs/$runId/Development%20Build.zip"
         val artifactLine = "GitHub".linkTo(artifactLink)
         val nightlyLine = "Nightly".linkTo(nightlyLink)
 
