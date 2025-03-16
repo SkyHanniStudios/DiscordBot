@@ -64,7 +64,6 @@ fun main() {
 
 private fun startBot(): DiscordBot {
     val config = ConfigLoader.load("config.json")
-    val config = ConfigLoader.load("src/main/kotlin/at/hannibal2/skyhanni/discord/config.json")
     val token = config.token
 
     val jda = JDABuilder.createDefault(token).also { builder ->
