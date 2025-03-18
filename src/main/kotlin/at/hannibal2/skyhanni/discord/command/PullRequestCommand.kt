@@ -33,8 +33,7 @@ object PullRequestCommand : BaseCommand() {
 
     override val description: String = "Displays useful information about a pull request on Github."
     override val options: List<Option> = listOf(
-        Option("number", "Number of the pull request you want to display."),
-        Option("link", "Use -l to link a forum post to this pr.", required = false)
+        Option("number", "Number of the pull request you want to display.")
     )
 
     override val userCommand: Boolean = true
@@ -49,10 +48,8 @@ object PullRequestCommand : BaseCommand() {
     private val pullRequestPattern = "$BASE/pull/(?<pr>\\d+)".toPattern()
 
     override fun MessageReceivedEvent.execute(args: List<String>) {
-        if (args.size !in 1..2) return wrongUsage("<number>")
+        if (args.size != 1) return wrongUsage("<number>")
         val first = args.first()
-        val link = args.getOrNull(1) == "-l"
-        println(link)
         val prNumber = first.toLongOrNull() ?: run {
             userError("Unknown number $PLEADING_FACE ($first})")
             return
@@ -61,10 +58,10 @@ object PullRequestCommand : BaseCommand() {
             userError("PR number needs to be positive $PLEADING_FACE")
             return
         }
-        loadPrInfos(prNumber, link)
+        loadPrInfos(prNumber)
     }
 
-    private fun MessageReceivedEvent.loadPrInfos(prNumber: Long, link: Boolean = false) {
+    private fun MessageReceivedEvent.loadPrInfos(prNumber: Long) {
         logAction("loads pr infos for #$prNumber")
 
         val prLink = "$BASE/pull/$prNumber"
@@ -220,26 +217,6 @@ object PullRequestCommand : BaseCommand() {
         }
 
         reply(embed(embedTitle, embedBody, readColor(pr)))
-
-        if (link && isFromType(ChannelType.GUILD_PUBLIC_THREAD)) {
-            val post = channel.asThreadChannel()
-            val manager = post.manager
-
-            if (post.name.contains("(PR #")) {
-                reply("Post already linked.")
-                return
-            }
-
-            manager.setName("${post.name} (PR #$prNumber)").queue()
-
-            val tags = post.appliedTags
-            if (tags.any { it.id == OPEN_PR_TAG }) return
-
-            val tag = post.parentChannel.asForumChannel().getAvailableTagById(OPEN_PR_TAG) ?: return
-            manager.setAppliedTags(tags + tag).queue()
-
-            logAction("${author.name} linked pr $prNumber")
-        }
     }
 
     private val labelTypes: Map<String, Set<String>> = mapOf(

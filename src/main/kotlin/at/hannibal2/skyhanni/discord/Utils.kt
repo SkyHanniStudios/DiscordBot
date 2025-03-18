@@ -8,7 +8,6 @@ import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.utils.FileUpload
-import org.slf4j.LoggerFactory
 import java.awt.Color
 import java.awt.Toolkit.getDefaultToolkit
 import java.io.File
@@ -32,6 +31,10 @@ object Utils {
     fun MessageReceivedEvent.sendError(text: String) {
         message.messageReply("❌ An error occurred: $text")
         logAction("Error: $text")
+    }
+
+    fun MessageReceivedEvent.userSuccess(text: String) {
+        message.messageReply("✅ $text")
     }
 
     fun MessageReceivedEvent.reply(embed: MessageEmbed) {
@@ -66,6 +69,14 @@ object Utils {
             sendMessage(text).complete()
         } else {
             sendMessage(text).queue()
+        }
+    }
+
+    fun MessageChannel.messageSend(embed: MessageEmbed, instantly: Boolean = false) {
+        if (instantly) {
+            sendMessageEmbeds(embed).complete()
+        } else {
+            sendMessageEmbeds(embed).queue()
         }
     }
 
