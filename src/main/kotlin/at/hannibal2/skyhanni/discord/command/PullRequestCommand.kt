@@ -231,19 +231,6 @@ object PullRequestCommand : BaseCommand() {
         return stringBuilder.append("> $labelType: `${labelsWithType.joinToString("` `")}`$suffix\n")
     }
 
-    private val labelTypes: Map<String, Set<String>> = mapOf(
-        Pair("Type", setOf("Backend", "Bug Fix")),
-        Pair("State", setOf("Detekt", "Merge Conflicts", "Waiting on Dependency PR", "Waiting on Hypixel", "Wrong Title/Changelog")),
-        Pair("Milestone", setOf("Soon")),
-        Pair("Misc", setOf("Good First Issue"))
-    )
-
-    private fun appendLabelCategory(labelType: String, labels: Set<String>, stringBuilder: StringBuilder, suffix: String = ""): StringBuilder {
-        val labelsWithType = labels.intersect(labelTypes[labelType] ?: setOf())
-        if (labelsWithType.isEmpty()) return stringBuilder.append(if (suffix.isNotEmpty()) "> $labelType: $suffix\n" else "")
-        return stringBuilder.append("> $labelType: `${labelsWithType.joinToString("` `")}`$suffix\n")
-    }
-
     // Colors picked from GitHub
     private fun readColor(pr: PullRequestJson): Color = when {
         pr.draft -> Color(101, 108, 118)
