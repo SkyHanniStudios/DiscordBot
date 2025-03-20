@@ -26,25 +26,24 @@ import java.time.format.DateTimeFormatter
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
 
-object PullRequestCommand : BaseCommand() {
+open class PullRequestCommand : BaseCommand() {
+
+    open val disableBuildInfo: Boolean = false
+    open val repo get() = "SkyHanni"
+    private val user get() = "hannibal002"
+    private val base get() = "https://github.com/$user/$repo"
+
+    private val pullRequestPattern = "$base/pull/(?<pr>\\d+)".toPattern()
+    private val github by lazy { GitHubClient(user, repo, BOT.config.githubToken) }
+    private val runIdRegex =
+        Regex("https://github\\.com/[\\w.]+/[\\w.]+/actions/runs/(?<RunId>\\d+)/job/(?<JobId>\\d+)")
 
     override val name: String = "pr"
-
     override val description: String = "Displays useful information about a pull request on Github."
     override val options: List<Option> = listOf(
         Option("number", "Number of the pull request you want to display.")
     )
-
     override val userCommand: Boolean = true
-
-    private const val USER = "hannibal002"
-    private const val REPO = "SkyHanni"
-    private val github = GitHubClient(USER, REPO, BOT.config.githubToken)
-    private const val BASE = "https://github.com/$USER/$REPO"
-
-    private val runIdRegex =
-        Regex("https://github\\.com/[\\w.]+/[\\w.]+/actions/runs/(?<RunId>\\d+)/job/(?<JobId>\\d+)")
-    private val pullRequestPattern = "$BASE/pull/(?<pr>\\d+)".toPattern()
 
     override fun MessageReceivedEvent.execute(args: List<String>) {
         if (args.size != 1) return wrongUsage("<number>")
@@ -60,27 +59,113 @@ object PullRequestCommand : BaseCommand() {
         loadPrInfos(prNumber)
     }
 
-    private fun MessageReceivedEvent.loadPrInfos(prNumber: Long) {
-        logAction("loads pr infos for #$prNumber")
-
-        val prLink = "$BASE/pull/$prNumber"
-
-        val pr = try {
+    private fun MessageReceivedEvent.getPrJsonOrNull(prNumber: Long): PullRequestJson? {
+        return try {
             github.findPullRequest(prNumber) ?: run {
                 reply("pr is null!")
-                return
+                return null
             }
         } catch (e: IllegalStateException) {
             if (e.message?.contains(" code:404 ") == true) {
-                val issueUrl = "$BASE/issues/$prNumber"
+                val issueUrl = "${base}/issues/$prNumber"
                 val issue = "issue".linkTo(issueUrl)
                 val text = "This pull request does not yet exist or is an $issue"
                 reply(embed("Not found $PLEADING_FACE", text, Color.red))
-                return
+                return null
             }
             reply("Could not load pull request infos for #$prNumber: ${e.message}")
-            return
+            return null
         }
+    }
+
+    private fun MessageReceivedEvent.loadBuildResultsOrNull(
+        prNumber: Long,
+        pr: PullRequestJson,
+        inBeta: Boolean,
+        title: String,
+        time: String,
+        embedTitle: String
+    ): String? {
+        if (toTimeMark(pr.updatedAt).passedSince() > 400.days && !inBeta) {
+            val text = "${title}${time} \nBuild download has expired $PLEADING_FACE"
+            reply(embed(embedTitle, text, readColor(pr)))
+            return null
+        }
+
+        val lastCommit = pr.head.sha
+
+        val job = github.getRun(lastCommit, "Build and test") ?: run {
+            val text = buildString {
+                append(title)
+                append(time)
+                if (!inBeta) {
+                    append("\n")
+                    append("Build needs approval $PLEADING_FACE")
+                }
+            }
+
+            reply(embed(embedTitle, text, readColor(pr)))
+            return null
+        }
+
+        if (job.startedAt?.let { toTimeMark(it).passedSince() > 90.days } == true && !inBeta) {
+            reply(embed(embedTitle, "${title}${time} \nBuild download has expired $PLEADING_FACE", readColor(pr)))
+
+            return null
+        }
+
+        if (job.status != RunStatus.COMPLETED) {
+            val text = when (job.status) {
+                RunStatus.REQUESTED -> "Build has been requested $PLEADING_FACE"
+                RunStatus.QUEUED -> "Build is in queue $PLEADING_FACE"
+                RunStatus.IN_PROGRESS -> "Build is in progress $PLEADING_FACE"
+                RunStatus.WAITING -> "Build is waiting $PLEADING_FACE"
+                RunStatus.PENDING -> "Build is pending $PLEADING_FACE"
+                else -> ""
+            }
+
+            val embedBody = buildString {
+                append(title)
+                append(time)
+                if (!inBeta) {
+                    append("\n")
+                    append(text)
+                }
+            }
+
+            reply(embed(embedTitle, embedBody, readColor(pr)))
+            return null
+        }
+
+        if (job.conclusion != Conclusion.SUCCESS && !inBeta) {
+            reply(embed(embedTitle, "$title$time\nLast development build failed $PLEADING_FACE", Color.red))
+            return null
+        }
+
+        val match = job.htmlUrl?.let { runIdRegex.matchEntire(it) }
+        val runId = match?.groups?.get("RunId")?.value
+
+        val artifactLink = "$base/actions/runs/$runId?pr=$prNumber"
+        val nightlyLink = "https://nightly.link/$user/$repo/actions/runs/$runId/Development%20Build.zip"
+        val artifactLine = "GitHub".linkTo(artifactLink)
+        val nightlyLine = "Nightly".linkTo(nightlyLink)
+
+        return buildString {
+            append(" \n")
+            append("Download the latest development build of this pr!")
+            append("\n")
+            append("> From $artifactLine (requires a GitHub Account)")
+            append("\n")
+            append("> From $nightlyLine (unofficial)")
+            append("\n")
+            append("> (updated ${passedSince(job.completedAt ?: "")})")
+        }
+    }
+
+    fun MessageReceivedEvent.loadPrInfos(prNumber: Long) {
+        logAction("loads pr infos for #$prNumber")
+        val prLink = "$base/pull/$prNumber"
+        val pr = this.getPrJsonOrNull(prNumber) ?: return
 
         val head = pr.head
         val userName = head.user.login
@@ -93,8 +178,7 @@ object PullRequestCommand : BaseCommand() {
             append("\n")
         }
 
-        var inBeta: Boolean = false
-
+        var inBeta = false
         val labels = pr.labels.map { it.name }.toSet()
 
         val time = buildString {
@@ -132,85 +216,19 @@ object PullRequestCommand : BaseCommand() {
             }
         }
 
-        if (toTimeMark(pr.updatedAt).passedSince() > 400.days && !inBeta) {
-            val text = "${title}${time} \nBuild download has expired $PLEADING_FACE"
-            reply(embed(embedTitle, text, readColor(pr)))
-            return
-        }
-
-        val lastCommit = head.sha
-
-        val job = github.getRun(lastCommit, "Build and test") ?: run {
-            val text = buildString {
-                append(title)
-                append(time)
-                if (!inBeta) {
-                    append("\n")
-                    append("Build needs approval $PLEADING_FACE")
-                }
-            }
-
-            reply(embed(embedTitle, text, readColor(pr)))
-            return
-        }
-
-        if (job.startedAt?.let { toTimeMark(it).passedSince() > 90.days } == true && !inBeta) {
-            reply(embed(embedTitle, "${title}${time} \nBuild download has expired $PLEADING_FACE", readColor(pr)))
-
-            return
-        }
-
-        if (job.status != RunStatus.COMPLETED) {
-            val text = when (job.status) {
-                RunStatus.REQUESTED -> "Build has been requested $PLEADING_FACE"
-                RunStatus.QUEUED -> "Build is in queue $PLEADING_FACE"
-                RunStatus.IN_PROGRESS -> "Build is in progress $PLEADING_FACE"
-                RunStatus.WAITING -> "Build is waiting $PLEADING_FACE"
-                RunStatus.PENDING -> "Build is pending $PLEADING_FACE"
-                else -> ""
-            }
-
-            val embedBody = buildString {
-                append(title)
-                append(time)
-                if (!inBeta) {
-                    append("\n")
-                    append(text)
-                }
-            }
-
-            reply(embed(embedTitle, embedBody, readColor(pr)))
-            return
-        }
-
-        if (job.conclusion != Conclusion.SUCCESS && !inBeta) {
-            reply(embed(embedTitle, "$title$time\nLast development build failed $PLEADING_FACE", Color.red))
-            return
-        }
-
-        val match = job.htmlUrl?.let { runIdRegex.matchEntire(it) }
-        val runId = match?.groups?.get("RunId")?.value
-
-        val artifactLink = "$BASE/actions/runs/$runId?pr=$prNumber"
-        val nightlyLink = "https://nightly.link/$USER/$REPO/actions/runs/$runId/Development%20Build.zip"
-        val artifactLine = "GitHub".linkTo(artifactLink)
-        val nightlyLine = "Nightly".linkTo(nightlyLink)
-
-        val artifactDisplay = buildString {
-            append(" \n")
-            append("Download the latest development build of this pr!")
-            append("\n")
-            append("> From $artifactLine (requires a GitHub Account)")
-            append("\n")
-            append("> From $nightlyLine (unofficial)")
-            append("\n")
-            append("> (updated ${passedSince(job.completedAt ?: "")})")
-        }
+        val artifactDisplay = loadBuildResultsOrNull(
+            prNumber,
+            pr,
+            inBeta,
+            title,
+            time,
+            embedTitle
+        )
 
         val embedBody = buildString {
             append(title)
             append(time)
-            if (!inBeta) {
+            if (!inBeta && !disableBuildInfo) {
                 append(artifactDisplay)
             }
         }
@@ -262,7 +280,7 @@ object PullRequestCommand : BaseCommand() {
             return
         }
 
-        val prLink = "$BASE/pull/$prNumber"
+        val prLink = "$base/pull/$prNumber"
         reply("Looking for pr <$prLink..")
 
         val pr = github.findPullRequest(prNumber) ?: run {
@@ -293,7 +311,7 @@ object PullRequestCommand : BaseCommand() {
         Utils.unzipFile(fileRaw, fileUnzipped)
         fileRaw.delete()
 
-        val displayUrl = "$BASE/actions/runs/$artifactId?pr=$prNumber"
+        val displayUrl = "$base/actions/runs/$artifactId?pr=$prNumber"
 
         val modJar = findJarFile(fileUnzipped) ?: run {
             reply("mod jar not found!")
