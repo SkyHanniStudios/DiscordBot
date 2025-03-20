@@ -30,11 +30,11 @@ open class PullRequestCommand : BaseCommand() {
 
     open val disableBuildInfo: Boolean = false
     open val repo get() = "SkyHanni"
-    private val user get() = "hannibal002"
+    protected val user get() = "hannibal002"
     private val base get() = "https://github.com/$user/$repo"
 
     private val pullRequestPattern = "$base/pull/(?<pr>\\d+)".toPattern()
-    private val github by lazy { GitHubClient(user, repo, BOT.config.githubToken) }
+    open val github by lazy { GitHubClient(user, repo, BOT.config.githubToken) }
     private val runIdRegex =
         Regex("https://github\\.com/[\\w.]+/[\\w.]+/actions/runs/(?<RunId>\\d+)/job/(?<JobId>\\d+)")
 
@@ -162,6 +162,12 @@ open class PullRequestCommand : BaseCommand() {
         }
     }
 
+    open fun StringBuilder.appendLabelCategories(labels: Set<String>, pr: PullRequestJson) {
+        appendLabelCategory("Type", labels, this)
+        appendLabelCategory("State", labels, this)
+        appendLabelCategory("Milestone", labels, this, pr.milestone?.let { " `${it.title}`" } ?: "")
+    }
+
     private fun MessageReceivedEvent.loadPrInfos(prNumber: Long) {
         logAction("loads pr infos for #$prNumber")
         val prLink = "$base/pull/$prNumber"
@@ -189,9 +195,7 @@ open class PullRequestCommand : BaseCommand() {
             if (!pr.merged) {
                 append("> Last Updated: $lastUpdate")
                 append("\n")
-                appendLabelCategory("Type", labels, this)
-                appendLabelCategory("State", labels, this)
-                appendLabelCategory("Milestone", labels, this, pr.milestone?.let { " `${it.title}`" } ?: "")
+                appendLabelCategories(labels, pr)
             } else {
                 val merged = passedSince(pr.mergedAt ?: "")
                 append("> Merged: $merged")
@@ -232,15 +236,15 @@ open class PullRequestCommand : BaseCommand() {
         reply(embed(embedTitle, embedBody, readColor(pr)))
     }
 
-    private val labelTypes: Map<String, Set<String>> = mapOf(
+    open val labelTypes: Map<String, Set<String>> get() = mapOf(
         Pair("Type", setOf("Backend", "Bug Fix")),
         Pair("State", setOf("Detekt", "Merge Conflicts", "Waiting on Dependency PR", "Waiting on Hypixel", "Wrong Title/Changelog")),
         Pair("Milestone", setOf("Soon")),
         Pair("Misc", setOf("Good First Issue"))
     )
 
-    private fun appendLabelCategory(labelType: String, labels: Set<String>, stringBuilder: StringBuilder, suffix: String = ""): StringBuilder {
-        val labelsWithType = labels.intersect(labelTypes[labelType] ?: setOf())
+    protected fun appendLabelCategory(labelType: String, labels: Set<String>, stringBuilder: StringBuilder, suffix: String = ""): StringBuilder {
+        val labelsWithType = labels.intersect((labelTypes[labelType] ?: setOf()).toSet())
         if (labelsWithType.isEmpty()) return stringBuilder.append(if (suffix.isNotEmpty()) "> $labelType: $suffix\n" else "")
         return stringBuilder.append("> $labelType: `${labelsWithType.joinToString("` `")}`$suffix\n")
     }
@@ -329,7 +333,7 @@ open class PullRequestCommand : BaseCommand() {
         val matcher = pullRequestPattern.matcher(message)
         if (!matcher.matches()) return false
         val pr = matcher.group("pr")?.toLongOrNull() ?: return false
-        event.replyWithConsumer("Next time just type `!pr $pr` $PLEADING_FACE") { consumer ->
+        event.replyWithConsumer("Next time just type `!$name $pr` $PLEADING_FACE") { consumer ->
             runDelayed(10.seconds) {
                 consumer.message.messageDelete()
             }
