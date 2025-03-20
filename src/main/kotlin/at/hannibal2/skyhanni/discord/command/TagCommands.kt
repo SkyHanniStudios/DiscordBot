@@ -34,7 +34,7 @@ object TagCommands {
 
     fun handleTag(event: MessageReceivedEvent): Boolean {
         val message = event.message
-        var keyword = message.contentRaw.substring(1)
+        var keyword = message.contentRaw.substring(1).trimStart()
         var deleting = false
         if (keyword.endsWith(" -d")) {
             keyword = keyword.dropLast(3)

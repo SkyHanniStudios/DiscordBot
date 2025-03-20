@@ -60,6 +60,7 @@ open class PullRequestCommand : BaseCommand() {
     }
 
     private fun MessageReceivedEvent.getPrJsonOrNull(prNumber: Long): PullRequestJson? {
+        logAction("loads pr infos for #$prNumber")
         return try {
             github.findPullRequest(prNumber) ?: run {
                 reply("pr is null!")
@@ -81,13 +82,18 @@ open class PullRequestCommand : BaseCommand() {
     private fun MessageReceivedEvent.loadBuildResultsOrNull(
         prNumber: Long,
         pr: PullRequestJson,
-        inBeta: Boolean,
         title: String,
         time: String,
         embedTitle: String
     ): String? {
-        if (toTimeMark(pr.updatedAt).passedSince() > 400.days && !inBeta) {
+        if (toTimeMark(pr.updatedAt).passedSince() > 400.days) {
             val text = "${title}${time} \nBuild download has expired $PLEADING_FACE"
+            reply(embed(embedTitle, text, readColor(pr)))
+            return null
+        }
+
+        if (toTimeMark(pr.updatedAt).passedSince() < 5.seconds) {
+            val text = "${title}${time} \nGitHub actions is loading $PLEADING_FACE"
             reply(embed(embedTitle, text, readColor(pr)))
             return null
         }
@@ -95,22 +101,9 @@ open class PullRequestCommand : BaseCommand() {
         val lastCommit = pr.head.sha
 
         val job = github.getRun(lastCommit, "Build and test") ?: run {
-            val text = buildString {
-                append(title)
-                append(time)
-                if (!inBeta) {
-                    append("\n")
-                    append("Build needs approval $PLEADING_FACE")
-                }
-            }
+            val text = "${title}${time} \nBuild needs approval $PLEADING_FACE"
 
             reply(embed(embedTitle, text, readColor(pr)))
-            return null
-        }
-
-        if (job.startedAt?.let { toTimeMark(it).passedSince() > 90.days } == true && !inBeta) {
-            reply(embed(embedTitle, "${title}${time} \nBuild download has expired $PLEADING_FACE", readColor(pr)))
-
             return null
         }
 
@@ -123,21 +116,16 @@ open class PullRequestCommand : BaseCommand() {
                 RunStatus.PENDING -> "Build is pending $PLEADING_FACE"
                 else -> ""
             }
-
-            val embedBody = buildString {
-                append(title)
-                append(time)
-                if (!inBeta) {
-                    append("\n")
-                    append(text)
-                }
-            }
-
-            reply(embed(embedTitle, embedBody, readColor(pr)))
+            reply(embed(embedTitle, "${title}${time} \n $text", readColor(pr)))
             return null
         }
 
-        if (job.conclusion != Conclusion.SUCCESS && !inBeta) {
+        if (job.startedAt?.let { toTimeMark(it).passedSince() > 90.days } == true) {
+            reply(embed(embedTitle, "${title}${time} \nBuild download has expired $PLEADING_FACE", readColor(pr)))
+            return null
+        }
+
+        if (job.conclusion != Conclusion.SUCCESS) {
             reply(embed(embedTitle, "$title$time\nLast development build failed $PLEADING_FACE", Color.red))
             return null
         }
@@ -221,8 +209,8 @@ open class PullRequestCommand : BaseCommand() {
         }
 
         val artifactDisplay =
-            if (disableBuildInfo) null
-            else loadBuildResultsOrNull(prNumber, pr, inBeta, title, time, embedTitle)
+            if (disableBuildInfo || inBeta) null
+            else loadBuildResultsOrNull(prNumber, pr, title, time, embedTitle)
                 ?: return
 
         val embedBody = buildString {
