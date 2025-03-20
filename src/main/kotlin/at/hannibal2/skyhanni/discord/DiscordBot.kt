@@ -31,6 +31,8 @@ class DiscordBot(val jda: JDA, val config: BotConfig) {
 }
 
 const val PLEADING_FACE = "🥺"
+const val BIG_X = "❌"
+const val CHECK_MARK = "✅"
 const val PING_HANNIBAL = "<@239858538959077376>"
 
 fun main() {
