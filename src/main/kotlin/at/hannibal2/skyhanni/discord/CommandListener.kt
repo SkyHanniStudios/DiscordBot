@@ -51,10 +51,6 @@ object CommandListener {
             TagCommands.lastMessages.remove(this.author.id)
         }
 
-        if (ServerCommands.isKnownServerUrl(this, message)) return
-        if (pullRequestCommand.isPullRequest(this, message)) return
-        if (RepoPullRequestCommand.isPullRequest(this, message)) return
-
         if (!isCommand(message)) return
 
         val split = message.substring(1).split(" ")
@@ -65,6 +61,10 @@ object CommandListener {
             TagCommands.handleTag(this)
             return
         }
+
+        if (ServerCommands.isKnownServerUrl(this, message)) return
+        if (command.name == "pr" && pullRequestCommand.isPullRequest(this, message)) return
+        if (command.name == "repopr" && RepoPullRequestCommand.isPullRequest(this, message)) return
 
         if (!command.userCommand) {
             if (!hasAdminPermissions()) {

@@ -162,7 +162,7 @@ open class PullRequestCommand : BaseCommand() {
         }
     }
 
-    fun MessageReceivedEvent.loadPrInfos(prNumber: Long) {
+    private fun MessageReceivedEvent.loadPrInfos(prNumber: Long) {
         logAction("loads pr infos for #$prNumber")
         val prLink = "$base/pull/$prNumber"
         val pr = this.getPrJsonOrNull(prNumber) ?: return
@@ -216,19 +216,15 @@ open class PullRequestCommand : BaseCommand() {
             }
         }
 
-        val artifactDisplay = loadBuildResultsOrNull(
-            prNumber,
-            pr,
-            inBeta,
-            title,
-            time,
-            embedTitle
-        )
+        val artifactDisplay =
+            if (disableBuildInfo) null
+            else loadBuildResultsOrNull(prNumber, pr, inBeta, title, time, embedTitle)
+                ?: return
 
         val embedBody = buildString {
             append(title)
             append(time)
-            if (!inBeta && !disableBuildInfo) {
+            if (!inBeta && artifactDisplay != null) {
                 append(artifactDisplay)
             }
         }
