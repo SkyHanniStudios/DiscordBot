@@ -31,7 +31,10 @@ class DiscordBot(val jda: JDA, val config: BotConfig) {
 }
 
 const val PLEADING_FACE = "🥺"
+const val BIG_X = "❌"
+const val CHECK_MARK = "✅"
 const val PING_HANNIBAL = "<@239858538959077376>"
+const val OPEN_PR_TAG = "1350893914768277624"
 
 fun main() {
     val bot = startBot()
@@ -73,6 +76,7 @@ private fun startBot(): DiscordBot {
     val messageListener = object : ListenerAdapter() {
         override fun onMessageReceived(event: MessageReceivedEvent) {
             CommandListener.onMessage(bot, event)
+            LinkListener.onMessage(bot, event)
         }
     }
     jda.addEventListener(messageListener)
