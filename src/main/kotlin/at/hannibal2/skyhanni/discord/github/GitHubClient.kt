@@ -1,12 +1,6 @@
 package at.hannibal2.skyhanni.discord.github
 
-import at.hannibal2.skyhanni.discord.json.discord.Artifact
-import at.hannibal2.skyhanni.discord.json.discord.ArtifactResponse
-import at.hannibal2.skyhanni.discord.json.discord.CheckRun
-import at.hannibal2.skyhanni.discord.json.discord.CheckRunsResponse
-import at.hannibal2.skyhanni.discord.json.discord.Job
-import at.hannibal2.skyhanni.discord.json.discord.JobsResponse
-import at.hannibal2.skyhanni.discord.json.discord.PullRequestJson
+import at.hannibal2.skyhanni.discord.json.discord.*
 import com.google.gson.Gson
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -65,7 +59,8 @@ class GitHubClient(user: String, repo: String, private val token: String) {
 
     private inline fun <reified T : Any, R> readJson(url: String, crossinline block: (T) -> R): R? =
         readBody(url) { body ->
-            block(gson.fromJson(body.string(), T::class.java))
+            val type = object : com.google.gson.reflect.TypeToken<T>() {}.type
+            block(gson.fromJson(body.string(), type))
         }
 
     inline fun <T> readBody(url: String, block: (ResponseBody) -> T): T? {
@@ -79,5 +74,10 @@ class GitHubClient(user: String, repo: String, private val token: String) {
     fun response(url: String): Response {
         val request = Request.Builder().url(url).header("Authorization", "token $token").build()
         return client.newCall(request).execute()
+    }
+
+    fun getReleases(): List<Release>? {
+        val url = "$base/releases"
+        return readJson<List<Release>, List<Release>?>(url) { it }
     }
 }

@@ -7,6 +7,7 @@ import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.command.BaseCommand
 import at.hannibal2.skyhanni.discord.command.HelpCommand
 import at.hannibal2.skyhanni.discord.command.PullRequestCommand
+import at.hannibal2.skyhanni.discord.command.RepoPullRequestCommand
 import at.hannibal2.skyhanni.discord.command.ServerCommands
 import at.hannibal2.skyhanni.discord.command.TagCommands
 import at.hannibal2.skyhanni.discord.command.TagUndo
@@ -16,6 +17,8 @@ import java.lang.reflect.Modifier
 
 object CommandListener {
     private const val BOT_ID = "1343351725381128193"
+
+    private val pullRequestCommand: PullRequestCommand = PullRequestCommand()
 
     var commands = listOf<BaseCommand>()
         private set
@@ -48,9 +51,6 @@ object CommandListener {
             TagCommands.lastMessages.remove(this.author.id)
         }
 
-        if (ServerCommands.isKnownServerUrl(this, message)) return
-        if (PullRequestCommand.isPullRequest(this, message)) return
-
         if (!isCommand(message)) return
 
         val split = message.substring(1).split(" ")
@@ -61,6 +61,10 @@ object CommandListener {
             TagCommands.handleTag(this)
             return
         }
+
+        if (ServerCommands.isKnownServerUrl(this, message)) return
+        if (command.name == "pr" && pullRequestCommand.isPullRequest(this, message)) return
+        if (command.name == "repopr" && RepoPullRequestCommand.isPullRequest(this, message)) return
 
         if (!command.userCommand) {
             if (!hasAdminPermissions()) {
