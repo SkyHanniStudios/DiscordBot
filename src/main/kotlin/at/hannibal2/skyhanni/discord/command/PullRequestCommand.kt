@@ -1,11 +1,7 @@
 package at.hannibal2.skyhanni.discord.command
 
-import at.hannibal2.skyhanni.discord.BOT
-import at.hannibal2.skyhanni.discord.Option
-import at.hannibal2.skyhanni.discord.PLEADING_FACE
-import at.hannibal2.skyhanni.discord.SimpleTimeMark
+import at.hannibal2.skyhanni.discord.*
 import at.hannibal2.skyhanni.discord.SimpleTimeMark.Companion.asTimeMark
-import at.hannibal2.skyhanni.discord.Utils
 import at.hannibal2.skyhanni.discord.Utils.createParentDirIfNotExist
 import at.hannibal2.skyhanni.discord.Utils.embed
 import at.hannibal2.skyhanni.discord.Utils.format
@@ -30,25 +26,24 @@ import java.time.format.DateTimeFormatter
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
 
-object PullRequestCommand : BaseCommand() {
+open class PullRequestCommand : BaseCommand() {
+
+    open val disableBuildInfo: Boolean = false
+    open val repo get() = "SkyHanni"
+    protected val user get() = "hannibal002"
+    private val base get() = "https://github.com/$user/$repo"
+
+    private val pullRequestPattern = "$base/pull/(?<pr>\\d+)".toPattern()
+    open val github by lazy { GitHubClient(user, repo, BOT.config.githubToken) }
+    private val runIdRegex =
+        Regex("https://github\\.com/[\\w.]+/[\\w.]+/actions/runs/(?<RunId>\\d+)/job/(?<JobId>\\d+)")
 
     override val name: String = "pr"
-
     override val description: String = "Displays useful information about a pull request on Github."
     override val options: List<Option> = listOf(
         Option("number", "Number of the pull request you want to display.")
     )
-
     override val userCommand: Boolean = true
-
-    private const val USER = "hannibal002"
-    private const val REPO = "SkyHanni"
-    private val github = GitHubClient(USER, REPO, BOT.config.githubToken)
-    private const val BASE = "https://github.com/$USER/$REPO"
-
-    private val runIdRegex =
-        Regex("https://github\\.com/[\\w.]+/[\\w.]+/actions/runs/(?<RunId>\\d+)/job/(?<JobId>\\d+)")
-    private val pullRequestPattern = "$BASE/pull/(?<pr>\\d+)".toPattern()
 
     override fun MessageReceivedEvent.execute(args: List<String>) {
         if (args.size != 1) return wrongUsage("<number>")
@@ -64,72 +59,52 @@ object PullRequestCommand : BaseCommand() {
         loadPrInfos(prNumber)
     }
 
-    private fun MessageReceivedEvent.loadPrInfos(prNumber: Long) {
+    private fun MessageReceivedEvent.getPrJsonOrNull(prNumber: Long): PullRequestJson? {
         logAction("loads pr infos for #$prNumber")
-
-        val prLink = "$BASE/pull/$prNumber"
-
-        val pr = try {
+        return try {
             github.findPullRequest(prNumber) ?: run {
                 reply("pr is null!")
-                return
+                return null
             }
         } catch (e: IllegalStateException) {
             if (e.message?.contains(" code:404 ") == true) {
-                val issueUrl = "$BASE/issues/$prNumber"
+                val issueUrl = "${base}/issues/$prNumber"
                 val issue = "issue".linkTo(issueUrl)
                 val text = "This pull request does not yet exist or is an $issue"
                 reply(embed("Not found $PLEADING_FACE", text, Color.red))
-                return
+                return null
             }
             reply("Could not load pull request infos for #$prNumber: ${e.message}")
-            return
+            return null
         }
+    }
 
-        val head = pr.head
-        val userName = head.user.login
-        val userProfile = "https://github.com/$userName"
-        val prNumberDisplay = "#$prNumber".linkTo(prLink)
-        val userNameDisplay = userName.linkTo(userProfile)
-        val embedTitle = pr.title
-        val title = buildString {
-            append("> $prNumberDisplay by $userNameDisplay")
-            append("\n")
-        }
-
-        val labels = pr.labels.map { it.name }.toSet()
-
-        val time = buildString {
-            val lastUpdate = passedSince(pr.updatedAt)
-            val created = passedSince(pr.createdAt)
-            append("> Created: $created")
-            append("\n")
-            append("> Last Updated: $lastUpdate")
-            append("\n")
-            appendLabelCategory("Type", labels, this)
-            appendLabelCategory("State", labels, this)
-            appendLabelCategory("Milestone", labels, this, pr.milestone?.let { " `${it.title}`" } ?: "")
-        }
-
+    private fun MessageReceivedEvent.loadBuildResultsOrNull(
+        prNumber: Long,
+        pr: PullRequestJson,
+        title: String,
+        time: String,
+        embedTitle: String
+    ): String? {
         if (toTimeMark(pr.updatedAt).passedSince() > 400.days) {
             val text = "${title}${time} \nBuild download has expired $PLEADING_FACE"
             reply(embed(embedTitle, text, readColor(pr)))
-            return
+            return null
         }
 
         if (toTimeMark(pr.updatedAt).passedSince() < 5.seconds) {
             val text = "${title}${time} \nGitHub actions is loading $PLEADING_FACE"
             reply(embed(embedTitle, text, readColor(pr)))
-            return
+            return null
         }
 
-        val lastCommit = head.sha
+        val lastCommit = pr.head.sha
 
         val job = github.getRun(lastCommit, "Build and test") ?: run {
             val text = "${title}${time} \nBuild needs approval $PLEADING_FACE"
 
             reply(embed(embedTitle, text, readColor(pr)))
-            return
+            return null
         }
 
         if (job.status != RunStatus.COMPLETED) {
@@ -142,28 +117,28 @@ object PullRequestCommand : BaseCommand() {
                 else -> ""
             }
             reply(embed(embedTitle, "${title}${time} \n $text", readColor(pr)))
-            return
+            return null
         }
 
         if (job.startedAt?.let { toTimeMark(it).passedSince() > 90.days } == true) {
             reply(embed(embedTitle, "${title}${time} \nBuild download has expired $PLEADING_FACE", readColor(pr)))
-            return
+            return null
         }
 
         if (job.conclusion != Conclusion.SUCCESS) {
             reply(embed(embedTitle, "$title$time\nLast development build failed $PLEADING_FACE", Color.red))
-            return
+            return null
         }
 
         val match = job.htmlUrl?.let { runIdRegex.matchEntire(it) }
         val runId = match?.groups?.get("RunId")?.value
 
-        val artifactLink = "$BASE/actions/runs/$runId?pr=$prNumber"
-        val nightlyLink = "https://nightly.link/$USER/$REPO/actions/runs/$runId/Development%20Build.zip"
+        val artifactLink = "$base/actions/runs/$runId?pr=$prNumber"
+        val nightlyLink = "https://nightly.link/$user/$repo/actions/runs/$runId/Development%20Build.zip"
         val artifactLine = "GitHub".linkTo(artifactLink)
         val nightlyLine = "Nightly".linkTo(nightlyLink)
 
-        val artifactDisplay = buildString {
+        return buildString {
             append(" \n")
             append("Download the latest development build of this pr!")
             append("\n")
@@ -173,19 +148,91 @@ object PullRequestCommand : BaseCommand() {
             append("\n")
             append("> (updated ${passedSince(job.completedAt ?: "")})")
         }
-
-        reply(embed(embedTitle, "$title$time$artifactDisplay", readColor(pr)))
     }
 
-    private val labelTypes: Map<String, Set<String>> = mapOf(
+    open fun StringBuilder.appendLabelCategories(labels: Set<String>, pr: PullRequestJson) {
+        appendLabelCategory("Type", labels, this)
+        appendLabelCategory("State", labels, this)
+        appendLabelCategory("Milestone", labels, this, pr.milestone?.let { " `${it.title}`" } ?: "")
+    }
+
+    private fun MessageReceivedEvent.loadPrInfos(prNumber: Long) {
+        logAction("loads pr infos for #$prNumber")
+        val prLink = "$base/pull/$prNumber"
+        val pr = this.getPrJsonOrNull(prNumber) ?: return
+
+        val head = pr.head
+        val userName = head.user.login
+        val userProfile = "https://github.com/$userName"
+        val prNumberDisplay = "#$prNumber".linkTo(prLink)
+        val userNameDisplay = userName.linkTo(userProfile)
+        val embedTitle = pr.title
+        val title = buildString {
+            append("> $prNumberDisplay by $userNameDisplay")
+            append("\n")
+        }
+
+        var inBeta = false
+        val labels = pr.labels.map { it.name }.toSet()
+
+        val time = buildString {
+            val lastUpdate = passedSince(pr.updatedAt)
+            val created = passedSince(pr.createdAt)
+            append("> Created: $created")
+            append("\n")
+            if (!pr.merged) {
+                append("> Last Updated: $lastUpdate")
+                append("\n")
+                appendLabelCategories(labels, pr)
+            } else {
+                val merged = passedSince(pr.mergedAt ?: "")
+                append("> Merged: $merged")
+                append("\n")
+
+                val releases = try {
+                    github.getReleases()
+                } catch (e: Exception) {
+                    null
+                }
+
+                val lastRelease = releases?.firstOrNull()
+
+                if (releaseSinceMerge(pr.mergedAt ?: "", lastRelease?.publishedAt ?: "")) {
+                    append("> This PR is in the latest beta $CHECK_MARK")
+                    append("\n")
+                    inBeta = true
+                } else {
+                    append("> This PR is not in the latest beta $BIG_X")
+                    append("\n")
+                }
+            }
+        }
+
+        val artifactDisplay =
+            if (disableBuildInfo || inBeta) null
+            else loadBuildResultsOrNull(prNumber, pr, title, time, embedTitle)
+                ?: return
+
+        val embedBody = buildString {
+            append(title)
+            append(time)
+            if (!inBeta && artifactDisplay != null) {
+                append(artifactDisplay)
+            }
+        }
+
+        reply(embed(embedTitle, embedBody, readColor(pr)))
+    }
+
+    open val labelTypes: Map<String, Set<String>> get() = mapOf(
         Pair("Type", setOf("Backend", "Bug Fix")),
         Pair("State", setOf("Detekt", "Merge Conflicts", "Waiting on Dependency PR", "Waiting on Hypixel", "Wrong Title/Changelog")),
         Pair("Milestone", setOf("Soon")),
         Pair("Misc", setOf("Good First Issue"))
     )
 
-    private fun appendLabelCategory(labelType: String, labels: Set<String>, stringBuilder: StringBuilder, suffix: String = ""): StringBuilder {
-        val labelsWithType = labels.intersect(labelTypes[labelType] ?: setOf())
+    protected fun appendLabelCategory(labelType: String, labels: Set<String>, stringBuilder: StringBuilder, suffix: String = ""): StringBuilder {
+        val labelsWithType = labels.intersect((labelTypes[labelType] ?: setOf()).toSet())
         if (labelsWithType.isEmpty()) return stringBuilder.append(if (suffix.isNotEmpty()) "> $labelType: $suffix\n" else "")
         return stringBuilder.append("> $labelType: `${labelsWithType.joinToString("` `")}`$suffix\n")
     }
@@ -204,6 +251,12 @@ object PullRequestCommand : BaseCommand() {
 
     private fun passedSince(stringTime: String): String = "<t:${parseToUnixTime(stringTime)}:R>"
 
+    private fun releaseSinceMerge(stringTimeMerge: String, stringTimeLastRelease: String): Boolean {
+        val timeMerge = parseToUnixTime(stringTimeMerge)
+        val timeLastRelease = parseToUnixTime(stringTimeLastRelease)
+        return timeMerge < timeLastRelease
+    }
+
     @Suppress("unused") // TODO implement once we can upload the file
     private fun MessageReceivedEvent.pullRequestArtifactCommand(args: List<String>) {
         if (args.size != 2) {
@@ -215,7 +268,7 @@ object PullRequestCommand : BaseCommand() {
             return
         }
 
-        val prLink = "$BASE/pull/$prNumber"
+        val prLink = "$base/pull/$prNumber"
         reply("Looking for pr <$prLink..")
 
         val pr = github.findPullRequest(prNumber) ?: run {
@@ -246,7 +299,7 @@ object PullRequestCommand : BaseCommand() {
         Utils.unzipFile(fileRaw, fileUnzipped)
         fileRaw.delete()
 
-        val displayUrl = "$BASE/actions/runs/$artifactId?pr=$prNumber"
+        val displayUrl = "$base/actions/runs/$artifactId?pr=$prNumber"
 
         val modJar = findJarFile(fileUnzipped) ?: run {
             reply("mod jar not found!")
@@ -268,7 +321,7 @@ object PullRequestCommand : BaseCommand() {
         val matcher = pullRequestPattern.matcher(message)
         if (!matcher.matches()) return false
         val pr = matcher.group("pr")?.toLongOrNull() ?: return false
-        event.replyWithConsumer("Next time just type `!pr $pr` $PLEADING_FACE") { consumer ->
+        event.replyWithConsumer("Next time just type `!$name $pr` $PLEADING_FACE") { consumer ->
             runDelayed(10.seconds) {
                 consumer.message.messageDelete()
             }
