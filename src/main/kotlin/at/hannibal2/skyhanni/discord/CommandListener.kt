@@ -6,6 +6,7 @@ import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.command.BaseCommand
 import at.hannibal2.skyhanni.discord.command.HelpCommand
+import at.hannibal2.skyhanni.discord.command.BotPullRequestCommand
 import at.hannibal2.skyhanni.discord.command.PullRequestCommand
 import at.hannibal2.skyhanni.discord.command.RepoPullRequestCommand
 import at.hannibal2.skyhanni.discord.command.ServerCommands
@@ -65,6 +66,7 @@ object CommandListener {
         if (ServerCommands.isKnownServerUrl(this, message)) return
         if (command.name == "pr" && pullRequestCommand.isPullRequest(this, message)) return
         if (command.name == "repopr" && RepoPullRequestCommand.isPullRequest(this, message)) return
+        if (command.name == "botpr" && BotPullRequestCommand.isPullRequest(this, message)) return
 
         if (!command.userCommand) {
             if (!hasAdminPermissions()) {
