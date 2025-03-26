@@ -51,17 +51,17 @@ object Database {
         }
     }
 
-    fun addTag(keyword: String, response: String): Boolean {
+    fun addTag(keyword: String, response: String, count: Int = 0): Boolean {
         val key = keyword.lowercase()
         val statement = connection.prepareStatement(
             "INSERT OR REPLACE INTO keywords (keyword, response, count) VALUES (?, ?, ?)"
         )
         statement.setString(1, key)
         statement.setString(2, response)
-        statement.setInt(3, 0)
+        statement.setInt(3, count)
         val updated = statement.executeUpdate() > 0
         if (updated) {
-            tags[key] = Tag(key, response, 0)
+            tags[key] = Tag(key, response, count)
         }
         return updated
     }
