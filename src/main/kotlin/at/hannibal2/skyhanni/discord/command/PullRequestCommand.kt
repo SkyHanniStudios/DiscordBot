@@ -30,7 +30,7 @@ open class PullRequestCommand : BaseCommand() {
 
     open val disableBuildInfo: Boolean = false
     open val repo get() = "SkyHanni"
-    protected val user get() = "hannibal002"
+    protected open val user get() = "hannibal002"
     private val base get() = "https://github.com/$user/$repo"
 
     private val pullRequestPattern = "$base/pull/(?<pr>\\d+)".toPattern()
