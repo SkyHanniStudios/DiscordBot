@@ -11,7 +11,7 @@ object BotPullRequestCommand : PullRequestCommand() {
     override val github get() = GitHubClient(user, repo, BOT.config.githubToken)
 
     override val labelTypes: Map<String, Set<String>> get() = mapOf(
-        Pair("Misc", setOf("Merge Conflicts", "Part of SkyHanni PR", "Wait on Hypixel"))
+        Pair("Misc", setOf("Bug Fix", "Merge Conflicts", "Waiting on Dependency PR"))
     )
 
     override fun StringBuilder.appendLabelCategories(labels: Set<String>, pr: PullRequestJson) {
