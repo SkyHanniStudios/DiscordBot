@@ -113,13 +113,13 @@ object PullRequestCommand : BaseCommand() {
 
         if (toTimeMark(pr.updatedAt).passedSince() > 400.days) {
             val text = "${title}${time} \nBuild download has expired $PLEADING_FACE"
-            reply(embed(embedTitle, text, readColor(pr)))
+            reply(embed(embedTitle, text, readColor(pr), prLink))
             return
         }
 
         if (toTimeMark(pr.updatedAt).passedSince() < 5.seconds) {
             val text = "${title}${time} \nGitHub actions is loading $PLEADING_FACE"
-            reply(embed(embedTitle, text, readColor(pr)))
+            reply(embed(embedTitle, text, readColor(pr), prLink))
             return
         }
 
@@ -128,7 +128,7 @@ object PullRequestCommand : BaseCommand() {
         val job = github.getRun(lastCommit, "Build and test") ?: run {
             val text = "${title}${time} \nBuild needs approval $PLEADING_FACE"
 
-            reply(embed(embedTitle, text, readColor(pr)))
+            reply(embed(embedTitle, text, readColor(pr), prLink))
             return
         }
 
@@ -141,17 +141,17 @@ object PullRequestCommand : BaseCommand() {
                 RunStatus.PENDING -> "Build is pending $PLEADING_FACE"
                 else -> ""
             }
-            reply(embed(embedTitle, "${title}${time} \n $text", readColor(pr)))
+            reply(embed(embedTitle, "${title}${time} \n $text", readColor(pr), prLink))
             return
         }
 
         if (job.startedAt?.let { toTimeMark(it).passedSince() > 90.days } == true) {
-            reply(embed(embedTitle, "${title}${time} \nBuild download has expired $PLEADING_FACE", readColor(pr)))
+            reply(embed(embedTitle, "${title}${time} \nBuild download has expired $PLEADING_FACE", readColor(pr), prLink))
             return
         }
 
         if (job.conclusion != Conclusion.SUCCESS) {
-            reply(embed(embedTitle, "$title$time\nLast development build failed $PLEADING_FACE", Color.red))
+            reply(embed(embedTitle, "$title$time\nLast development build failed $PLEADING_FACE", Color.red, prLink))
             return
         }
 
@@ -174,7 +174,7 @@ object PullRequestCommand : BaseCommand() {
             append("> (updated ${passedSince(job.completedAt ?: "")})")
         }
 
-        reply(embed(embedTitle, "$title$time$artifactDisplay", readColor(pr)))
+        reply(embed(embedTitle, "$title$time$artifactDisplay", readColor(pr), prLink))
     }
 
     private val labelTypes: Map<String, Set<String>> = mapOf(
