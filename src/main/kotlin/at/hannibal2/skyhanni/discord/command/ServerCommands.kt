@@ -17,7 +17,7 @@ import java.util.concurrent.CountDownLatch
 import kotlin.time.Duration.Companion.milliseconds
 
 object ServerCommands {
-    private val github = GitHubClient("SkyHanniStudios", "DiscordBot", BOT.config.githubToken)
+    private val github = GitHubClient("SkyHanniStudios", "DiscordBot", BOT.config.githubTokenOwn)
 
     data class Server(
         val keyword: String,

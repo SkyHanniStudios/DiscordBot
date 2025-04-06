@@ -70,7 +70,9 @@ class GitHubClient(user: String, repo: String, private val token: String) {
 
     inline fun <T> readBody(url: String, block: (ResponseBody) -> T): T? {
         response(url).use {
-            if (!it.isSuccessful) error("Error fetching $url - code:${it.code} - message:'${it.message}'")
+            if (!it.isSuccessful) {
+                error("Error fetching $url - code:${it.code} - message:'${it.message}'")
+            }
             val body = it.body ?: error("Error loading '$url' - empty response'")
             return block(body)
         }
