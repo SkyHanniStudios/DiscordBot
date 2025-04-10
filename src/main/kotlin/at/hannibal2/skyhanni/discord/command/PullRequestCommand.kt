@@ -1,7 +1,13 @@
 package at.hannibal2.skyhanni.discord.command
 
-import at.hannibal2.skyhanni.discord.*
+import at.hannibal2.skyhanni.discord.BIG_X
+import at.hannibal2.skyhanni.discord.BOT
+import at.hannibal2.skyhanni.discord.CHECK_MARK
+import at.hannibal2.skyhanni.discord.Option
+import at.hannibal2.skyhanni.discord.PLEADING_FACE
+import at.hannibal2.skyhanni.discord.SimpleTimeMark
 import at.hannibal2.skyhanni.discord.SimpleTimeMark.Companion.asTimeMark
+import at.hannibal2.skyhanni.discord.Utils
 import at.hannibal2.skyhanni.discord.Utils.createParentDirIfNotExist
 import at.hannibal2.skyhanni.discord.Utils.embed
 import at.hannibal2.skyhanni.discord.Utils.format
@@ -93,7 +99,7 @@ object PullRequestCommand : BaseCommand() {
             append("\n")
         }
 
-        var inBeta: Boolean = false
+        var inBeta = false
 
         val labels = pr.labels.map { it.name }.toSet()
 
@@ -132,31 +138,31 @@ object PullRequestCommand : BaseCommand() {
             }
         }
 
+        fun result(text: String, color: Color = readColor(pr)) {
+            reply(embed(embedTitle, text, color, prLink))
+        }
+
         if (toTimeMark(pr.updatedAt).passedSince() > 400.days && !inBeta) {
-            val text = "${title}${time} \nBuild download has expired $PLEADING_FACE"
-            reply(embed(embedTitle, text, readColor(pr), prLink))
+            result("${title}${time} \nBuild download has expired $PLEADING_FACE")
             return
         }
 
         val lastCommit = head.sha
 
         val job = github.getRun(lastCommit, "Build and test") ?: run {
-            val text = buildString {
+            result(buildString {
                 append(title)
                 append(time)
                 if (!inBeta) {
                     append("\n")
                     append("Build needs approval $PLEADING_FACE")
                 }
-            }
-
-            reply(embed(embedTitle, text, readColor(pr), prLink))
+            })
             return
         }
 
         if (job.startedAt?.let { toTimeMark(it).passedSince() > 90.days } == true && !inBeta) {
-            reply(embed(embedTitle, "${title}${time} \nBuild download has expired $PLEADING_FACE", readColor(pr)))
-
+            result("${title}${time} \nBuild download has expired $PLEADING_FACE")
             return
         }
 
@@ -170,21 +176,19 @@ object PullRequestCommand : BaseCommand() {
                 else -> ""
             }
 
-            val embedBody = buildString {
+            result(buildString {
                 append(title)
                 append(time)
                 if (!inBeta) {
                     append("\n")
                     append(text)
                 }
-            }
-
-            reply(embed(embedTitle, embedBody, readColor(pr), prLink))
+            })
             return
         }
 
         if (job.conclusion != Conclusion.SUCCESS && !inBeta) {
-            reply(embed(embedTitle, "$title$time\nLast development build failed $PLEADING_FACE", Color.red))
+            result("$title$time\nLast development build failed $PLEADING_FACE", Color.red)
             return
         }
 
@@ -207,25 +211,37 @@ object PullRequestCommand : BaseCommand() {
             append("> (updated ${passedSince(job.completedAt ?: "")})")
         }
 
-        val embedBody = buildString {
+        result(buildString {
             append(title)
             append(time)
             if (!inBeta) {
                 append(artifactDisplay)
             }
-        }
-
-        reply(embed(embedTitle, embedBody, readColor(pr), prLink))
+        })
     }
 
     private val labelTypes: Map<String, Set<String>> = mapOf(
         Pair("Type", setOf("Backend", "Bug Fix")),
-        Pair("State", setOf("Detekt", "Merge Conflicts", "Waiting on Dependency PR", "Waiting on Hypixel", "Wrong Title/Changelog")),
+        Pair(
+            "State",
+            setOf(
+                "Detekt",
+                "Merge Conflicts",
+                "Waiting on Dependency PR",
+                "Waiting on Hypixel",
+                "Wrong Title/Changelog"
+            )
+        ),
         Pair("Milestone", setOf("Soon")),
         Pair("Misc", setOf("Good First Issue"))
     )
 
-    private fun appendLabelCategory(labelType: String, labels: Set<String>, stringBuilder: StringBuilder, suffix: String = ""): StringBuilder {
+    private fun appendLabelCategory(
+        labelType: String,
+        labels: Set<String>,
+        stringBuilder: StringBuilder,
+        suffix: String = ""
+    ): StringBuilder {
         val labelsWithType = labels.intersect(labelTypes[labelType] ?: setOf())
         if (labelsWithType.isEmpty()) return stringBuilder.append(if (suffix.isNotEmpty()) "> $labelType: $suffix\n" else "")
         return stringBuilder.append("> $labelType: `${labelsWithType.joinToString("` `")}`$suffix\n")
