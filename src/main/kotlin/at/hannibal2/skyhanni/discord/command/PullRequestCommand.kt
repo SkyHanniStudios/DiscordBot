@@ -1,11 +1,7 @@
 package at.hannibal2.skyhanni.discord.command
 
-import at.hannibal2.skyhanni.discord.BOT
-import at.hannibal2.skyhanni.discord.Option
-import at.hannibal2.skyhanni.discord.PLEADING_FACE
-import at.hannibal2.skyhanni.discord.SimpleTimeMark
+import at.hannibal2.skyhanni.discord.*
 import at.hannibal2.skyhanni.discord.SimpleTimeMark.Companion.asTimeMark
-import at.hannibal2.skyhanni.discord.Utils
 import at.hannibal2.skyhanni.discord.Utils.createParentDirIfNotExist
 import at.hannibal2.skyhanni.discord.Utils.embed
 import at.hannibal2.skyhanni.discord.Utils.format
@@ -97,6 +93,8 @@ object PullRequestCommand : BaseCommand() {
             append("\n")
         }
 
+        var inBeta: Boolean = false
+
         val labels = pr.labels.map { it.name }.toSet()
 
         val time = buildString {
@@ -104,21 +102,38 @@ object PullRequestCommand : BaseCommand() {
             val created = passedSince(pr.createdAt)
             append("> Created: $created")
             append("\n")
-            append("> Last Updated: $lastUpdate")
-            append("\n")
-            appendLabelCategory("Type", labels, this)
-            appendLabelCategory("State", labels, this)
-            appendLabelCategory("Milestone", labels, this, pr.milestone?.let { " `${it.title}`" } ?: "")
+            if (!pr.merged) {
+                append("> Last Updated: $lastUpdate")
+                append("\n")
+                appendLabelCategory("Type", labels, this)
+                appendLabelCategory("State", labels, this)
+                appendLabelCategory("Milestone", labels, this, pr.milestone?.let { " `${it.title}`" } ?: "")
+            } else {
+                val merged = passedSince(pr.mergedAt ?: "")
+                append("> Merged: $merged")
+                append("\n")
+
+                val releases = try {
+                    github.getReleases()
+                } catch (e: Exception) {
+                    null
+                }
+
+                val lastRelease = releases?.firstOrNull()
+
+                if (releaseSinceMerge(pr.mergedAt ?: "", lastRelease?.publishedAt ?: "")) {
+                    append("> This PR is in the latest beta $CHECK_MARK")
+                    append("\n")
+                    inBeta = true
+                } else {
+                    append("> This PR is not in the latest beta $BIG_X")
+                    append("\n")
+                }
+            }
         }
 
-        if (toTimeMark(pr.updatedAt).passedSince() > 400.days) {
+        if (toTimeMark(pr.updatedAt).passedSince() > 400.days && !inBeta) {
             val text = "${title}${time} \nBuild download has expired $PLEADING_FACE"
-            reply(embed(embedTitle, text, readColor(pr), prLink))
-            return
-        }
-
-        if (toTimeMark(pr.updatedAt).passedSince() < 5.seconds) {
-            val text = "${title}${time} \nGitHub actions is loading $PLEADING_FACE"
             reply(embed(embedTitle, text, readColor(pr), prLink))
             return
         }
@@ -126,9 +141,22 @@ object PullRequestCommand : BaseCommand() {
         val lastCommit = head.sha
 
         val job = github.getRun(lastCommit, "Build and test") ?: run {
-            val text = "${title}${time} \nBuild needs approval $PLEADING_FACE"
+            val text = buildString {
+                append(title)
+                append(time)
+                if (!inBeta) {
+                    append("\n")
+                    append("Build needs approval $PLEADING_FACE")
+                }
+            }
 
             reply(embed(embedTitle, text, readColor(pr), prLink))
+            return
+        }
+
+        if (job.startedAt?.let { toTimeMark(it).passedSince() > 90.days } == true && !inBeta) {
+            reply(embed(embedTitle, "${title}${time} \nBuild download has expired $PLEADING_FACE", readColor(pr)))
+
             return
         }
 
@@ -141,17 +169,22 @@ object PullRequestCommand : BaseCommand() {
                 RunStatus.PENDING -> "Build is pending $PLEADING_FACE"
                 else -> ""
             }
-            reply(embed(embedTitle, "${title}${time} \n $text", readColor(pr), prLink))
+
+            val embedBody = buildString {
+                append(title)
+                append(time)
+                if (!inBeta) {
+                    append("\n")
+                    append(text)
+                }
+            }
+
+            reply(embed(embedTitle, embedBody, readColor(pr), prLink))
             return
         }
 
-        if (job.startedAt?.let { toTimeMark(it).passedSince() > 90.days } == true) {
-            reply(embed(embedTitle, "${title}${time} \nBuild download has expired $PLEADING_FACE", readColor(pr), prLink))
-            return
-        }
-
-        if (job.conclusion != Conclusion.SUCCESS) {
-            reply(embed(embedTitle, "$title$time\nLast development build failed $PLEADING_FACE", Color.red, prLink))
+        if (job.conclusion != Conclusion.SUCCESS && !inBeta) {
+            reply(embed(embedTitle, "$title$time\nLast development build failed $PLEADING_FACE", Color.red))
             return
         }
 
@@ -174,7 +207,15 @@ object PullRequestCommand : BaseCommand() {
             append("> (updated ${passedSince(job.completedAt ?: "")})")
         }
 
-        reply(embed(embedTitle, "$title$time$artifactDisplay", readColor(pr), prLink))
+        val embedBody = buildString {
+            append(title)
+            append(time)
+            if (!inBeta) {
+                append(artifactDisplay)
+            }
+        }
+
+        reply(embed(embedTitle, embedBody, readColor(pr), prLink))
     }
 
     private val labelTypes: Map<String, Set<String>> = mapOf(
@@ -203,6 +244,12 @@ object PullRequestCommand : BaseCommand() {
     private fun toTimeMark(stringTime: String): SimpleTimeMark = (parseToUnixTime(stringTime) * 1000).asTimeMark()
 
     private fun passedSince(stringTime: String): String = "<t:${parseToUnixTime(stringTime)}:R>"
+
+    private fun releaseSinceMerge(stringTimeMerge: String, stringTimeLastRelease: String): Boolean {
+        val timeMerge = parseToUnixTime(stringTimeMerge)
+        val timeLastRelease = parseToUnixTime(stringTimeLastRelease)
+        return timeMerge < timeLastRelease
+    }
 
     @Suppress("unused") // TODO implement once we can upload the file
     private fun MessageReceivedEvent.pullRequestArtifactCommand(args: List<String>) {
