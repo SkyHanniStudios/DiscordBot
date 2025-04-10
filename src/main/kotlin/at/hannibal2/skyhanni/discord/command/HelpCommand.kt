@@ -65,17 +65,17 @@ object HelpCommand : BaseCommand() {
             return
         }
 
-        reply(createHelpEmbed(commandName))
+        reply(command.createHelpEmbed())
     }
 
-    private fun BaseCommand.createHelpEmbed(commandName: String): MessageEmbed {
+    private fun BaseCommand.createHelpEmbed(): MessageEmbed {
         val em = EmbedBuilder()
 
-        em.setTitle("Usage: /$commandName <" + this.options.joinToString("> <") { it.name } + ">")
-        em.setDescription("📋 **${this.description}**")
+        em.setTitle("Usage: /$name " + options.joinToString("> <", prefix = "<", postfix = ">") { it.name })
+        em.setDescription("📋 **${description}**")
         em.setColor(Color.GREEN)
 
-        for (option in this.options) {
+        for (option in options) {
             em.addField(option.name, option.description, true)
             em.addField("Required", if (option.required) "✅" else "❌", true)
             em.addBlankField(true)

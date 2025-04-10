@@ -14,17 +14,13 @@ import at.hannibal2.skyhanni.discord.Utils.format
 import at.hannibal2.skyhanni.discord.Utils.linkTo
 import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.messageDelete
-import at.hannibal2.skyhanni.discord.Utils.reply
-import at.hannibal2.skyhanni.discord.Utils.replyWithConsumer
 import at.hannibal2.skyhanni.discord.Utils.runDelayed
 import at.hannibal2.skyhanni.discord.Utils.timeExecution
 import at.hannibal2.skyhanni.discord.Utils.uploadFile
-import at.hannibal2.skyhanni.discord.Utils.userError
 import at.hannibal2.skyhanni.discord.github.GitHubClient
 import at.hannibal2.skyhanni.discord.json.discord.Conclusion
 import at.hannibal2.skyhanni.discord.json.discord.PullRequestJson
 import at.hannibal2.skyhanni.discord.json.discord.RunStatus
-import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import java.awt.Color
 import java.io.File
 import java.time.Instant
@@ -52,21 +48,33 @@ object PullRequestCommand : BaseCommand() {
         Regex("https://github\\.com/[\\w.]+/[\\w.]+/actions/runs/(?<RunId>\\d+)/job/(?<JobId>\\d+)")
     private val pullRequestPattern = "$BASE/pull/(?<pr>\\d+)".toPattern()
 
-    override fun MessageReceivedEvent.execute(args: List<String>) {
-        if (args.size != 1) return wrongUsage("<number>")
-        val first = args.first()
-        val prNumber = first.toLongOrNull() ?: run {
-            userError("Unknown number $PLEADING_FACE ($first})")
-            return
+    override fun CommandEvent.execute(args: List<String>) {
+        if (args.isNotEmpty() && args.size != 1) {
+            return wrongUsage("<number>")
         }
+
+        val prNumber = doWhen(
+            isMessage = {
+                val first = args.first()
+                first.toLongOrNull() ?: run {
+                    userError("Unknown number $PLEADING_FACE ($first})")
+                    null
+                }
+            },
+            isSlashCommand = {
+                it.getOption("number")?.asLong
+            }
+        ) ?: return
+
         if (prNumber < 1) {
             userError("PR number needs to be positive $PLEADING_FACE")
             return
         }
+
         loadPrInfos(prNumber)
     }
 
-    private fun MessageReceivedEvent.loadPrInfos(prNumber: Long) {
+    private fun CommandEvent.loadPrInfos(prNumber: Long) {
         logAction("loads pr infos for #$prNumber")
 
         val prLink = "$BASE/pull/$prNumber"
@@ -242,7 +250,7 @@ object PullRequestCommand : BaseCommand() {
         stringBuilder: StringBuilder,
         suffix: String = ""
     ): StringBuilder {
-        val labelsWithType = labels.intersect(labelTypes[labelType] ?: setOf())
+        val labelsWithType = labels.intersect((labelTypes[labelType] ?: setOf()).toSet())
         if (labelsWithType.isEmpty()) return stringBuilder.append(if (suffix.isNotEmpty()) "> $labelType: $suffix\n" else "")
         return stringBuilder.append("> $labelType: `${labelsWithType.joinToString("` `")}`$suffix\n")
     }
@@ -268,13 +276,13 @@ object PullRequestCommand : BaseCommand() {
     }
 
     @Suppress("unused") // TODO implement once we can upload the file
-    private fun MessageReceivedEvent.pullRequestArtifactCommand(args: List<String>) {
+    private fun CommandEvent.pullRequestArtifactCommand(args: List<String>) {
         if (args.size != 2) {
             reply("Usage: `!prupload <number>`")
             return
         }
         val prNumber = args[1].toLongOrNull() ?: run {
-            reply("unknwon number $PLEADING_FACE (${args[1]})")
+            reply("unknown number $PLEADING_FACE (${args[1]})")
             return
         }
 
@@ -304,7 +312,7 @@ object PullRequestCommand : BaseCommand() {
         val (_, downloadTime) = timeExecution {
             github.downloadArtifact(artifactId, fileRaw)
         }
-        reply("artifact downnloaded in ${downloadTime.format()}")
+        reply("artifact downloaded in ${downloadTime.format()}")
 
         Utils.unzipFile(fileRaw, fileUnzipped)
         fileRaw.delete()
@@ -327,16 +335,16 @@ object PullRequestCommand : BaseCommand() {
         return directory.walkTopDown().firstOrNull { it.isFile && it.name.startsWith("SkyHanni-") }
     }
 
-    fun isPullRequest(event: MessageReceivedEvent, message: String): Boolean {
+    fun MessageEvent.isPullRequest(message: String): Boolean {
         val matcher = pullRequestPattern.matcher(message)
         if (!matcher.matches()) return false
         val pr = matcher.group("pr")?.toLongOrNull() ?: return false
-        event.replyWithConsumer("Next time just type `!pr $pr` $PLEADING_FACE") { consumer ->
+        replyWithConsumer("Next time just type `!pr $pr` $PLEADING_FACE") { consumer ->
             runDelayed(10.seconds) {
                 consumer.message.messageDelete()
             }
         }
-        event.loadPrInfos(pr)
+        loadPrInfos(pr)
         return true
     }
 

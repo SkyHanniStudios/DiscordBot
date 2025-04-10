@@ -6,7 +6,6 @@ import at.hannibal2.skyhanni.discord.Option
 import at.hannibal2.skyhanni.discord.PING_HANNIBAL
 import at.hannibal2.skyhanni.discord.PLEADING_FACE
 import at.hannibal2.skyhanni.discord.Tag
-import at.hannibal2.skyhanni.discord.Utils
 import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.messageDelete
 import at.hannibal2.skyhanni.discord.Utils.messageDeleteAndThen
@@ -91,7 +90,7 @@ class TagList : BaseCommand() {
     override fun CommandEvent.execute(args: List<String>) {
         val list = Database.listTags()
         if (list.isEmpty()) {
-            reply("No tags set.")
+            reply("No tags set.", ephemeral = true)
             return
         }
 
@@ -111,7 +110,8 @@ class TagEdit : BaseCommand() {
     override val name = "tagedit"
     override val description = "Edits a tag in the database."
     override val options: List<Option> = listOf(
-        Option("keyword", "The tag you want to edit.", autoComplete = true), Option("response", "Response you want the tag to have.")
+        Option("keyword", "The tag you want to edit.", autoComplete = true),
+        Option("response", "Response you want the tag to have.")
     )
     override val aliases = listOf("tagchange")
 
@@ -191,19 +191,16 @@ class TagAdd : BaseCommand() {
             it.getOption("keyword")?.asString
         }) ?: return
 
-        if (CommandListener.existsCommand(keyword)) {
-            reply(
-                "Can not create tag `!$keyword`. There is already a command with that name",
-            )
-            return
-        }
+        if (CommandListener.existsCommand(keyword))
+            return userError("Can not create tag `!$keyword`. There is already a command with that name")
+        if (Database.containsKeyword(keyword))
+            return userError("Keyword already exists. Use `!tagedit` instead.")
+
         val response = doWhen(
             isMessage = { args.drop(1).joinToString(" ") },
             isSlashCommand = { it.getOption("response")?.asString }
         ) ?: return
-        if (Database.containsKeyword(keyword)) {
-            return userError("Keyword already exists. Use `!tagedit` instead.")
-        }
+
         if (Database.addTag(keyword, response)) {
             doWhen(isMessage = { it.message.messageDelete() }, isSlashCommand = {})
 

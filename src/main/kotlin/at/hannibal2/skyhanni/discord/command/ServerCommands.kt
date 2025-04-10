@@ -5,14 +5,12 @@ import at.hannibal2.skyhanni.discord.Option
 import at.hannibal2.skyhanni.discord.Utils
 import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.sendMessageToBotChannel
-import at.hannibal2.skyhanni.discord.Utils.userError
 import at.hannibal2.skyhanni.discord.command.ServerCommands.loadServers
 import at.hannibal2.skyhanni.discord.github.GitHubClient
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.entities.Invite
-import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.interactions.commands.OptionType
 import java.util.concurrent.CountDownLatch
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -248,7 +246,7 @@ class ServerCommand : BaseCommand() {
 
         val debug = doWhen(
             isMessage = { args.getOrNull(1) == "-d" },
-            isSlashCommand = { it.getOption("debug")?.asBoolean == true }
+            isSlashCommand = { it.getOption("debug")?.asBoolean }
         ) ?: false
 
         val server = ServerCommands.getServer(keyword.lowercase())
@@ -272,14 +270,21 @@ class ServerUpdate : BaseCommand() {
     }
 
     override fun CommandEvent.execute(args: List<String>) {
-        reply("updating server list ...")
+        doWhen(
+            isMessage = { reply("updating server list ...") },
+            isSlashCommand = { it.deferReply(true).queue() }
+        )
+
         loadServers(startup = false) { source, removed ->
             val removedSuffix = if (removed > 0) {
                 " (removed $removed servers)"
             } else ""
-            reply(
-            "Updated server list from $source.$removedSuffix"
-        )
+
+            doWhen(
+                isMessage = { reply("Updated server list from $source.$removedSuffix") },
+                isSlashCommand = { it.hook.sendMessage("Updated server list from $source.$removedSuffix").queue() }
+            )
+
             logAction("updated server list from github")
         }
     }

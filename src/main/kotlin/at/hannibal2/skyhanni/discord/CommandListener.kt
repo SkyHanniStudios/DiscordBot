@@ -15,8 +15,6 @@ import at.hannibal2.skyhanni.discord.command.TagCommands.handleTag
 import at.hannibal2.skyhanni.discord.command.TagUndo
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
-import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
-import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
@@ -169,7 +167,7 @@ object CommandListener {
                 if (focusedOption.name != "keyword") return
 
                 replyChoiceStrings(
-                    Database.listKeywords().filter { it.startsWith(focusedOption.value, true) }
+                    Database.listTags().filter { it.keyword.startsWith(focusedOption.value, true) }.map { it.keyword }
                         .take(25)
                 ).queue()
             }
@@ -178,7 +176,7 @@ object CommandListener {
                 if (focusedOption.name != "keyword") return
 
                 replyChoiceStrings(
-                    Database.listKeywords().filter { it.startsWith(focusedOption.value, true) }
+                    Database.listTags().filter { it.keyword.startsWith(focusedOption.value, true) }.map { it.keyword }
                         .take(25)
                 ).queue()
             }

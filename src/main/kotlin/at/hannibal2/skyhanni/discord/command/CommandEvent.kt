@@ -6,7 +6,7 @@ import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.entities.User
-import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
+import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
@@ -16,7 +16,7 @@ abstract class CommandEvent {
 
     abstract val author: User
 
-    abstract val channel: MessageChannel
+    abstract val channel: MessageChannelUnion
 
     abstract val message: Message?
 
@@ -52,7 +52,7 @@ class MessageEvent(val event: MessageReceivedEvent) : CommandEvent() {
         get() = event.member
     override val author: User
         get() = event.author
-    override val channel: MessageChannel
+    override val channel: MessageChannelUnion
         get() = event.channel
     override val message: Message
         get() = event.message
@@ -81,7 +81,7 @@ class SlashCommandEvent(val event: SlashCommandInteractionEvent) : CommandEvent(
         get() = event.member
     override val author: User
         get() = event.user
-    override val channel: MessageChannel
+    override val channel: MessageChannelUnion
         get() = event.channel
     override val message: Message?
         get() = null
