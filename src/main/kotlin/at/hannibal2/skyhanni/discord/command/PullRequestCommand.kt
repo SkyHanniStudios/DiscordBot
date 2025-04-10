@@ -111,24 +111,24 @@ object PullRequestCommand : BaseCommand() {
             appendLabelCategory("Milestone", labels, this, pr.milestone?.let { " `${it.title}`" } ?: "")
         }
 
+        fun result(text: String, color: Color = readColor(pr)) {
+            reply(embed(embedTitle, text, color, prLink))
+        }
+
         if (toTimeMark(pr.updatedAt).passedSince() > 400.days) {
-            val text = "${title}${time} \nBuild download has expired $PLEADING_FACE"
-            reply(embed(embedTitle, text, readColor(pr), prLink))
+            result("${title}${time} \nBuild download has expired $PLEADING_FACE")
             return
         }
 
         if (toTimeMark(pr.updatedAt).passedSince() < 5.seconds) {
-            val text = "${title}${time} \nGitHub actions is loading $PLEADING_FACE"
-            reply(embed(embedTitle, text, readColor(pr), prLink))
+            result("${title}${time} \nGitHub actions is loading $PLEADING_FACE")
             return
         }
 
         val lastCommit = head.sha
 
         val job = github.getRun(lastCommit, "Build and test") ?: run {
-            val text = "${title}${time} \nBuild needs approval $PLEADING_FACE"
-
-            reply(embed(embedTitle, text, readColor(pr), prLink))
+            result("${title}${time} \nBuild needs approval $PLEADING_FACE")
             return
         }
 
@@ -141,17 +141,17 @@ object PullRequestCommand : BaseCommand() {
                 RunStatus.PENDING -> "Build is pending $PLEADING_FACE"
                 else -> ""
             }
-            reply(embed(embedTitle, "${title}${time} \n $text", readColor(pr), prLink))
+            result("${title}${time} \n $text")
             return
         }
 
         if (job.startedAt?.let { toTimeMark(it).passedSince() > 90.days } == true) {
-            reply(embed(embedTitle, "${title}${time} \nBuild download has expired $PLEADING_FACE", readColor(pr), prLink))
+            result("${title}${time} \nBuild download has expired $PLEADING_FACE")
             return
         }
 
         if (job.conclusion != Conclusion.SUCCESS) {
-            reply(embed(embedTitle, "$title$time\nLast development build failed $PLEADING_FACE", Color.red, prLink))
+            result("$title$time\nLast development build failed $PLEADING_FACE", Color.red)
             return
         }
 
@@ -173,18 +173,31 @@ object PullRequestCommand : BaseCommand() {
             append("\n")
             append("> (updated ${passedSince(job.completedAt ?: "")})")
         }
-
-        reply(embed(embedTitle, "$title$time$artifactDisplay", readColor(pr), prLink))
+        result("$title$time$artifactDisplay")
     }
 
     private val labelTypes: Map<String, Set<String>> = mapOf(
         Pair("Type", setOf("Backend", "Bug Fix")),
-        Pair("State", setOf("Detekt", "Merge Conflicts", "Waiting on Dependency PR", "Waiting on Hypixel", "Wrong Title/Changelog")),
+        Pair(
+            "State",
+            setOf(
+                "Detekt",
+                "Merge Conflicts",
+                "Waiting on Dependency PR",
+                "Waiting on Hypixel",
+                "Wrong Title/Changelog"
+            )
+        ),
         Pair("Milestone", setOf("Soon")),
         Pair("Misc", setOf("Good First Issue"))
     )
 
-    private fun appendLabelCategory(labelType: String, labels: Set<String>, stringBuilder: StringBuilder, suffix: String = ""): StringBuilder {
+    private fun appendLabelCategory(
+        labelType: String,
+        labels: Set<String>,
+        stringBuilder: StringBuilder,
+        suffix: String = ""
+    ): StringBuilder {
         val labelsWithType = labels.intersect(labelTypes[labelType] ?: setOf())
         if (labelsWithType.isEmpty()) return stringBuilder.append(if (suffix.isNotEmpty()) "> $labelType: $suffix\n" else "")
         return stringBuilder.append("> $labelType: `${labelsWithType.joinToString("` `")}`$suffix\n")
