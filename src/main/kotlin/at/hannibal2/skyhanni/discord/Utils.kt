@@ -1,5 +1,6 @@
 package at.hannibal2.skyhanni.discord
 
+import at.hannibal2.skyhanni.discord.command.CommandEvent
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.MessageEmbed
@@ -19,28 +20,6 @@ import kotlin.time.Duration.Companion.nanoseconds
 object Utils {
 
     private inline val logger get() = BOT.logger
-
-    fun MessageReceivedEvent.reply(text: String) {
-        message.messageReply(text)
-    }
-
-    fun MessageReceivedEvent.userError(text: String) {
-        message.messageReply("❌ $text")
-    }
-
-    fun MessageReceivedEvent.sendError(text: String) {
-        message.messageReply("❌ An error occurred: $text")
-        logAction("Error: $text")
-    }
-
-    fun MessageReceivedEvent.reply(embed: MessageEmbed) {
-        message.messageReply(embed)
-    }
-
-    fun MessageReceivedEvent.replyWithConsumer(text: String, consumer: (MessageReceivedEvent) -> Unit) {
-        BotMessageHandler.log(text, consumer)
-        reply(text)
-    }
 
     fun Message.messageDelete() {
         delete().queue()
@@ -82,31 +61,29 @@ object Utils {
         BOT.jda.getTextChannelById(BOT.config.botCommandChannelId)?.messageSend(text, instantly)
     }
 
-    fun MessageReceivedEvent.logAction(action: String, raw: Boolean = false) {
+    fun CommandEvent.logAction(action: String, raw: Boolean = false) {
         if (raw) {
             logger.info(action)
             return
         }
+
         val name = author.name
         val id = author.id
+        val nickString = member?.nickname?.takeIf { it != "null" }?.let { " (`$it`)" } ?: ""
+        val isFromGuild = isFromGuild
+        val channelSuffix = if (isFromGuild) " in channel '${channel.name}'" else ""
 
-        val nick = member?.nickname?.takeIf { it != "null" }
-        val nickString = nick?.let { " (`$nick`)" } ?: ""
-
-        val channelSuffix = if (isFromGuild) {
-            val channelName = channel.name
-            " in channel '$channelName'"
-        } else ""
         logger.info("$id/$name$nickString $action$channelSuffix")
     }
 
-    fun MessageReceivedEvent.hasAdminPermissions(): Boolean {
+    fun CommandEvent.hasAdminPermissions(): Boolean {
         val member = member ?: return false
+
         val allowedRoleIds = BOT.config.editPermissionRoleIds.values
         return !member.roles.none { it.id in allowedRoleIds }
     }
 
-    fun MessageReceivedEvent.inBotCommandChannel() = channel.id == BOT.config.botCommandChannelId
+    fun CommandEvent.inBotCommandChannel(): Boolean = channel.id == BOT.config.botCommandChannelId
 
     fun runDelayed(duration: Duration, consumer: () -> Unit) {
         Thread {
