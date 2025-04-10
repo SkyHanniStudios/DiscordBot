@@ -39,7 +39,7 @@ object PullRequestCommand : BaseCommand() {
 
     private const val USER = "hannibal002"
     private const val REPO = "SkyHanni"
-    private val github = GitHubClient(USER, REPO, BOT.config.githubToken)
+    private val github = GitHubClient(USER, REPO, BOT.config.githubTokenPullRequests)
     private const val BASE = "https://github.com/$USER/$REPO"
 
     private val runIdRegex =
@@ -134,7 +134,7 @@ object PullRequestCommand : BaseCommand() {
 
         if (toTimeMark(pr.updatedAt).passedSince() > 400.days && !inBeta) {
             val text = "${title}${time} \nBuild download has expired $PLEADING_FACE"
-            reply(embed(embedTitle, text, readColor(pr)))
+            reply(embed(embedTitle, text, readColor(pr), prLink))
             return
         }
 
@@ -150,7 +150,7 @@ object PullRequestCommand : BaseCommand() {
                 }
             }
 
-            reply(embed(embedTitle, text, readColor(pr)))
+            reply(embed(embedTitle, text, readColor(pr), prLink))
             return
         }
 
@@ -179,7 +179,7 @@ object PullRequestCommand : BaseCommand() {
                 }
             }
 
-            reply(embed(embedTitle, embedBody, readColor(pr)))
+            reply(embed(embedTitle, embedBody, readColor(pr), prLink))
             return
         }
 
@@ -215,7 +215,7 @@ object PullRequestCommand : BaseCommand() {
             }
         }
 
-        reply(embed(embedTitle, embedBody, readColor(pr)))
+        reply(embed(embedTitle, embedBody, readColor(pr), prLink))
     }
 
     private val labelTypes: Map<String, Set<String>> = mapOf(
