@@ -91,7 +91,7 @@ object CommandListener {
         }
     }
 
-    private val commandPattern = "^!(?!!).+".toPattern()
+    private val commandPattern = "^!(?!!)[\\s\\S]+".toPattern()
 
     // ensures the command starts with ! while ignoring !!
     private fun isCommand(message: String): Boolean = commandPattern.matcher(message).matches()

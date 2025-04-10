@@ -123,11 +123,12 @@ class TagEdit : BaseCommand() {
         val keyword = args.first()
         val response = args.drop(1).joinToString(" ")
         val oldResponse = Database.getResponse(keyword)
+        val count = Database.getTagCount(keyword) ?: 0
         if (oldResponse == null) {
             userError("❌ Tag doesn't exist! Use `!tagadd` instead.")
             return
         }
-        if (Database.addTag(keyword, response)) {
+        if (Database.addTag(keyword, response, count)) {
             message.messageDeleteAndThen {
                 val id = author.id
                 reply("✅ Tag '$keyword' edited by <@$id>:")
