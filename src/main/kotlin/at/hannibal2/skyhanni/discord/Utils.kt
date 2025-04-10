@@ -33,6 +33,10 @@ object Utils {
         logAction("Error: $text")
     }
 
+    fun MessageReceivedEvent.userSuccess(text: String) {
+        message.messageReply("✅ $text")
+    }
+
     fun MessageReceivedEvent.reply(embed: MessageEmbed) {
         message.messageReply(embed)
     }
@@ -65,6 +69,14 @@ object Utils {
             sendMessage(text).complete()
         } else {
             sendMessage(text).queue()
+        }
+    }
+
+    fun MessageChannel.messageSend(embed: MessageEmbed, instantly: Boolean = false) {
+        if (instantly) {
+            sendMessageEmbeds(embed).complete()
+        } else {
+            sendMessageEmbeds(embed).queue()
         }
     }
 
