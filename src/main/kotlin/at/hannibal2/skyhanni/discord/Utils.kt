@@ -10,6 +10,7 @@ import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.utils.FileUpload
 import java.awt.Color
+import java.awt.Toolkit.getDefaultToolkit
 import java.io.File
 import java.util.zip.ZipFile
 import kotlin.time.Duration
@@ -144,7 +145,7 @@ object Utils {
     fun String.linkTo(link: String): String = "[$this](<$link>)"
 
     // keep comments as docs
-    fun embed(title: String, body: String, color: Color): MessageEmbed {
+    fun embed(title: String, body: String, color: Color, url: String? = null): MessageEmbed {
         val eb = EmbedBuilder()
 
         /*
@@ -152,7 +153,7 @@ object Utils {
     1. Arg: title as string
     2. Arg: URL as string or could also be null
  */
-        eb.setTitle(title, null)
+        eb.setTitle(title, url)
 
         /*
     Set the color
@@ -214,4 +215,8 @@ object Utils {
 
         return eb.build()
     }
+
+    fun readStringFromClipboard(): String? = runCatching {
+        getDefaultToolkit().systemClipboard.getData(java.awt.datatransfer.DataFlavor.stringFlavor) as String
+    }.getOrNull()
 }
