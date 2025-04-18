@@ -1,6 +1,7 @@
 package at.hannibal2.skyhanni.discord
 
 import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
@@ -178,9 +179,13 @@ object Utils {
 
     private val mentionRegex = Regex("<?@?(?<id>\\d+)>?")
 
-    fun String.getId(): String? {
-        return mentionRegex.matchEntire(this)?.let { result ->
-            result.groups["id"]?.value
+    fun String.getId(guild: Guild?, callback: (String?) -> Unit) {
+        mentionRegex.matchEntire(this)?.let { result ->
+            callback(result.groups["id"]?.value)
+        } ?: guild?.let {
+            guild.retrieveMembersByPrefix(this, 1).onSuccess {
+                callback(it.first().id)
+            }
         }
     }
 

@@ -10,12 +10,12 @@ import at.hannibal2.skyhanni.discord.Utils.embed
 import at.hannibal2.skyhanni.discord.Utils.embedSend
 import at.hannibal2.skyhanni.discord.Utils.getId
 import at.hannibal2.skyhanni.discord.Utils.messageSend
+import at.hannibal2.skyhanni.discord.Utils.passedSince
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.Utils.userError
 import at.hannibal2.skyhanni.discord.command.ManageCommands.createModerationEmbed
 import at.hannibal2.skyhanni.discord.command.ManageCommands.handleError
 import at.hannibal2.skyhanni.discord.command.ManageCommands.sendDM
-import at.hannibal2.skyhanni.discord.command.PullRequestCommand.passedSince
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Member
@@ -93,21 +93,23 @@ class KickCommand : BaseCommand() {
         if (!mod.hasPermission(Permission.KICK_MEMBERS) && !mod.hasPermission(Permission.ADMINISTRATOR))
             return reply("No perms $PLEADING_FACE")
 
-        val targetId = args[0].getId() ?: return userError("Invalid user! Did you enter the correct id?")
-        val reason = args.drop(1).joinToString(" ")
+        args[0].getId(guild) { targetId ->
+            if (targetId == null) return@getId userError("Invalid user! Did you enter the correct @/id/name?")
+            val reason = args.drop(1).joinToString(" ")
 
-        guild.retrieveMemberById(targetId).queue(
-            { target ->
-                val modChannel = guild.getTextChannelById(BOT.config.moderationChannelId) ?: channel
+            guild.retrieveMemberById(targetId).queue(
+                { target ->
+                    val modChannel = guild.getTextChannelById(BOT.config.moderationChannelId) ?: channel
 
-                target.user.sendDM(modChannel, "kicked", reason)
+                    target.user.sendDM(modChannel, "kicked", reason)
 
-                target.kick().reason(reason).queue {
-                    modChannel.embedSend(createModerationEmbed("kicked", target.user, mod, reason))
-                }
-            },
-            { error -> reply("$BIG_X ${handleError(error)}") }
-        )
+                    target.kick().reason(reason).queue {
+                        modChannel.embedSend(createModerationEmbed("kicked", target.user, mod, reason))
+                    }
+                },
+                { error -> reply("$BIG_X ${handleError(error)}") }
+            )
+        }
     }
 }
 
@@ -126,23 +128,25 @@ class BanCommand : BaseCommand() {
         if (!mod.hasPermission(Permission.BAN_MEMBERS) && !mod.hasPermission(Permission.ADMINISTRATOR))
             return reply("No perms $PLEADING_FACE")
 
-        val targetId = args[0].getId() ?: return userError("Invalid user! Did you enter the correct id?")
-        val timeframe = args[1].toIntOrNull().takeIf { it != null && it <= 7 }
-            ?: return userError("Invalid timeframe! Did you enter a number <= 7?")
-        val reason = args.drop(2).joinToString(" ")
+        args[0].getId(guild) { targetId ->
+            if (targetId == null) return@getId userError("Invalid user! Did you enter the correct @/id/name?")
+            val timeframe = args[1].toIntOrNull().takeIf { it != null && it <= 7 }
+                ?: return@getId userError("Invalid timeframe! Did you enter a number <= 7?")
+            val reason = args.drop(2).joinToString(" ")
 
-        guild.retrieveMemberById(targetId).queue(
-            { target ->
-                val modChannel = guild.getTextChannelById(BOT.config.moderationChannelId) ?: channel
+            guild.retrieveMemberById(targetId).queue(
+                { target ->
+                    val modChannel = guild.getTextChannelById(BOT.config.moderationChannelId) ?: channel
 
-                target.user.sendDM(modChannel, "banned", reason)
+                    target.user.sendDM(modChannel, "banned", reason)
 
-                target.ban(timeframe, TimeUnit.DAYS).reason(reason).queue {
-                    modChannel.embedSend(createModerationEmbed("banned", target.user, mod, reason))
-                }
-            },
-            { error -> reply("$BIG_X ${handleError(error)}") }
-        )
+                    target.ban(timeframe, TimeUnit.DAYS).reason(reason).queue {
+                        modChannel.embedSend(createModerationEmbed("banned", target.user, mod, reason))
+                    }
+                },
+                { error -> reply("$BIG_X ${handleError(error)}") }
+            )
+        }
     }
 }
 
@@ -160,22 +164,24 @@ class UnbanCommand : BaseCommand() {
         if (!mod.hasPermission(Permission.BAN_MEMBERS) && !mod.hasPermission(Permission.ADMINISTRATOR))
             return reply("No perms $PLEADING_FACE")
 
-        val targetId = args[0].getId() ?: return userError("Invalid user! Did you enter the correct id?")
-        val reason = args.drop(1).joinToString(" ")
+        args[0].getId(guild) { targetId ->
+            if (targetId == null) return@getId userError("Invalid user! Did you enter the correct @/id/name?")
+            val reason = args.drop(1).joinToString(" ")
 
-        jda.retrieveUserById(targetId).queue(
-            { target ->
-                val modChannel = guild.getTextChannelById(BOT.config.moderationChannelId) ?: channel
+            jda.retrieveUserById(targetId).queue(
+                { target ->
+                    val modChannel = guild.getTextChannelById(BOT.config.moderationChannelId) ?: channel
 
-                target.sendDM(modChannel, "unbanned", reason)
+                    target.sendDM(modChannel, "unbanned", reason)
 
-                guild.unban(target).reason(reason).queue {
-                    modChannel.embedSend(
-                        createModerationEmbed("unbanned", target, mod, reason, color = Color.GREEN)
-                    )
-                }
-            },
-            { error -> reply("$BIG_X ${handleError(error)}") }
-        )
+                    guild.unban(target).reason(reason).queue {
+                        modChannel.embedSend(
+                            createModerationEmbed("unbanned", target, mod, reason, color = Color.GREEN)
+                        )
+                    }
+                },
+                { error -> reply("$BIG_X ${handleError(error)}") }
+            )
+        }
     }
 }
