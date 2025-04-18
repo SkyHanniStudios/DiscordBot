@@ -67,6 +67,7 @@ private fun startBot(): DiscordBot {
 
     val jda = JDABuilder.createDefault(token).also { builder ->
         builder.enableIntents(GatewayIntent.MESSAGE_CONTENT)
+        builder.enableIntents(GatewayIntent.GUILD_MEMBERS)
         builder.setEnableShutdownHook(false)
     }.build()
 
