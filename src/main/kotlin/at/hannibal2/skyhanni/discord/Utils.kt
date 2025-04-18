@@ -11,6 +11,8 @@ import net.dv8tion.jda.api.utils.FileUpload
 import java.awt.Color
 import java.awt.Toolkit.getDefaultToolkit
 import java.io.File
+import java.time.Instant
+import java.time.format.DateTimeFormatter
 import java.util.zip.ZipFile
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.nanoseconds
@@ -66,6 +68,10 @@ object Utils {
         } else {
             sendMessage(text).queue()
         }
+    }
+
+    fun MessageChannel.embedSend(embed: MessageEmbed) {
+        sendMessageEmbeds(embed).queue()
     }
 
     fun Message.replyWithConsumer(text: String, consumer: (MessageReceivedEvent) -> Unit) {
@@ -163,6 +169,19 @@ object Utils {
         val fileUpload = FileUpload.fromData(jarFile, jarFile.name)
         textChannel.sendFiles(fileUpload).addContent(comment).queue()
 
+    }
+
+    fun parseToUnixTime(isoTimestamp: String): Long =
+        Instant.from(DateTimeFormatter.ISO_INSTANT.parse(isoTimestamp)).epochSecond
+
+    fun passedSince(stringTime: String): String = "<t:${parseToUnixTime(stringTime)}:R>"
+
+    private val mentionRegex = Regex("<?@?(?<id>\\d+)>?")
+
+    fun String.getId(): String? {
+        return mentionRegex.matchEntire(this)?.let { result ->
+            result.groups["id"]?.value
+        }
     }
 
     fun String.linkTo(link: String): String = "[$this](<$link>)"
