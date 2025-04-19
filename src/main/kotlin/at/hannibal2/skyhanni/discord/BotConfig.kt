@@ -8,7 +8,8 @@ data class BotConfig(
     val token: String,
     val botCommandChannelId: String,
     val allowedServerId: String,
-    val githubToken: String,
+    val githubTokenOwn: String,
+    val githubTokenPullRequests: String,
     val editPermissionRoleIds: Map<String, String>,
 )
 
@@ -17,9 +18,10 @@ object ConfigLoader {
 	private val logger = LoggerFactory.getLogger(ConfigLoader::class.java)
     private val exampleConfig = BotConfig(
 		"TODO: discord token",
-		"TODO: github token token",
 		"TODO: staff channel id",
 		"TODO: allowed server id",
+		"TODO: github token with sh bot repo access",
+		"TODO: github token with sh mod repo access",
 		mapOf(
 			"user friendly (non important) name" to "TODO: role id"
 		)

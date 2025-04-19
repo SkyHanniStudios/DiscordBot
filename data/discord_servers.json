@@ -465,7 +465,8 @@
       "description": "Official Hunters Discord is a community focused on discovering new SkyBlock secrets.",
       "aliases": [
         "Official Hunters",
-        "Official Hunter"
+        "Official Hunter",
+        "hunters"
       ]
     },
     "splash": {
@@ -512,7 +513,8 @@
       "description": "A community for trading rare items in SkyBlock.",
       "aliases": [
         "collections",
-        "rare items"
+        "rare items",
+        "collector"
       ]
     },
     "dragon": {

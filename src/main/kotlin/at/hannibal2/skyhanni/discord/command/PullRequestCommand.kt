@@ -1,7 +1,13 @@
 package at.hannibal2.skyhanni.discord.command
 
-import at.hannibal2.skyhanni.discord.*
+import at.hannibal2.skyhanni.discord.BIG_X
+import at.hannibal2.skyhanni.discord.BOT
+import at.hannibal2.skyhanni.discord.CHECK_MARK
+import at.hannibal2.skyhanni.discord.Option
+import at.hannibal2.skyhanni.discord.PLEADING_FACE
+import at.hannibal2.skyhanni.discord.SimpleTimeMark
 import at.hannibal2.skyhanni.discord.SimpleTimeMark.Companion.asTimeMark
+import at.hannibal2.skyhanni.discord.Utils
 import at.hannibal2.skyhanni.discord.Utils.createParentDirIfNotExist
 import at.hannibal2.skyhanni.discord.Utils.embed
 import at.hannibal2.skyhanni.discord.Utils.format
@@ -213,20 +219,27 @@ open class PullRequestCommand : BaseCommand() {
             else loadBuildResultsOrNull(prNumber, pr, title, time, embedTitle)
                 ?: return
 
-        val embedBody = buildString {
+        result(buildString {
             append(title)
             append(time)
             if (!inBeta && artifactDisplay != null) {
                 append(artifactDisplay)
             }
-        }
-
-        reply(embed(embedTitle, embedBody, readColor(pr)))
+        })
     }
 
     open val labelTypes: Map<String, Set<String>> get() = mapOf(
         Pair("Type", setOf("Backend", "Bug Fix")),
-        Pair("State", setOf("Detekt", "Merge Conflicts", "Waiting on Dependency PR", "Waiting on Hypixel", "Wrong Title/Changelog")),
+        Pair(
+            "State",
+            setOf(
+                "Detekt",
+                "Merge Conflicts",
+                "Waiting on Dependency PR",
+                "Waiting on Hypixel",
+                "Wrong Title/Changelog"
+            )
+        ),
         Pair("Milestone", setOf("Soon")),
         Pair("Misc", setOf("Good First Issue"))
     )
