@@ -74,13 +74,27 @@ object CommandListener {
             }
         }
 
-        // allows to use `!<command> -help` instaed of `!help -<command>`
+        // allows to use `!<command> -help` instead of `!help -<command>`
         if (args.size == 1 && args.first() == "-help") {
             with(HelpCommand) {
                 sendUsageReply(literal)
             }
             return
         }
+
+        if (command.async) {
+            Utils.launchIOCoroutine {
+                execute(command, args)
+            }
+        } else {
+            execute(command, args)
+        }
+    }
+
+    private fun MessageReceivedEvent.execute(
+        command: BaseCommand,
+        args: List<String>
+    ) {
         try {
             with(command) {
                 execute(args)

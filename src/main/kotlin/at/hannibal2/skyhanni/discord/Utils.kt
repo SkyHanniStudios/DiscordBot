@@ -1,5 +1,6 @@
 package at.hannibal2.skyhanni.discord
 
+import kotlinx.coroutines.*
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Message
@@ -179,13 +180,11 @@ object Utils {
 
     private val mentionRegex = Regex("<?@?(?<id>\\d+)>?")
 
-    fun String.getId(guild: Guild?, callback: (String?) -> Unit) {
-        mentionRegex.matchEntire(this)?.let { result ->
-            callback(result.groups["id"]?.value)
+    fun String.getId(guild: Guild?): String? {
+        return mentionRegex.matchEntire(this)?.let { result ->
+            result.groups["id"]?.value
         } ?: guild?.let {
-            guild.retrieveMembersByPrefix(this, 1).onSuccess {
-                callback(it.first().id)
-            }
+            guild.retrieveMembersByPrefix(this, 1).get().first().id
         }
     }
 
@@ -266,4 +265,31 @@ object Utils {
     fun readStringFromClipboard(): String? = runCatching {
         getDefaultToolkit().systemClipboard.getData(java.awt.datatransfer.DataFlavor.stringFlavor) as String
     }.getOrNull()
+
+    private val globalJob: Job = Job(null)
+    val coroutineScope = CoroutineScope(
+        CoroutineName("SkyBot") + SupervisorJob(globalJob),
+    )
+
+    fun launchIOCoroutine(block: suspend CoroutineScope.() -> Unit) {
+        launchCoroutine {
+            withContext(Dispatchers.IO) {
+                try {
+                    block()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
+    }
+
+    fun launchCoroutine(function: suspend () -> Unit) {
+        coroutineScope.launch {
+            try {
+                function()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
 }

@@ -28,6 +28,11 @@ dependencies {
     runtimeOnly("com.google.code.gson:gson:2.11.0") // Json
     implementation("org.reflections:reflections:0.10.2") // Reflections
     implementation("org.jetbrains.kotlin:kotlin-reflect") // Kotlin Reflection
+
+    // Coroutines
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3") {
+        exclude(group = "org.jetbrains.kotlin")
+    }
 }
 
 tasks.test {
