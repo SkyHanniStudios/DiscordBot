@@ -43,15 +43,13 @@ object ManageCommands {
         moderator: Member,
         reason: String,
     ): MessageEmbed {
-        val color = if (action == "unbanned") Color.GREEN else Color.RED
-
         return EmbedBuilder()
             .setAuthor("${target.name} was $action", null, target.avatarUrl)
             .addField("Mention", target.asMention, false)
             .addField("Moderator", moderator.asMention, false)
             .addField("Reason", reason, false)
             .addField("Time", passedSince(SimpleTimeMark.now().toString()), false)
-            .setColor(color)
+            .setColor(if (action == "unbanned") Color.GREEN else Color.RED)
             .build()
     }
 
