@@ -51,9 +51,15 @@ object CommandListener {
         if (ServerCommands.isKnownServerUrl(this, message)) return
         if (PullRequestCommand.isPullRequest(this, message)) return
 
-        if (!isCommand(message)) return
+        var commandMessage = message
+        // ! pr arg -> !pr arg
+        while (commandMessage.startsWith("! ")) {
+            commandMessage = commandMessage.replaceFirst("! ", "!")
+        }
 
-        val split = message.substring(1).split(" ")
+        if (!isCommand(commandMessage)) return
+
+        val split = commandMessage.substring(1).split(" ")
         val literal = split.first().lowercase()
         val args = split.drop(1)
 
