@@ -27,7 +27,7 @@ object ModChecker {
         val startLine = "# Mods Loaded"
         if (!lines.any { it == startLine }) return false
 
-        val mods = mutableListOf<ModInfo>()
+        val mods = mutableMapOf<ModInfo, String>()
         var active = false
         for (line in lines) {
             if (line == startLine) {
@@ -36,7 +36,7 @@ object ModChecker {
             }
             if (active) {
                 val mod = readModInfo(line) ?: break
-                mods.add(mod)
+                mods[mod] = line
             }
         }
 
@@ -59,14 +59,13 @@ object ModChecker {
     }
 
     @Suppress("CyclomaticComplexMethod", "LongMethod")
-    private fun MessageReceivedEvent.run(activeMods: List<ModInfo>) {
+    private fun MessageReceivedEvent.run(activeMods: Map<ModInfo, String>) {
         println(" ")
         println(" ")
         println(" ")
         if (knownMods.isEmpty()) {
             loadModDataFromRepo()
         }
-
 
         if (knownMods.isEmpty()) error("known mods is empty")
 
@@ -77,32 +76,67 @@ object ModChecker {
 
         val result = mutableListOf<String>()
 
-        @Suppress("LoopWithTooManyJumpStatements")
-        for (mod in activeMods) {
-            val rawName = mod.name
-            // odin/odin client is weird/mixed up in the json file
-            val name = if (rawName == "Odin") "OdinClient" else rawName
+        val ignored = mutableListOf<String>()
+
+        @Suppress("LoopWithTooManyJumpStatements") for ((mod, line) in activeMods) {
+            val name = when (mod.name) {
+
+                // odin/odin client is weird/mixed up in the json file
+                "Odin" -> "OdinClient"
+
+                // not so essential is fancy
+                "§cNot §aSo §9Essential" -> "Not So Essential"
+                else -> mod.name
+            }
 
             val fileName = mod.fileName
             val version = mod.version
 
             // hide minecraft/forge/mod loader stuff
-            if (fileName == "minecraft.jar") continue
-            if (fileName == "forge-1.8.9-11.15.1.2318-1.8.9.jar") continue
+            if (fileName == "minecraft.jar") {
+                ignored.add(line)
+                continue
+            }
+
+            val forge1 = "forge-1.8.9-11.15.1.2318-1.8.9.jar"
+            val forge2 = "forge-1.8.9-11.15.1.2318-1.8.9-universal.jar"
+            if (fileName == forge1 || fileName == forge2) {
+                ignored.add(line)
+                continue
+            }
+
             if (name == "Forge Mod Loader") {
                 unknownMod.add("unkown forge version: '$fileName'")
                 continue
             }
 
             // has auto update, and too many small updates all the time, so no one cares
-            if (name == "Essential") continue
-            if (name == "OneConfig") continue
+            if (name == "Essential") {
+                ignored.add(line)
+                continue
+            }
+            if (name == "OneConfig") {
+                ignored.add(line)
+                continue
+            }
 
             // comes bundelled with other mods
-            if (name == "Hypixel Mod API") continue
+            if (name == "Hypixel Mod API") {
+                ignored.add(line)
+                continue
+            }
 
             // dulkir version bug
-            if (name == "Dulkir Mod" && version == "\${version}") continue
+            if (name == "Dulkir Mod" && version == "\${version}") {
+                ignored.add(line)
+                continue
+            }
+
+            // spark version bug
+            if (name == "spark" && version == "\${pluginVersion}") {
+                ignored.add(line)
+                continue
+            }
 
             val latestFullMod = findModFromName(name)
             val latestBetaMod = findBetaFromName(name)
@@ -132,8 +166,22 @@ object ModChecker {
         }
 
         println(" ")
+        println("found mods in total: ${activeMods.size}")
+
+        val errorMods = activeMods.size - unknownMod.size - upToDate.size - unknownVersion.size -
+                updateAvaliable.size - ignored.size
+
+        if (errorMods != 0) error("wrong mod size!")
+
+        println(" ")
         println("${unknownMod.size} unknown mods:")
         for (line in unknownMod) {
+            println(line)
+        }
+
+        println(" ")
+        println("${ignored.size} really ignored mods:")
+        for (line in ignored) {
             println(line)
         }
 
@@ -156,9 +204,6 @@ object ModChecker {
             println(line)
         }
 
-        for (line in result) {
-            println(line)
-        }
         if (result.isEmpty()) {
             reply("no outdated mods found $PARTY_FACE")
         } else {
