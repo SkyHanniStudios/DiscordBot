@@ -28,7 +28,7 @@ object ModChecker {
     class ModInfo(val name: String, val version: String, val fileName: String)
 
     @Suppress("unused")
-    class TagList : BaseCommand() {
+    class DebugModsCommand : BaseCommand() {
         override val name = "debugmods"
         override val description = "Debug infos about the mod list in neu stats format"
 
@@ -47,6 +47,22 @@ object ModChecker {
             }
             run(mods, debug = true)
         }
+    }
+
+    @Suppress("unused")
+    class UpdateModList : BaseCommand() {
+        override val name: String = "modlistupdate"
+        override val description: String = "Updates the server list."
+        override val aliases: List<String> = listOf("updatemodlist")
+
+        override fun MessageReceivedEvent.execute(args: List<String>) {
+            reply("updating mod list ...")
+
+            loadModDataFromRepo()
+            val link = "GitHub".linkTo("https://github.com/SkyHanniStudios/DiscordBot/blob/master/data/mods.json")
+            reply("Updated mod list from $link.")
+        }
+
     }
 
     fun isModList(event: MessageReceivedEvent, message: String): Boolean {
