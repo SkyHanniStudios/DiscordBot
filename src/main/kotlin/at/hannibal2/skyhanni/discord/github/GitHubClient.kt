@@ -1,6 +1,13 @@
 package at.hannibal2.skyhanni.discord.github
 
-import at.hannibal2.skyhanni.discord.json.discord.*
+import at.hannibal2.skyhanni.discord.json.discord.Artifact
+import at.hannibal2.skyhanni.discord.json.discord.ArtifactResponse
+import at.hannibal2.skyhanni.discord.json.discord.CheckRun
+import at.hannibal2.skyhanni.discord.json.discord.CheckRunsResponse
+import at.hannibal2.skyhanni.discord.json.discord.Job
+import at.hannibal2.skyhanni.discord.json.discord.JobsResponse
+import at.hannibal2.skyhanni.discord.json.discord.PullRequestJson
+import at.hannibal2.skyhanni.discord.json.discord.Release
 import com.google.gson.Gson
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -66,7 +73,7 @@ class GitHubClient(user: String, repo: String, private val token: String) {
     inline fun <T> readBody(url: String, block: (ResponseBody) -> T): T? {
         response(url).use {
             if (!it.isSuccessful) {
-                error("Error fetching $url - code:${it.code} - message:'${it.message}'")
+                error("Error fetching $url - code:${it.code} - message:'${it.message}' '${it.body?.string()}'")
             }
             val body = it.body ?: error("Error loading '$url' - empty response'")
             return block(body)
