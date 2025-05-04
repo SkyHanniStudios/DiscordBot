@@ -7,6 +7,7 @@ import at.hannibal2.skyhanni.discord.PING_HANNIBAL
 import at.hannibal2.skyhanni.discord.PLEADING_FACE
 import at.hannibal2.skyhanni.discord.Tag
 import at.hannibal2.skyhanni.discord.Utils
+import at.hannibal2.skyhanni.discord.Utils.getLinkName
 import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.messageDelete
 import at.hannibal2.skyhanni.discord.Utils.messageDeleteAndThen
@@ -130,13 +131,12 @@ class TagEdit : BaseCommand() {
         }
         if (Database.addTag(keyword, response, count)) {
             message.messageDeleteAndThen {
-                val id = author.id
-                reply("✅ Tag '$keyword' edited by <@$id>:")
+                reply("✅ Tag '$keyword' edited by ${author.getLinkName()}:")
                 reply(response)
                 logAction("edited tags '$keyword'")
                 logAction("old response: '$oldResponse'", raw = true)
                 logAction("new response: '$response'", raw = true)
-                lastTouchedTag[id] = keyword
+                lastTouchedTag[author.id] = keyword
             }
         } else {
             reply("❌ Failed to edit tags.")
@@ -186,12 +186,11 @@ class TagAdd : BaseCommand() {
         }
         if (Database.addTag(keyword, response)) {
             message.messageDeleteAndThen {
-                val id = author.id
-                reply("✅ Tag '$keyword' added by <@$id>:")
+                reply("✅ Tag '$keyword' added by ${author.getLinkName()}:")
                 reply(response)
                 logAction("added tag '$keyword'")
                 logAction("response: '$response'", raw = true)
-                lastTouchedTag[id] = keyword
+                lastTouchedTag[author.id] = keyword
             }
         } else {
             reply("❌ Failed to add keyword.")

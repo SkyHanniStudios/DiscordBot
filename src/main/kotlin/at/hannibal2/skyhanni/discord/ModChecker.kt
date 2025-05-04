@@ -7,8 +7,11 @@ package at.hannibal2.skyhanni.discord
 // See LICENSE for copyright and license notices.
 //
 
+import at.hannibal2.skyhanni.discord.Utils.getLink
+import at.hannibal2.skyhanni.discord.Utils.getLinkName
 import at.hannibal2.skyhanni.discord.Utils.linkTo
 import at.hannibal2.skyhanni.discord.Utils.reply
+import at.hannibal2.skyhanni.discord.command.BaseCommand
 import at.hannibal2.skyhanni.discord.github.GitHubClient
 import com.google.gson.Gson
 import com.google.gson.annotations.Expose
@@ -16,16 +19,47 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
 object ModChecker {
     private var knownMods = listOf<KnownMod>()
+
+    // https://regex101.com/r/0W4NCa/1
     private val pattern = "\\[(?<modName>.*)]\\[(?<fileName>.*) \\((?<version>.*)\\)]".toPattern()
+
     private val github = GitHubClient("SkyHanniStudios", "DiscordBot", BOT.config.githubTokenOwn)
 
     class ModInfo(val name: String, val version: String, val fileName: String)
 
-    @Suppress("ReturnCount", "LoopWithTooManyJumpStatements")
+    @Suppress("unused")
+    class TagList : BaseCommand() {
+        override val name = "debugmods"
+        override val description = "Debug infos about the mod list in neu stats format"
+
+        override fun MessageReceivedEvent.execute(args: List<String>) {
+            val referencedMessage = message.referencedMessage
+
+            if (referencedMessage == null) {
+                reply("reply to a message to see debug infos from that message!")
+                return
+            }
+            val text = referencedMessage.contentRaw.trim()
+            val mods = readModsFromMessage(text)
+            if (mods == null) {
+                reply("no mods found in that message!")
+                return
+            }
+            run(mods, debug = true)
+        }
+    }
+
     fun isModList(event: MessageReceivedEvent, message: String): Boolean {
+        val mods = readModsFromMessage(message) ?: return false
+        event.run(mods, debug = false)
+        return true
+    }
+
+    @Suppress("ReturnCount", "LoopWithTooManyJumpStatements")
+    private fun readModsFromMessage(message: String): MutableMap<ModInfo, String>? {
         val lines = message.split("\n")
         val startLine = "# Mods Loaded"
-        if (!lines.any { it == startLine }) return false
+        if (!lines.any { it == startLine }) return null
 
         val mods = mutableMapOf<ModInfo, String>()
         var active = false
@@ -39,15 +73,11 @@ object ModChecker {
                 mods[mod] = line
             }
         }
-
-        if (mods.isEmpty()) return false
-
-        event.run(mods)
-        return true
+        if (mods.isEmpty()) return null
+        return mods
     }
 
     private fun readModInfo(line: String): ModInfo? {
-        //[Minecraft Coder Pack][minecraft.jar (9.19)]
         val matcher = pattern.matcher(line)
         if (!matcher.matches()) return null
 
@@ -59,10 +89,8 @@ object ModChecker {
     }
 
     @Suppress("CyclomaticComplexMethod", "LongMethod")
-    private fun MessageReceivedEvent.run(activeMods: Map<ModInfo, String>) {
-        println(" ")
-        println(" ")
-        println(" ")
+    private fun MessageReceivedEvent.run(activeMods: Map<ModInfo, String>, debug: Boolean) {
+
         if (knownMods.isEmpty()) {
             loadModDataFromRepo()
         }
@@ -152,62 +180,103 @@ object ModChecker {
             }
             val currentVersion = knownMods.firstOrNull { it.name == mod.name && it.version == version }
             if (currentVersion == null) {
-                val link = latestBetaMod.downloadLink
+                val link = "Download".linkTo(latestBetaMod.downloadLink)
                 unknownVersion.add("$name ($version) - $link")
                 continue
             }
             val latestVersion = if (latestBetaMod.beta) latestBetaMod.version else latestFullMod.version
-            val link = currentVersion.downloadLink
+            val link = "Download".linkTo(latestBetaMod.downloadLink)
+            updateAvaliable.add("$name (current: $version, latest: $latestVersion) - $link")
 
-            updateAvaliable.add("$name (current: $version, latest: $latestVersion) - $$link")
-
-            val downloadLink = "Download".linkTo(link)
-            result.add("Update $name! ($version -> $latestVersion) $downloadLink")
+            result.add("Update $name! ($version -> $latestVersion) $link")
         }
 
-        println(" ")
-        println("found mods in total: ${activeMods.size}")
+        val debugList = mutableListOf<String>()
+        fun debug(text: String) {
+            if (debug) {
+                debugList.add(text)
+            } else {
+                println(text)
+            }
+        }
 
-        val errorMods = activeMods.size - unknownMod.size - upToDate.size - unknownVersion.size -
-                updateAvaliable.size - ignored.size
+        debug(" ")
+        debug("found mods in total: ${activeMods.size}")
 
-        if (errorMods != 0) error("wrong mod size!")
+        val errorMods =
+            activeMods.size - unknownMod.size - upToDate.size - unknownVersion.size - updateAvaliable.size - ignored.size
 
-        println(" ")
-        println("${unknownMod.size} unknown mods:")
+        if (errorMods != 0) {
+            if (debug) {
+                debug("errorMods = $errorMods")
+            } else {
+                Utils.sendMessageToBotChannel(
+                    "Wrong mod size from ${author.getLinkName()} at ${message.getLink()}\n" +
+                            "reply to the message via `!debugmods` to investigate!"
+                )
+                return
+            }
+        }
+
+        val forSupportChannel = mutableListOf<String>()
+
+        debug(" ")
+        if (unknownMod.size > 0) {
+            forSupportChannel.add("${unknownMod.size} unknown mods:")
+            forSupportChannel.addAll(unknownMod)
+            forSupportChannel.add(" ")
+        }
+        debug("${unknownMod.size} unknown mods:")
         for (line in unknownMod) {
-            println(line)
+            debug(line)
         }
 
-        println(" ")
-        println("${ignored.size} really ignored mods:")
+        debug(" ")
+        debug("${ignored.size} ignored mods:")
         for (line in ignored) {
-            println(line)
+            debug(line)
         }
 
-        println(" ")
-        println("${upToDate.size} up to date mods:")
+        debug(" ")
+        debug("${upToDate.size} up to date mods:")
         for (line in upToDate) {
-            println(line)
+            debug(line)
         }
 
-        println(" ")
-        println("${unknownVersion.size} unknown mod versions:")
+        if (unknownVersion.size > 0) {
+            forSupportChannel.add("${unknownVersion.size} unknown mod versions:")
+            forSupportChannel.addAll(unknownVersion)
+            forSupportChannel.add(" ")
+        }
+        debug(" ")
+        debug("${unknownVersion.size} unknown mod versions:")
         for (line in unknownVersion) {
-            println(line)
+            debug(line)
         }
 
-        println(" ")
+        debug(" ")
 
-        println("Update avaliable for ${updateAvaliable.size} mods:")
+        debug("Update avaliable for ${updateAvaliable.size} mods:")
         for (line in updateAvaliable) {
-            println(line)
+            debug(line)
+        }
+
+        if (debug) {
+            reply("debug data for ${activeMods.size} mods in that message:\n${debugList.joinToString("\n")}")
+            return
         }
 
         if (result.isEmpty()) {
             reply("no outdated mods found $PARTY_FACE")
         } else {
             reply("Found ${result.size} outdated mods $PLEADING_FACE\n" + result.joinToString("\n"))
+        }
+        if (forSupportChannel.isNotEmpty()) {
+            val text = buildList {
+                add("Unknown mod data from ${author.getLinkName()} at ${message.getLink()}")
+                addAll(forSupportChannel)
+            }.joinToString("\n")
+            Utils.sendMessageToBotChannel(text)
         }
     }
 
