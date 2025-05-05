@@ -2210,10 +2210,12 @@
       "name": "ravenAddons",
       "download": "https://github.com/raaaaaven/ravenAddons",
       "versions": {
-        "1.9.2": "8cd2798656b93ffa1a3a911d4012240c0f18f8728420c0aff5b0ec224c84bf90"
+        "1.9.2": "8cd2798656b93ffa1a3a911d4012240c0f18f8728420c0aff5b0ec224c84bf90",
+        "1.9.3": "idk"
       },
       "betaVersions": {
-        "1.9.2": "8cd2798656b93ffa1a3a911d4012240c0f18f8728420c0aff5b0ec224c84bf90"
+        "1.9.2": "8cd2798656b93ffa1a3a911d4012240c0f18f8728420c0aff5b0ec224c84bf90",
+        "1.9.3": "idk"
       }
     },
     "CropHitbox": {
@@ -2234,6 +2236,26 @@
       },
       "betaVersions": {
         "1.0": "idk"
+      }
+    },
+    "World Downloader": {
+      "name": "WorldDownloader",
+      "download": "idk",
+      "versions": {
+        "1.0": "idk"
+      },
+      "betaVersions": {
+        "1.0": "idk"
+      }
+    },
+    "awesome": {
+      "name": "awesome",
+      "download": "idk",
+      "versions": {
+        "1.7": "idk"
+      },
+      "betaVersions": {
+        "1.7": "idk"
       }
     }
   }
