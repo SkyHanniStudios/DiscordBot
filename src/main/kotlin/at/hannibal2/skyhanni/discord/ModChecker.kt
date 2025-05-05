@@ -204,7 +204,7 @@ object ModChecker {
             val link = "Download".linkTo(latestBetaMod.downloadLink)
             updateAvaliable.add("$name (current: $version, latest: $latestVersion) - $link")
 
-            result.add("Update $name! ($version -> $latestVersion) $link")
+            result.add("$name ($version -> $latestVersion) $link")
         }
 
         val debugList = mutableListOf<String>()
