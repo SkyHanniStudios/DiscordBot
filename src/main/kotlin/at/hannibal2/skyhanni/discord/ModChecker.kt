@@ -142,9 +142,7 @@ object ModChecker {
                 continue
             }
 
-            val forge1 = "forge-1.8.9-11.15.1.2318-1.8.9.jar"
-            val forge2 = "forge-1.8.9-11.15.1.2318-1.8.9-universal.jar"
-            if (fileName == forge1 || fileName == forge2) {
+            if (fileName.contains("forge-1.8.9-11.15.1.2318-1.8.9")) {
                 ignored.add(line)
                 continue
             }
@@ -211,9 +209,6 @@ object ModChecker {
         fun debug(text: String) {
             if (debug) {
                 debugList.add(text)
-            } else {
-                // TODO remove for production
-                println(text)
             }
         }
 
@@ -226,10 +221,9 @@ object ModChecker {
             if (debug) {
                 debug("errorMods = $errorMods")
             } else {
-                Utils.sendMessageToBotChannel(
-                    "Wrong mod size from ${author.getLinkName()} at ${message.getLink()}\n" +
-                            "reply to the message via `!debugmods` to investigate!"
-                )
+                val a = "Wrong mod size from ${author.getLinkName()} at ${message.getLink()}"
+                val b = "reply to the message via `!debugmods` to investigate!"
+                Utils.sendMessageToBotChannel("$a\n$b")
                 return
             }
         }
