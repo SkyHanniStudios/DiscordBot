@@ -2209,6 +2209,26 @@
       "betaVersions": {
         "1.9.2": "8cd2798656b93ffa1a3a911d4012240c0f18f8728420c0aff5b0ec224c84bf90"
       }
+    },
+    "CropHitbox": {
+      "name": "CropHitbox",
+      "download": "idk",
+      "versions": {
+        "1.0": "idk"
+      },
+      "betaVersions": {
+        "1.0": "idk"
+      }
+    },
+    "Command Hotkeys": {
+      "name": "Command Hotkeys",
+      "download": "idk",
+      "versions": {
+        "1.0": "idk"
+      },
+      "betaVersions": {
+        "1.0": "idk"
+      }
     }
   }
 }

@@ -186,7 +186,7 @@ object ModChecker {
             val latestBetaMod = findBetaFromName(name)
 
             if (latestFullMod == null || latestBetaMod == null) {
-                unknownMod.add("$name (${fileName})")
+                unknownMod.add(line)
                 continue
             }
 
@@ -212,11 +212,11 @@ object ModChecker {
             if (debug) {
                 debugList.add(text)
             } else {
+                // TODO remove for production
                 println(text)
             }
         }
 
-        debug(" ")
         debug("found mods in total: ${activeMods.size}")
 
         val errorMods =
