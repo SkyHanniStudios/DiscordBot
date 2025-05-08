@@ -179,10 +179,12 @@
       "name": "Patcher",
       "download": "https://modrinth.com/mod/patcher",
       "versions": {
+        "1.8.5": "idk",
         "1.8.7": "0c61939fbd472f96c02c40bd77ef447c5719fecbb52c0a40eb90aaf198e7dd34",
         "1.8.9": "0974504b3520bac8942ee6742a515f937816390253899b01096320af87c68160"
       },
       "betaVersions": {
+        "1.8.5": "idk",
         "1.8.7": "0c61939fbd472f96c02c40bd77ef447c5719fecbb52c0a40eb90aaf198e7dd34",
         "1.8.9": "0974504b3520bac8942ee6742a515f937816390253899b01096320af87c68160",
         "1.9.0 - PolyPatcher this and below": "79ee5ffa9cb71ceb9d53393f784d7fc96bc90601e81c98b3c3ced1b5dc58093e",
@@ -2257,6 +2259,17 @@
       "betaVersions": {
         "1.7": "idk"
       }
+    },
+    "Skypixel": {
+      "name": "Skypixel",
+      "download": "idk",
+      "versions": {
+        "0.0.6": "idk"
+      },
+      "betaVersions": {
+        "0.0.6": "idk"
+      },
+      "do_not_use_reason": "Old mod that breaks other mods."
     }
   }
 }
