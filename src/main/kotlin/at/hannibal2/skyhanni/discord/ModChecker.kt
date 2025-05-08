@@ -290,7 +290,10 @@ object ModChecker {
 
         val toRemoveText = if (modToRemove.isNotEmpty()) {
             buildList {
-                add("### Please remove the following ${modToRemove.size} mods:")
+                val label = if (modToRemove.size == 1) {
+                    "this mod"
+                } else "the following ${modToRemove.size} mods"
+                add("### Please remove $label:")
                 addAll(modToRemove)
             }.joinToString("\n")
         } else ""
@@ -301,7 +304,11 @@ object ModChecker {
                 reply(toRemoveText)
             }
         } else {
-            reply("### Found ${result.size} outdated mods $PLEADING_FACE\n" + result.joinToString("\n") + "\n$toRemoveText")
+            val label = if (result.size == 1) {
+                "Found one outdated mod"
+            } else "Found ${result.size} outdated mods"
+            val resultAsText = result.joinToString("\n")
+            reply("### $label $PLEADING_FACE\n$resultAsText\n$toRemoveText")
         }
         if (forSupportChannel.isNotEmpty()) {
             val text = buildList {
