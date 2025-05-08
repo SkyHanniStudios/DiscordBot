@@ -50,6 +50,7 @@ object CommandListener {
 
         if (ServerCommands.isKnownServerUrl(this, message)) return
         if (PullRequestCommand.isPullRequest(this, message)) return
+        if (ModChecker.isModList(this, message)) return
 
         var commandMessage = message
         // ! pr arg -> !pr arg

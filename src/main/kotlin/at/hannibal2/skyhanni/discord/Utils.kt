@@ -3,6 +3,7 @@ package at.hannibal2.skyhanni.discord
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.MessageEmbed
+import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion
@@ -242,4 +243,14 @@ object Utils {
     fun readStringFromClipboard(): String? = runCatching {
         getDefaultToolkit().systemClipboard.getData(java.awt.datatransfer.DataFlavor.stringFlavor) as String
     }.getOrNull()
+
+    fun User.getLinkName(): String = "<@$id>"
+
+    fun Message.getLink(): String {
+        val messageId = id
+        val guildId = guild.id
+        val channelId = channel.id
+
+        return "https://discord.com/channels/$guildId/$channelId/$messageId"
+    }
 }
