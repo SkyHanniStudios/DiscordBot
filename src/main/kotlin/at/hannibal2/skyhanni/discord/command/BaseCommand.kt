@@ -14,6 +14,8 @@ abstract class BaseCommand {
 
     open val userCommand: Boolean = false
 
+    open val async: Boolean = false
+
     protected open val aliases: List<String> = emptyList()
 
     abstract fun MessageReceivedEvent.execute(args: List<String>)

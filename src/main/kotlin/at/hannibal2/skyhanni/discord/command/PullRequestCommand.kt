@@ -14,6 +14,8 @@ import at.hannibal2.skyhanni.discord.Utils.format
 import at.hannibal2.skyhanni.discord.Utils.linkTo
 import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.messageDelete
+import at.hannibal2.skyhanni.discord.Utils.parseToUnixTime
+import at.hannibal2.skyhanni.discord.Utils.passedSince
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.Utils.replyWithConsumer
 import at.hannibal2.skyhanni.discord.Utils.runDelayed
@@ -27,8 +29,6 @@ import at.hannibal2.skyhanni.discord.json.discord.RunStatus
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import java.awt.Color
 import java.io.File
-import java.time.Instant
-import java.time.format.DateTimeFormatter
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
 
@@ -242,7 +242,7 @@ object PullRequestCommand : BaseCommand() {
         stringBuilder: StringBuilder,
         suffix: String = ""
     ): StringBuilder {
-        val labelsWithType = labels.intersect(labelTypes[labelType] ?: setOf())
+        val labelsWithType = labels.intersect((labelTypes[labelType] ?: setOf()).toSet())
         if (labelsWithType.isEmpty()) return stringBuilder.append(if (suffix.isNotEmpty()) "> $labelType: $suffix\n" else "")
         return stringBuilder.append("> $labelType: `${labelsWithType.joinToString("` `")}`$suffix\n")
     }
@@ -254,12 +254,7 @@ object PullRequestCommand : BaseCommand() {
         else -> Color(52, 125, 57)
     }
 
-    private fun parseToUnixTime(isoTimestamp: String): Long =
-        Instant.from(DateTimeFormatter.ISO_INSTANT.parse(isoTimestamp)).epochSecond
-
     private fun toTimeMark(stringTime: String): SimpleTimeMark = (parseToUnixTime(stringTime) * 1000).asTimeMark()
-
-    private fun passedSince(stringTime: String): String = "<t:${parseToUnixTime(stringTime)}:R>"
 
     private fun releaseSinceMerge(stringTimeMerge: String, stringTimeLastRelease: String): Boolean {
         val timeMerge = parseToUnixTime(stringTimeMerge)

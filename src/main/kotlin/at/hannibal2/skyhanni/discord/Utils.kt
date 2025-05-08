@@ -1,6 +1,8 @@
 package at.hannibal2.skyhanni.discord
 
+import kotlinx.coroutines.*
 import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
@@ -11,6 +13,8 @@ import net.dv8tion.jda.api.utils.FileUpload
 import java.awt.Color
 import java.awt.Toolkit.getDefaultToolkit
 import java.io.File
+import java.time.Instant
+import java.time.format.DateTimeFormatter
 import java.util.zip.ZipFile
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.nanoseconds
@@ -66,6 +70,10 @@ object Utils {
         } else {
             sendMessage(text).queue()
         }
+    }
+
+    fun MessageChannel.embedSend(embed: MessageEmbed) {
+        sendMessageEmbeds(embed).queue()
     }
 
     fun Message.replyWithConsumer(text: String, consumer: (MessageReceivedEvent) -> Unit) {
@@ -165,6 +173,21 @@ object Utils {
 
     }
 
+    fun parseToUnixTime(isoTimestamp: String): Long =
+        Instant.from(DateTimeFormatter.ISO_INSTANT.parse(isoTimestamp)).epochSecond
+
+    fun passedSince(stringTime: String): String = "<t:${parseToUnixTime(stringTime)}:R>"
+
+    private val mentionRegex = Regex("<?@?(?<id>\\d+)>?")
+
+    fun String.getId(guild: Guild?): String? {
+        return mentionRegex.matchEntire(this)?.let { result ->
+            result.groups["id"]?.value
+        } ?: guild?.let {
+            guild.retrieveMembersByPrefix(this, 1).get().first().id
+        }
+    }
+
     fun String.linkTo(link: String): String = "[$this](<$link>)"
 
     // keep comments as docs
@@ -242,4 +265,31 @@ object Utils {
     fun readStringFromClipboard(): String? = runCatching {
         getDefaultToolkit().systemClipboard.getData(java.awt.datatransfer.DataFlavor.stringFlavor) as String
     }.getOrNull()
+
+    private val globalJob: Job = Job(null)
+    val coroutineScope = CoroutineScope(
+        CoroutineName("SkyBot") + SupervisorJob(globalJob),
+    )
+
+    fun launchIOCoroutine(block: suspend CoroutineScope.() -> Unit) {
+        launchCoroutine {
+            withContext(Dispatchers.IO) {
+                try {
+                    block()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
+    }
+
+    fun launchCoroutine(function: suspend () -> Unit) {
+        coroutineScope.launch {
+            try {
+                function()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
 }
