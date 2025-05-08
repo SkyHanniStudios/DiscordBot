@@ -205,6 +205,12 @@ object ModChecker {
                 continue
             }
             val latestVersion = if (latestBetaMod.beta) latestBetaMod.version else latestFullMod.version
+
+            if (name == "Velox Caelo" && version == "1.0.2" && latestVersion == "1.1.0") {
+                ignored.add("velox wrong version format: $line")
+                continue
+            }
+
             val link = "Download".linkTo(latestBetaMod.downloadLink)
             updateAvaliable.add("$name (current: $version, latest: $latestVersion) - $link")
 
