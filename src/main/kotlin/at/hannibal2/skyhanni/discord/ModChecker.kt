@@ -14,7 +14,7 @@ import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.command.BaseCommand
 import at.hannibal2.skyhanni.discord.github.GitHubClient
 import com.google.gson.Gson
-import com.google.gson.annotations.Expose
+import com.google.gson.annotations.SerializedName
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
 object ModChecker {
@@ -116,6 +116,7 @@ object ModChecker {
         val unknownMod = mutableListOf<String>()
         val unknownVersion = mutableListOf<String>()
         val upToDate = mutableListOf<String>()
+        val modToRemove = mutableListOf<String>()
         val updateAvaliable = mutableListOf<String>()
 
         val result = mutableListOf<String>()
@@ -187,6 +188,11 @@ object ModChecker {
                 unknownMod.add(line)
                 continue
             }
+            val reasonNotToUse = latestFullMod.reasonNotToUse ?: latestBetaMod.reasonNotToUse
+            reasonNotToUse?.let {
+                modToRemove.add("- $name ($it)")
+                continue
+            }
 
             if (latestFullMod.version == version || latestBetaMod.version == version) {
                 upToDate.add(name)
@@ -202,7 +208,7 @@ object ModChecker {
             val link = "Download".linkTo(latestBetaMod.downloadLink)
             updateAvaliable.add("$name (current: $version, latest: $latestVersion) - $link")
 
-            result.add("$name ($version -> $latestVersion) $link")
+            result.add("- $name ($version -> $latestVersion) $link")
         }
 
         val debugList = mutableListOf<String>()
@@ -215,14 +221,14 @@ object ModChecker {
         debug("found mods in total: ${activeMods.size}")
 
         val errorMods =
-            activeMods.size - unknownMod.size - upToDate.size - unknownVersion.size - updateAvaliable.size - ignored.size
+            activeMods.size - unknownMod.size - upToDate.size - unknownVersion.size - updateAvaliable.size - ignored.size - modToRemove.size
 
         if (errorMods != 0) {
             if (debug) {
                 debug("errorMods = $errorMods")
             } else {
                 val a = "Wrong mod size from ${author.getLinkName()} at ${message.getLink()}"
-                val b = "reply to the message via `!debugmods` to investigate!"
+                val b = "reply to the message with `!debugmods` to investigate!"
                 Utils.sendMessageToBotChannel("$a\n$b")
                 return
             }
@@ -253,6 +259,12 @@ object ModChecker {
             debug(line)
         }
 
+        debug(" ")
+        debug("${modToRemove.size} to remove mods:")
+        for (line in modToRemove) {
+            debug(line)
+        }
+
         if (unknownVersion.size > 0) {
             forSupportChannel.add("${unknownVersion.size} unknown mod versions:")
             forSupportChannel.addAll(unknownVersion)
@@ -276,10 +288,20 @@ object ModChecker {
             return
         }
 
+        val toRemoveText = if (modToRemove.isNotEmpty()) {
+            buildList {
+                add("### Please remove the following ${modToRemove.size} mods:")
+                addAll(modToRemove)
+            }.joinToString("\n")
+        } else ""
         if (result.isEmpty()) {
-            reply("no outdated mods found $PARTY_FACE")
+            if (toRemoveText.isEmpty()) {
+                reply("No outdated mods found $PARTY_FACE")
+            } else {
+                reply(toRemoveText)
+            }
         } else {
-            reply("Found ${result.size} outdated mods $PLEADING_FACE\n" + result.joinToString("\n"))
+            reply("### Found ${result.size} outdated mods $PLEADING_FACE\n" + result.joinToString("\n") + "\n$toRemoveText")
         }
         if (forSupportChannel.isNotEmpty()) {
             val text = buildList {
@@ -291,20 +313,18 @@ object ModChecker {
     }
 
     class ModDataJson {
-        @Expose
         val mods: Map<String, ModInfo>? = null
 
         class ModInfo {
-            @Expose
             var name: String = ""
 
-            @Expose
             val download: String = ""
 
-            @Expose
+            @SerializedName("do_not_use_reason")
+            val reasonNotToUse: String? = null
+
             val versions: Map<String, String> = HashMap()
 
-            @Expose
             val betaVersions: Map<String, String> = HashMap()
         }
     }
@@ -328,13 +348,14 @@ object ModChecker {
             var latestBeta: KnownMod? = null
             val versions = modInfo.versions
             val betaVersions = modInfo.betaVersions
+            val reasonNotToUse = modInfo.reasonNotToUse
             for ((version, hash) in versions) {
-                val a = KnownMod(modId, modInfo.name, version, download, hash, false)
+                val a = KnownMod(modId, modInfo.name, version, download, hash, false, reasonNotToUse)
                 latest = a
                 list.add(a)
             }
             for ((version, hash) in betaVersions) {
-                val a = KnownMod(modId, modInfo.name, version, download, hash, true)
+                val a = KnownMod(modId, modInfo.name, version, download, hash, true, reasonNotToUse)
                 latestBeta = a
                 list.add(a)
             }
@@ -366,6 +387,7 @@ object ModChecker {
         return null
     }
 
+    @Suppress("LongParameterList")
     internal class KnownMod(
         internal val id: String,
         internal val name: String,
@@ -373,6 +395,7 @@ object ModChecker {
         internal val downloadLink: String,
         internal val hash: String,
         internal val beta: Boolean,
+        internal val reasonNotToUse: String?,
     ) {
         internal var latest = false
     }
