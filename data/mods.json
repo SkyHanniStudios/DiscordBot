@@ -1382,11 +1382,13 @@
       "download": "https://discord.gg/v4PU3WeH7z",
       "versions": {
         "1.10.0": "d0eae25b1f329214c4edb5a305207dfc8e846a1883ce0104b2a81728371b4766",
-        "${pluginVersion}-skyclientversion": "00019d86715a19796f6dda8f9216427274c586ec795089c627159a1cff4a57c9"
+        "${pluginVersion}-skyclientversion": "00019d86715a19796f6dda8f9216427274c586ec795089c627159a1cff4a57c9",
+        "1.10.127": "idk"
       },
       "betaVersions": {
         "1.10.0": "d0eae25b1f329214c4edb5a305207dfc8e846a1883ce0104b2a81728371b4766",
-        "${pluginVersion}-skyclientversion": "00019d86715a19796f6dda8f9216427274c586ec795089c627159a1cff4a57c9"
+        "${pluginVersion}-skyclientversion": "00019d86715a19796f6dda8f9216427274c586ec795089c627159a1cff4a57c9",
+        "1.10.127": "idk"
       }
     },
     "autoskyblockrejoin": {
