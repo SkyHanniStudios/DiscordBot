@@ -66,7 +66,7 @@ object AgeFeature {
         }
 
         val age = parts.joinToString(" ")
-        val releasedOn = releaseDate.format(DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.ENGLISH))
+        val releasedOn = releaseDate.format(DateTimeFormatter.ofPattern("MMMM d, yyyy", Locale.ENGLISH))
 
         return "### $name is $age old.\n### It was released on $releasedOn"
     }
