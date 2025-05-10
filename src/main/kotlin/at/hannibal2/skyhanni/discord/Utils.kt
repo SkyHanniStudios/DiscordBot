@@ -12,6 +12,8 @@ import net.dv8tion.jda.api.utils.FileUpload
 import java.awt.Color
 import java.awt.Toolkit.getDefaultToolkit
 import java.io.File
+import java.text.NumberFormat
+import java.util.Locale
 import java.util.zip.ZipFile
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.nanoseconds
@@ -253,4 +255,15 @@ object Utils {
 
         return "https://discord.com/channels/$guildId/$channelId/$messageId"
     }
+
+    fun String.pluralize(number: Int, withNumber: Boolean = false) = pluralize(number, this, withNumber = withNumber)
+
+    fun pluralize(number: Int, singular: String, plural: String? = null, withNumber: Boolean = false): String {
+        val pluralForm = plural ?: "${singular}s"
+        var str = if (number == 1 || number == -1) singular else pluralForm
+        if (withNumber) str = "${number.addSeparators()} $str"
+        return str
+    }
+
+    fun Number.addSeparators(): String = NumberFormat.getNumberInstance(Locale.US).format(this)
 }

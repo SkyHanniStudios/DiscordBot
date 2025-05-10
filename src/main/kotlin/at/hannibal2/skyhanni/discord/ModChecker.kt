@@ -343,7 +343,7 @@ object ModChecker {
     }
 
     private fun loadModDataFromRepo() {
-        val json = github.getFileContent("data/mods.json") ?: error("Error loading mods")
+        val json = github.getFileContent("data/mods.json") ?: error("Error loading mods json data")
 
         val gson = Gson()
         val modData = gson.fromJson(json, ModDataJson::class.java)

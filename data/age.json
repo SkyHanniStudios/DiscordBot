@@ -1,0 +1,52 @@
+{
+  "releases": {
+    "sh 1": {
+      "name": "SkyHanni version 1.0.0",
+      "date": "2025-01-04"
+    },
+    "beta 12": {
+      "name": "SkyHanni version 0.27 beta 12",
+      "date": "2024-09-25"
+    },
+    "rift": {
+      "name": "SkyBlock Rift",
+      "date": "2023-05-04"
+    },
+    "garden": {
+      "name": "SkyBlock Garden",
+      "date": "2023-02-14"
+    },
+    "sh": {
+      "name": "SkyHanni",
+      "date": "2022-07-14"
+    },
+    "neu": {
+      "name": "NotEnoughUpdates",
+      "date": "2020-07-16"
+    },
+    "cata": {
+      "name": "SkyBlock Dungeons",
+      "date": "2020-07-07"
+    },
+    "sb": {
+      "name": "Hypixel SkyBlock",
+      "date": "2019-05-10"
+    },
+    "mc 1.8.9": {
+      "name": "Minecraft version 1.8.9",
+      "date": "2015-12-08"
+    },
+    "java 8": {
+      "name": "Java update 8",
+      "date": "2014-03-18"
+    },
+    "hypixel": {
+      "name": "Hypixel",
+      "date": "2013-04-13"
+    },
+    "mc": {
+      "name": "Minecraft",
+      "date": "2011-11-18"
+    }
+  }
+}
