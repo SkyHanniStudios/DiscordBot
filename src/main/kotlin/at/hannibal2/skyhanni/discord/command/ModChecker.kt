@@ -1,4 +1,4 @@
-package at.hannibal2.skyhanni.discord
+package at.hannibal2.skyhanni.discord.command
 
 // taken and edited from https://github.com/PartlySaneStudios/partly-sane-skies/blob/main/src/main/kotlin/me/partlysanestudios/partlysaneskies/features/security/modschecker/ModChecker.kt
 
@@ -7,11 +7,14 @@ package at.hannibal2.skyhanni.discord
 // See LICENSE for copyright and license notices.
 //
 
+import at.hannibal2.skyhanni.discord.BOT
+import at.hannibal2.skyhanni.discord.PARTY_FACE
+import at.hannibal2.skyhanni.discord.PLEADING_FACE
+import at.hannibal2.skyhanni.discord.Utils
 import at.hannibal2.skyhanni.discord.Utils.getLink
 import at.hannibal2.skyhanni.discord.Utils.getLinkName
 import at.hannibal2.skyhanni.discord.Utils.linkTo
 import at.hannibal2.skyhanni.discord.Utils.reply
-import at.hannibal2.skyhanni.discord.command.BaseCommand
 import at.hannibal2.skyhanni.discord.github.GitHubClient
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName

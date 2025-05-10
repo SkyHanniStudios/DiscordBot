@@ -1,8 +1,9 @@
-package at.hannibal2.skyhanni.discord
+package at.hannibal2.skyhanni.discord.command
 
+import at.hannibal2.skyhanni.discord.BOT
+import at.hannibal2.skyhanni.discord.PLEADING_FACE
 import at.hannibal2.skyhanni.discord.Utils.pluralize
 import at.hannibal2.skyhanni.discord.Utils.reply
-import at.hannibal2.skyhanni.discord.command.BaseCommand
 import at.hannibal2.skyhanni.discord.github.GitHubClient
 import com.google.gson.Gson
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent

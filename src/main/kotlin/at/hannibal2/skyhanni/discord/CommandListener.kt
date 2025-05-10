@@ -6,6 +6,7 @@ import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.command.BaseCommand
 import at.hannibal2.skyhanni.discord.command.HelpCommand
+import at.hannibal2.skyhanni.discord.command.ModChecker
 import at.hannibal2.skyhanni.discord.command.PullRequestCommand
 import at.hannibal2.skyhanni.discord.command.ServerCommands
 import at.hannibal2.skyhanni.discord.command.TagCommands
