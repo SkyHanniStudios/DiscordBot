@@ -53,10 +53,10 @@ object ModChecker {
     }
 
     @Suppress("unused")
-    class UpdateModList : BaseCommand() {
+    class UpdateModListCommand : BaseCommand() {
         override val name: String = "modlistupdate"
         override val description: String = "Updates the server list."
-        override val aliases: List<String> = listOf("updatemodlist")
+        override val aliases: List<String> = listOf("updatemodlist", "updatemods")
 
         override fun MessageReceivedEvent.execute(args: List<String>) {
             reply("updating mod list ...")
@@ -65,7 +65,6 @@ object ModChecker {
             val link = "GitHub".linkTo("https://github.com/SkyHanniStudios/DiscordBot/blob/master/data/mods.json")
             reply("Updated mod list from $link.")
         }
-
     }
 
     fun isModList(event: MessageReceivedEvent, message: String): Boolean {

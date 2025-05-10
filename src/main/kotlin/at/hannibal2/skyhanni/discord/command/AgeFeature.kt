@@ -2,6 +2,7 @@ package at.hannibal2.skyhanni.discord.command
 
 import at.hannibal2.skyhanni.discord.BOT
 import at.hannibal2.skyhanni.discord.PLEADING_FACE
+import at.hannibal2.skyhanni.discord.Utils.linkTo
 import at.hannibal2.skyhanni.discord.Utils.pluralize
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.github.GitHubClient
@@ -70,5 +71,19 @@ object AgeFeature {
         val releasedOn = releaseDate.format(DateTimeFormatter.ofPattern("MMMM d, yyyy", Locale.ENGLISH))
 
         return "### $name is $age old.\n### It was released on $releasedOn"
+    }
+
+    @Suppress("unused")
+    class UpdateAgeListCommand : BaseCommand() {
+        override val name: String = "updateagelist"
+        override val description: String = "Updates the age list."
+        override val aliases: List<String> = listOf("ageupdate", "updateage")
+
+        override fun MessageReceivedEvent.execute(args: List<String>) {
+            reply("updating age list ...")
+            loadFromRepo()
+            val link = "GitHub".linkTo("https://github.com/SkyHanniStudios/DiscordBot/blob/master/data/age.json")
+            reply("Updated age list from $link.")
+        }
     }
 }
