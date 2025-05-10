@@ -43,10 +43,14 @@ object AgeFeature {
                 loadFromRepo()
             }
 
+            val tip = "\nTry one of those: ${releases.keys}"
+            if (args.isEmpty()) {
+                return reply("Usage: /age <term>$tip")
+            }
+
             val term = args.joinToString(" ").lowercase()
             val (name, time) = releases[term] ?: run {
-                reply("Nothing found $PLEADING_FACE\nTry one of those: ${releases.keys}")
-                return
+                return reply("Nothing found $PLEADING_FACE$tip")
             }
             reply(format(name, time))
         }
@@ -62,8 +66,8 @@ object AgeFeature {
         val period = Period.between(releaseZdt.toLocalDate(), now.toLocalDate())
 
         val parts = mutableListOf<String>().apply {
-            if (period.years != 0)   add("year".pluralize(period.years, withNumber = true))
-            if (period.months != 0)  add("month".pluralize(period.months, withNumber = true))
+            if (period.years != 0) add("year".pluralize(period.years, withNumber = true))
+            if (period.months != 0) add("month".pluralize(period.months, withNumber = true))
             if (period.days != 0 || isEmpty()) add("day".pluralize(period.days, withNumber = true))
         }
 

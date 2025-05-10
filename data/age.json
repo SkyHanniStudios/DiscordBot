@@ -8,29 +8,129 @@
       "name": "SkyHanni version 0.27 beta 12",
       "date": "2024-09-25"
     },
+    "backwater": {
+      "name": "Backwater Bayou",
+      "date": "2025-03-18"
+    },
+    "mountaintop": {
+      "name": "Rift Mountaintop",
+      "date": "2024-12-10"
+    },
+    "cf": {
+      "name": "Chocolate Factory",
+      "date": "2024-04-24"
+    },
+    "glacite": {
+      "name": "Glacite Tunnels",
+      "date": "2024-04-09"
+    },
+    "bestiary": {
+      "name": "Bestiary",
+      "date": "2023-08-01"
+    },
     "rift": {
-      "name": "SkyBlock Rift",
-      "date": "2023-05-04"
+      "name": "The Rift",
+      "date": "2023-06-20"
     },
     "garden": {
-      "name": "SkyBlock Garden",
-      "date": "2023-02-14"
+      "name": "The Garden",
+      "date": "2022-02-14"
     },
     "sh": {
       "name": "SkyHanni",
       "date": "2022-07-14"
+    },
+    "leveling": {
+      "name": "SkyBlock Leveling",
+      "date": "2022-09-28"
+    },
+    "crimson": {
+      "name": "Crimson Isle",
+      "date": "2022-04-20"
+    },
+    "stranded": {
+      "name": "Stranded Game Mode",
+      "date": "2022-01-18"
+    },
+    "bingo": {
+      "name": "Bingo",
+      "date": "2021-11-29"
+    },
+    "museum": {
+      "name": "Museum",
+      "date": "2021-11-02"
+    },
+    "ch": {
+      "name": "Crystal Hollows",
+      "date": "2021-07-14"
+    },
+    "mm": {
+      "name": "Dungeon Master Mode",
+      "date": "2021-03-30"
+    },
+    "spider": {
+      "name": "Spider's Den",
+      "date": "2021-03-09"
+    },
+    "mines": {
+      "name": "Dwarven Mines",
+      "date": "2021-01-15"
+    },
+    "ironman": {
+      "name": "Ironman Game Mode",
+      "date": "2020-10-06"
+    },
+    "election": {
+      "name": "SkyBlock Elections",
+      "date": "2020-09-08"
+    },
+    "hub": {
+      "name": "New Hub Island",
+      "date": "2020-08-13"
     },
     "neu": {
       "name": "NotEnoughUpdates",
       "date": "2020-07-16"
     },
     "cata": {
-      "name": "SkyBlock Dungeons",
+      "name": "Dungeons",
       "date": "2020-07-07"
+    },
+    "reforges": {
+      "name": "SkyBlock Reforges",
+      "date": "2020-07-01"
+    },
+    "sacks": {
+      "name": "SkyBlock Sacks",
+      "date": "2020-06-07"
+    },
+    "wardrobe": {
+      "name": "SkyBlock Wardrobe",
+      "date": "2020-06-02"
+    },
+    "pets": {
+      "name": "SkyBlock Pets",
+      "date": "2020-02-21"
+    },
+    "winter": {
+      "name": "SkyBlock Winter",
+      "date": "2019-12-17"
+    },
+    "foraging": {
+      "name": "Foraging Island",
+      "date": "2019-11-12"
+    },
+    "slayer": {
+      "name": "SkyBlock Slayer",
+      "date": "2019-08-10"
+    },
+    "end": {
+      "name": "The End",
+      "date": "2019-08-02"
     },
     "sb": {
       "name": "Hypixel SkyBlock",
-      "date": "2019-05-10"
+      "date": "2019-06-11"
     },
     "mc 1.8.9": {
       "name": "Minecraft version 1.8.9",
