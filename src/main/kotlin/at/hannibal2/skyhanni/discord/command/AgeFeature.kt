@@ -3,17 +3,13 @@ package at.hannibal2.skyhanni.discord.command
 import at.hannibal2.skyhanni.discord.BOT
 import at.hannibal2.skyhanni.discord.PLEADING_FACE
 import at.hannibal2.skyhanni.discord.Utils.linkTo
-import at.hannibal2.skyhanni.discord.Utils.pluralize
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.github.GitHubClient
 import com.google.gson.Gson
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import java.time.LocalDate
-import java.time.Period
 import java.time.ZoneId
-import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 object AgeFeature {
     private val github = GitHubClient("SkyHanniStudios", "DiscordBot", BOT.config.githubTokenOwn)
@@ -58,23 +54,13 @@ object AgeFeature {
 
     @Suppress("SameParameterValue")
     fun format(name: String, date: String): String {
-        val releaseDate = LocalDate.parse(date, DateTimeFormatter.ISO_LOCAL_DATE)
-
-        val zone = ZoneId.of("CET")
-        val releaseZdt = releaseDate.atStartOfDay(zone)
-        val now = ZonedDateTime.now(zone)
-        val period = Period.between(releaseZdt.toLocalDate(), now.toLocalDate())
-
-        val parts = mutableListOf<String>().apply {
-            if (period.years != 0) add("year".pluralize(period.years, withNumber = true))
-            if (period.months != 0) add("month".pluralize(period.months, withNumber = true))
-            if (period.days != 0 || isEmpty()) add("day".pluralize(period.days, withNumber = true))
+        val localDate = LocalDate.parse(date, DateTimeFormatter.ISO_LOCAL_DATE)
+        val dateTime = localDate.atStartOfDay(ZoneId.of("CET"))
+        val seconds = dateTime.toEpochSecond() + 60 * 60 * 12
+        return buildString {
+            append("### $name was released <t:$seconds:R>.\n")
+            append("### It was released on <t:$seconds:D>")
         }
-
-        val age = parts.joinToString(" ")
-        val releasedOn = releaseDate.format(DateTimeFormatter.ofPattern("MMMM d, yyyy", Locale.ENGLISH))
-
-        return "### $name is $age old.\n### It was released on $releasedOn"
     }
 
     @Suppress("unused")
