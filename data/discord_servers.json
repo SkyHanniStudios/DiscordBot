@@ -158,6 +158,16 @@
         "SkyBlockUtils"
       ]
     },
+    "sbt": {
+      "name": "SkyBlock Tweaks",
+      "id": "1199540355859746897",
+      "size": "600",
+      "invite": "https://discord.gg/XgxDxV87zJ",
+      "description": "SkyBlock Tweaks is a SkyBlock mod.",
+      "aliases": [
+        "SkyBlockTweaks"
+      ]
+    },
     "sbo": {
       "name": "SkyblockOverhaul",
       "id": "1163913835514699886",
