@@ -21,8 +21,8 @@ object AgeFeature {
     var releases = mapOf<String, ReleaseInfo>()
 
     private fun loadFromRepo() {
-        val json = github.getFileContent("data/age.json") ?: error("Error loading age json data")
-//        val json = Utils.readStringFromClipboard()
+        val json = github.getFileContent("data/age.json") ?: error("Error loading age json from github")
+//        val json = Utils.readStringFromClipboard() ?: error("error loading age json from clipboard")
 
         val gson = Gson()
         val data = gson.fromJson(json, TimeSinceJson::class.java)
