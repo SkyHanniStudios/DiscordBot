@@ -1524,10 +1524,12 @@
       "name": "Scatha-Pro",
       "download": "https://github.com/NamelessJu/Scatha-Pro/releases",
       "versions": {
-        "1.2.3.1": "9df8f87103f2f498ee9fdbfeac7b9f58c2f054e5fcd6f1583959c8c9dca9c50b"
+        "1.2.3.1": "9df8f87103f2f498ee9fdbfeac7b9f58c2f054e5fcd6f1583959c8c9dca9c50b",
+        "1.3.1.1": "idk"
       },
       "betaVersions": {
-        "1.2.3.1": "9df8f87103f2f498ee9fdbfeac7b9f58c2f054e5fcd6f1583959c8c9dca9c50b"
+        "1.2.3.1": "9df8f87103f2f498ee9fdbfeac7b9f58c2f054e5fcd6f1583959c8c9dca9c50b",
+        "1.3.1.1": "idk"
       }
     },
     "SkyblockExtras": {
@@ -1593,10 +1595,12 @@
       "name": "Inventory HUD+",
       "download": "https://www.curseforge.com/minecraft/mc-mods/inventory-hud-forge",
       "versions": {
-        "3.1.0": "220eca71b40ab36383fd706f6be83c539dc0cf442944742e76adc5cdcc45c591"
+        "3.1.0": "220eca71b40ab36383fd706f6be83c539dc0cf442944742e76adc5cdcc45c591",
+        "3.2.0": "idk"
       },
       "betaVersions": {
-        "3.1.0": "220eca71b40ab36383fd706f6be83c539dc0cf442944742e76adc5cdcc45c591"
+        "3.1.0": "220eca71b40ab36383fd706f6be83c539dc0cf442944742e76adc5cdcc45c591",
+        "3.2.0": "idk"
       }
     },
     "LunatriusCore": {
@@ -2272,6 +2276,17 @@
         "0.0.6": "idk"
       },
       "do_not_use_reason": "Old mod that breaks other mods."
+    },
+    "autoupdater": {
+      "name": "AutoUpdater",
+      "download": "https://hypixel.net/threads/forge-1-8-9-autoupdater-automatically-update-all-of-your-mods.4584948/",
+      "versions": {
+        "1.1.1": "idk"
+      },
+      "betaVersions": {
+        "1.1.1": "idk"
+      },
+      "do_not_use_reason": "Old mod that is not necessary."
     }
   }
 }
