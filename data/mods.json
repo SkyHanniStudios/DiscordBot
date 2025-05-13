@@ -2278,7 +2278,7 @@
       "do_not_use_reason": "Old mod that breaks other mods."
     },
     "autoupdater": {
-      "name": "AutoUpdater",
+      "name": "Auto Updater",
       "download": "https://hypixel.net/threads/forge-1-8-9-autoupdater-automatically-update-all-of-your-mods.4584948/",
       "versions": {
         "1.1.1": "idk"
