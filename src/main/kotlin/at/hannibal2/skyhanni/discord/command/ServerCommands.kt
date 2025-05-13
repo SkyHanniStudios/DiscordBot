@@ -3,10 +3,12 @@ package at.hannibal2.skyhanni.discord.command
 import at.hannibal2.skyhanni.discord.BOT
 import at.hannibal2.skyhanni.discord.Option
 import at.hannibal2.skyhanni.discord.Utils
+import at.hannibal2.skyhanni.discord.Utils.addSeparators
 import at.hannibal2.skyhanni.discord.Utils.linkTo
 import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.pluralize
 import at.hannibal2.skyhanni.discord.Utils.reply
+import at.hannibal2.skyhanni.discord.Utils.roundTo
 import at.hannibal2.skyhanni.discord.Utils.sendMessageToBotChannel
 import at.hannibal2.skyhanni.discord.Utils.userError
 import at.hannibal2.skyhanni.discord.command.ServerCommands.loadServers
@@ -16,6 +18,7 @@ import com.google.gson.reflect.TypeToken
 import net.dv8tion.jda.api.entities.Invite
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import java.util.concurrent.CountDownLatch
+import kotlin.math.absoluteValue
 import kotlin.time.Duration.Companion.seconds
 
 object ServerCommands {
@@ -26,6 +29,7 @@ object ServerCommands {
         val id: String,
         val name: String,
         val invite: String,
+        val size: Int,
         val description: String,
         val aliases: List<String>,
     ) {
@@ -87,6 +91,7 @@ object ServerCommands {
         var removed = 0
         val latch = CountDownLatch(servers.size)
 
+        val memberCountDiff = mutableMapOf<String, Double>()
         for (server in servers.toList()) {
             Invite.resolve(BOT.jda, server.invite.split("/").last(), true).queue { t ->
                 val guild = t.guild ?: run {
@@ -111,13 +116,49 @@ object ServerCommands {
                     }.joinToString("\n"))
                     servers.remove(server)
                 }
+                memberCountDiff.calcualteMemberCount(guild, server)
                 latch.countDown()
             }
         }
 
         latch.await() // wait for all servers to be checked
         onFinish(removed)
+
+        memberCountDiff.memberCountFormat()
     }
+
+    private fun Map<String, Double>.memberCountFormat() {
+        if (!isNotEmpty()) {
+            println("no member count update necessary")
+            return
+        }
+        println(" ")
+        for ((text, diff) in entries.sortedBy { it.value }.reversed()) {
+            println(text)
+        }
+        println(" ")
+        println("member count update necessary: $size")
+        println(" ")
+    }
+
+    private fun MutableMap<String, Double>.calcualteMemberCount(guild: Invite.Guild, server: Server) {
+        val accuracy = 0.01
+
+        val realSize = guild.memberCount
+        val storedSize = server.size
+        val diff = realSize - storedSize
+        if (diff.absoluteValue < realSize * accuracy) return
+
+        val diffFormat = " (diff=${diff.addSeparators()})"
+        val percentageChanged = ((diff.absoluteValue / realSize.toDouble()) * 100).roundTo(5)
+        val name = "${s(server, storedSize, realSize)} $diffFormat ${server.id}"
+        val text = "$name - $percentageChanged% ($realSize)"
+        this[text] = percentageChanged
+    }
+
+    private fun s(
+        server: Server, storedSize: Int, realSize: Int
+    ) = "${server.name}: ${storedSize.addSeparators()} -> ${realSize.addSeparators()}"
 
     private fun parseStringToServers(json: String): MutableSet<Server> {
         val type = object : TypeToken<Map<String, Map<String, ServerJson>>>() {}.type
@@ -129,6 +170,7 @@ object ServerCommands {
                     data.id,
                     data.name,
                     data.invite,
+                    data.size.toInt(),
                     data.description,
                     data.aliases?.map { it.lowercase() } ?: emptyList())
             }
@@ -243,7 +285,7 @@ class ServerUpdate : BaseCommand() {
                 " (removed $removed servers)"
             } else ""
             val source =
-                "[GitHub](<https://github.com/SkyHanniStudios/DiscordBot/blob/master/data/discord_servers.json>)"
+                "GitHub".linkTo("https://github.com/SkyHanniStudios/DiscordBot/blob/master/data/discord_servers.json")
             reply("Updated server list from $source.$removedSuffix")
             logAction("updated server list from github")
         }

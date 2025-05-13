@@ -15,6 +15,7 @@ import java.io.File
 import java.text.NumberFormat
 import java.util.Locale
 import java.util.zip.ZipFile
+import kotlin.math.pow
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.nanoseconds
 
@@ -266,4 +267,14 @@ object Utils {
     }
 
     fun Number.addSeparators(): String = NumberFormat.getNumberInstance(Locale.US).format(this)
+
+    /**
+     * This code was unmodified and taken under CC BY-SA 3.0 license
+     * @link https://stackoverflow.com/a/22186845
+     * @author jpdymond
+     */
+    fun Double.roundTo(precision: Int): Double {
+        val scale = 10.0.pow(precision)
+        return kotlin.math.round(this * scale) / scale
+    }
 }
