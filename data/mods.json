@@ -1596,11 +1596,11 @@
       "download": "https://www.curseforge.com/minecraft/mc-mods/inventory-hud-forge",
       "versions": {
         "3.1.0": "220eca71b40ab36383fd706f6be83c539dc0cf442944742e76adc5cdcc45c591",
-        "3.2.0": "idk"
+        "3.2.1": "idk"
       },
       "betaVersions": {
         "3.1.0": "220eca71b40ab36383fd706f6be83c539dc0cf442944742e76adc5cdcc45c591",
-        "3.2.0": "idk"
+        "3.2.1": "idk"
       }
     },
     "LunatriusCore": {
