@@ -187,6 +187,7 @@
         "1.8.5": "idk",
         "1.8.7": "0c61939fbd472f96c02c40bd77ef447c5719fecbb52c0a40eb90aaf198e7dd34",
         "1.8.9": "0974504b3520bac8942ee6742a515f937816390253899b01096320af87c68160",
+        "1.9.0": "idk",
         "1.9.0 - PolyPatcher this and below": "79ee5ffa9cb71ceb9d53393f784d7fc96bc90601e81c98b3c3ced1b5dc58093e",
         "1.9.1": "715aa93427a09980b844e24b47f39772a03086270d453252042f0aee68e7b583",
         "1.9.2": "4ecc73263c818285712d056d364c1d86558b94bfd8adda4d37a6958a5d23cef9",
@@ -224,6 +225,7 @@
       },
       "betaVersions": {
         "1.6.0": "a4716a1d7793701ecdc04d5ab638b0a17641d4bf5adb52d7672bd91a7cbe1415",
+        "1.6.0-beta4": "idk",
         "1.6.1": "e67edf7084d88c65a22bcee36555b3c916c079a9a39c7ee69f0afcf1c718feda",
         "1.7.0": "6ba489ae5eebc9cc1a3b3bc83de54758fe869d79ee4dcede7b6a934b66ae34f5",
         "1.7.1": "a1c973342460140e4bb3c99bb0f2eee216e50a2cd3dda7b5e680b705e2560cfd",
@@ -910,6 +912,7 @@
         "2.0.6": "2385b5194e5b33eb10484bfa080e13bff227e71456ebc2dbabd510c6180d636a"
       },
       "betaVersions": {
+        "1.4.2-beta5": "idk",
         "1.5.0": "6bc122b4530afa9a7e461c0d9f4929376440551dc2ef1d1301510a711d43cc7a",
         "1.5.1": "3f73a05b8def3bd67d9ffdca6cdd589825d57af6f11fe2012b133e43ba033b50",
         "1.5.2": "48b2742ec720f0e34ce4369571aec131ed15ca6fcd70ba6c5c20125e0a0a84a3",
@@ -2322,6 +2325,17 @@
       "betaVersions": {
         "1.3.3": "idk",
         "1.5.0": "idk"
+      },
+      "do_not_use_reason": "Old mod that is not necessary. Use Patcher instead."
+    },
+    "FoamFix": {
+      "name": "FoamFix",
+      "download": "https://github.com/asiekierka/FoamFix/tree/1.8.9",
+      "versions": {
+        "0.6.1": "idk"
+      },
+      "betaVersions": {
+        "0.6.1": "idk"
       },
       "do_not_use_reason": "Old mod that is not necessary. Use Patcher instead."
     }
