@@ -316,7 +316,8 @@
       "betaVersions": {
         "${version}": "d78b8b7d8e11bf3dcfa6bc0e11ff5828ae160f5fa67de4bd344cbb7b91cf2fb4",
         "1.7.3+7380": "fb2f7d36afa61ae84e13a685afc37cd6e47e983b5190a3195ad1784fa40d4f17"
-      }
+      },
+      "do_not_use_reason": "Official SBA is end of life. There are no more bug fixes. Instead, you might want to try out SkyBlockAddons Unofficial from <https://modrinth.com/mod/skyblockaddons-unofficial> for less bugs."
     },
     "skyblockhud": {
       "name": "Skyblock Hud",
