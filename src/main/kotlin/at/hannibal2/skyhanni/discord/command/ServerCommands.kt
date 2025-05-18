@@ -93,8 +93,8 @@ object ServerCommands {
 
         val memberCountDiff = mutableMapOf<String, Double>()
         for (server in servers.toList()) {
-            Invite.resolve(BOT.jda, server.invite.split("/").last(), true).queue({ t ->
-                val guild = t.guild ?: run {
+            Invite.resolve(BOT.jda, server.invite.split("/").last(), true).queue({ invite ->
+                val guild = invite.guild ?: run {
                     BOT.logger.info("Server not found in discord api '${server.name}'!")
                     sendMessageToBotChannel(buildString {
                         append("Server not found in discord api '${server.name}'!\n")
