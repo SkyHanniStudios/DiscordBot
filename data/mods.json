@@ -317,7 +317,7 @@
         "${version}": "d78b8b7d8e11bf3dcfa6bc0e11ff5828ae160f5fa67de4bd344cbb7b91cf2fb4",
         "1.7.3+7380": "fb2f7d36afa61ae84e13a685afc37cd6e47e983b5190a3195ad1784fa40d4f17"
       },
-      "do_not_use_reason": "Official SBA is end of life. There are no more bug fixes. Instead, you might want to try out [SkyBlockAddons Unofficial](<https://modrinth.com/mod/skyblockaddons-unofficial>) for less bugs."
+      "do_not_use_reason": "Official SBA is end of life. There are no more bug fixes. Instead, you might want to try out [SkyBlockAddons Unofficial](<https://modrinth.com/mod/skyblockaddons-unofficial>) for less bugs"
     },
     "skyblockhud": {
       "name": "Skyblock Hud",
@@ -2293,7 +2293,7 @@
       "betaVersions": {
         "0.0.6": "idk"
       },
-      "do_not_use_reason": "Old mod that breaks other mods."
+      "do_not_use_reason": "Old mod that breaks other mods"
     },
     "autoupdater": {
       "name": "Auto Updater",
@@ -2304,7 +2304,7 @@
       "betaVersions": {
         "1.1.1": "idk"
       },
-      "do_not_use_reason": "Old mod that is not necessary."
+      "do_not_use_reason": "Old mod that is not necessary"
     },
     "BingoBrewers": {
       "name": "Bingo Brewers",
@@ -2327,7 +2327,7 @@
         "1.3.3": "idk",
         "1.5.0": "idk"
       },
-      "do_not_use_reason": "Old mod that is not necessary. Use Patcher instead."
+      "do_not_use_reason": "Old mod that is not necessary. Use Patcher instead"
     },
     "FoamFix": {
       "name": "FoamFix",
@@ -2338,7 +2338,7 @@
       "betaVersions": {
         "0.6.1": "idk"
       },
-      "do_not_use_reason": "Old mod that is not necessary. Use Patcher instead."
+      "do_not_use_reason": "Old mod that is not necessary. Use Patcher instead"
     }
   }
 }
