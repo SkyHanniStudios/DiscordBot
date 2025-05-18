@@ -1941,6 +1941,7 @@
         "1.8.8+224": "48cd58c7649e03ff62c166689899ba8d646f17ea2f2dea43209455ee58f102c4",
         "1.8.9+227": "43b56a2371ae45fbeb14ff8558e153e383b2c5566871125385b38b79f09cfd82",
         "1.9.0+422": "9f1b90ad4e49be1cbf36982c2962b68f168f1b3763366ebd28aad8cc8d089179",
+        "1.9.2+434": "idk",
         "1.10.0+502": "7219f588dd22b582171a32ff9f86992de6acc5f0821d37ccd333b0356fa6137b",
         "1.10.1+503": "e22f7c2ae39baf21210053486cc237f9e0e17273be06a3e56e546873975d929c",
         "1.10.2+509": "eca20497f1748e60ca72d703c2765af82fe7ecd59d4dc0a193a40514ce9af458",
@@ -1983,6 +1984,7 @@
         "1.9.0-beta.20.1+400": "f470804c2f59c11a637fe401f7fb2fadf1591c53143716b8597a8cee4571b919",
         "1.9.0-beta.21+403": "2b38b8ff3a68a4e9112bf356df27b308c66e0cb94fedfbe59a1e7ed3f390d103",
         "1.9.0+422": "9f1b90ad4e49be1cbf36982c2962b68f168f1b3763366ebd28aad8cc8d089179",
+        "1.9.2+434": "idk",
         "1.10.0+502": "7219f588dd22b582171a32ff9f86992de6acc5f0821d37ccd333b0356fa6137b",
         "1.10.1+503": "e22f7c2ae39baf21210053486cc237f9e0e17273be06a3e56e546873975d929c",
         "1.10.2+509": "eca20497f1748e60ca72d703c2765af82fe7ecd59d4dc0a193a40514ce9af458",
@@ -2239,11 +2241,13 @@
       "download": "https://github.com/raaaaaven/ravenAddons",
       "versions": {
         "1.9.2": "8cd2798656b93ffa1a3a911d4012240c0f18f8728420c0aff5b0ec224c84bf90",
-        "1.9.3": "idk"
+        "1.9.3": "idk",
+        "1.10.1": "idk"
       },
       "betaVersions": {
         "1.9.2": "8cd2798656b93ffa1a3a911d4012240c0f18f8728420c0aff5b0ec224c84bf90",
-        "1.9.3": "idk"
+        "1.9.3": "idk",
+        "1.10.1": "idk"
       }
     },
     "CropHitbox": {
@@ -2341,6 +2345,37 @@
         "0.6.1": "idk"
       },
       "do_not_use_reason": "Old mod that is not necessary. Use Patcher instead"
+    },
+    "SillyMod": {
+      "name": "SillyMod",
+      "download": "idk",
+      "versions": {
+        "0.0.40": "idk"
+      },
+      "betaVersions": {
+        "0.0.40": "idk"
+      }
+    },
+    "Nautilus": {
+      "name": "Nautilus",
+      "download": "https://github.com/ItsEmpa/Nautilus",
+      "versions": {
+        "0.0.4": "idk"
+      },
+      "betaVersions": {
+        "0.0.4": "idk"
+      }
+    },
+    "hatecheaters": {
+      "note": "name intentionally writte in lower case below",
+      "name": "hatecheaters",
+      "download": "https://github.com/SubAt0m1c/HateCheaters/",
+      "versions": {
+        "0.2.0": "idk"
+      },
+      "betaVersions": {
+        "0.2.0": "idk"
+      }
     }
   }
 }
