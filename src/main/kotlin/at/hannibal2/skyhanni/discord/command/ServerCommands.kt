@@ -93,11 +93,12 @@ object ServerCommands {
 
         val memberCountDiff = mutableMapOf<String, Double>()
         for (server in servers.toList()) {
-            Invite.resolve(BOT.jda, server.invite.split("/").last(), true).queue { t ->
+            Invite.resolve(BOT.jda, server.invite.split("/").last(), true).queue({ t ->
                 val guild = t.guild ?: run {
                     BOT.logger.info("Server not found in discord api '${server.name}'!")
                     sendMessageToBotChannel(buildString {
                         append("Server not found in discord api '${server.name}'!\n")
+                        append("but the invite exists? somehow? - ${server.invite}\n")
                         append("Removed the server from the local cache!")
                     })
                     servers.remove(server)
@@ -118,7 +119,19 @@ object ServerCommands {
                 }
                 memberCountDiff.calcualteMemberCount(guild, server)
                 latch.countDown()
-            }
+            }, { error ->
+                if (error.message == "10006: Unknown Invite") {
+                    sendMessageToBotChannel(buildString {
+                        append("Invite not found in discord api for '${server.name}'!\n")
+                        append("Old invite: <${server.invite}>\n")
+                        append("Removed the server from the local cache!")
+                    })
+                    servers.remove(server)
+                    latch.countDown()
+                } else {
+                    throw error
+                }
+            })
         }
 
         latch.await() // wait for all servers to be checked
