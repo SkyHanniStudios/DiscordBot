@@ -1354,7 +1354,8 @@
         "3.0.0": "2abfab0564ccbd2e00de4d305b97a81c499be377d7ea360c65d7578726019513",
         "3.1.0": "eb8e065ac0e1ed36d89ea459654b29213db874ad4a7cbd813a73c6341a342036",
         "3.2.0": "73161e7e7a5ee5fd794c2acbd9a5a075ed8870859f38e01f2b1cbfb50560c230",
-        "3.3.0": "idk"
+        "3.3.0": "idk",
+        "3.4.0": "idk"
       }
     },
     "reauth": {
@@ -2402,7 +2403,8 @@
       },
       "betaVersions": {
         "3.0": "idk"
-      }
+      },
+      "do_not_use_reason": "This mod might allow illegal behaviour while having the chest open. To stay safe, rather use [SimpleToggleSprint](<https://modrinth.com/mod/simpletogglesprint>) or [PolySprint](<https://modrinth.com/mod/polysprint>)"
     },
     "iTEM": {
       "name": "iTEM",
