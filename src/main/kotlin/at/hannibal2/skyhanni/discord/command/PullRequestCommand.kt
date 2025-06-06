@@ -197,8 +197,10 @@ object PullRequestCommand : BaseCommand() {
 
         val artifactLink = "$BASE/actions/runs/$runId?pr=$prNumber"
         val nightlyLink = "https://nightly.link/$USER/$REPO/actions/runs/$runId/Development%20Build.zip"
+        val latestNightlyLink = "https://nightly.link/$USER/$REPO/actions/runs/$runId/Multi-version%20Development%20Build.zip"
         val artifactLine = "GitHub".linkTo(artifactLink)
-        val nightlyLine = "Nightly".linkTo(nightlyLink)
+        val nightlyLine = "Nightly (1.8.9)".linkTo(nightlyLink)
+        val latestNightlyLine = "Nightly (1.21.5)".linkTo(latestNightlyLink)
 
         val artifactDisplay = buildString {
             append(" \n")
@@ -207,6 +209,8 @@ object PullRequestCommand : BaseCommand() {
             append("> From $artifactLine (requires a GitHub Account)")
             append("\n")
             append("> From $nightlyLine (unofficial)")
+            append("\n")
+            append("> From $latestNightlyLine (unofficial)")
             append("\n")
             append("> (updated ${passedSince(job.completedAt ?: "")})")
         }
@@ -221,19 +225,17 @@ object PullRequestCommand : BaseCommand() {
     }
 
     private val labelTypes: Map<String, Set<String>> = mapOf(
-        Pair("Type", setOf("Backend", "Bug Fix")),
-        Pair(
-            "State",
-            setOf(
-                "Detekt",
-                "Merge Conflicts",
-                "Waiting on Dependency PR",
-                "Waiting on Hypixel",
-                "Wrong Title/Changelog"
-            )
+        "Type" to setOf("Backend", "Bug Fix"),
+        "State" to setOf(
+            "Detekt",
+            "Fails Multi-Version",
+            "Merge Conflicts",
+            "Waiting on Dependency PR",
+            "Waiting on Hypixel",
+            "Wrong Title/Changelog"
         ),
-        Pair("Milestone", setOf("Soon")),
-        Pair("Misc", setOf("Good First Issue"))
+        "Milestone" to setOf("Soon"),
+        "Misc" to setOf("Good First Issue")
     )
 
     private fun appendLabelCategory(
