@@ -124,6 +124,18 @@
       "invite": "https://discord.gg/pykzREcAuZ",
       "description": "Bloom is a Chat Triggers module."
     },
+    "meowdding": {
+      "name": "Meowdding",
+      "id": "1296157888343179264",
+      "size": "41",
+      "invite": "https://discord.gg/FsRc2GUwZR",
+      "description": "A collection of multiple 1.21 mods",
+      "aliases": [
+        "skyocean",
+        "skycubed",
+        "sbpv"
+      ]
+    },
     "volc": {
       "name": "VolcAddons",
       "id": "1136805313287299092",
