@@ -148,6 +148,13 @@
         "Volc Addon"
       ]
     },
+    "skyblocker": {
+      "name": "Skyblocker",
+      "id": "879732108745125969",
+      "size": "1647",
+      "invite": "https://discord.gg/aNNJHQykck",
+      "description": "Hypixel Skyblock Fabric Mod for latest version."
+    },
     "sbo": {
       "name": "SkyblockOverhaul",
       "id": "1163913835514699886",
@@ -188,6 +195,17 @@
       "description": "SkyBlock Tweaks is a SkyBlock mod.",
       "aliases": [
         "SkyBlockTweaks"
+      ]
+    },
+    "firmament": {
+      "name": "The Definitive Nea Cord",
+      "id": "1088154030628417616",
+      "size": "314",
+      "invite": "https://discord.gg/64pFP94AWA",
+      "description": "Firmament is a SkyBlock 1.21 QOL Fabric mod inspired by NEU.",
+      "aliases": [
+        "firm",
+        "neacord"
       ]
     }
   },
