@@ -153,7 +153,7 @@
       "id": "879732108745125969",
       "size": "1647",
       "invite": "https://discord.gg/aNNJHQykck",
-      "description": "Hypixel Skyblock Mod for latest version."
+      "description": "Hypixel Skyblock Fabric Mod for latest version."
     },
     "sbo": {
       "name": "SkyblockOverhaul",
@@ -202,7 +202,7 @@
       "id": "1088154030628417616",
       "size": "314",
       "invite": "https://discord.gg/64pFP94AWA",
-      "description": "A SkyBlock 1.21 QOL mod inspired by NEU.",
+      "description": "Firmament is a SkyBlock 1.21 QOL Fabric mod inspired by NEU.",
       "aliases": [
         "firm",
         "neacord"
