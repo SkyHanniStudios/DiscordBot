@@ -283,7 +283,9 @@ class ServerCommand : BaseCommand() {
 class ServerUpdate : BaseCommand() {
     override val name: String = "serverupdate"
     override val description: String = "Updates the server list."
-    override val aliases: List<String> = listOf("updateservers")
+    override val aliases: List<String> = listOf(
+        "updateservers", "updateserverlist", "serverlistupdate", "listupdateserver", "updateserver"
+    )
 
     init {
         Utils.runDelayed(1.seconds) {
