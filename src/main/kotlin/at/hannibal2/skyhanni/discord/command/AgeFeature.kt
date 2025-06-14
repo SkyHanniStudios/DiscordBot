@@ -34,6 +34,8 @@ object AgeFeature {
         override val name: String = "age"
         override val description: String = "Show the age of something."
 
+        override val userCommand: Boolean = true
+
         override fun MessageReceivedEvent.execute(args: List<String>) {
             if (releases.isEmpty()) {
                 loadFromRepo()
