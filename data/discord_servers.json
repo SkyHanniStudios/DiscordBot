@@ -15,7 +15,7 @@
       "id": "516977525906341928",
       "size": "138831",
       "invite": "https://discord.gg/moulberry",
-      "description": "Moulberry's Bush is home to the general-purpose SkyBlock mod NotEnoughUpdates.",
+      "description": "Moulberry's Bush is home to the general-purpose 1.8.9 SkyBlock mod NotEnoughUpdates.",
       "aliases": [
         "moulberry",
         "moul",
@@ -34,40 +34,14 @@
         "hanni"
       ]
     },
-    "drm": {
-      "name": "Dungeons Rooms Mod",
-      "id": "804143990869590066",
-      "size": "57929",
-      "invite": "https://discord.gg/kr2M7WutgJ",
-      "description": "A mod focusing on dungeon secrets and pathfinding.",
-      "aliases": [
-        "DungeonsRoomsMod",
-        "Rooms Mod",
-        "RoomsMod"
-      ]
-    },
     "dg": {
       "name": "Dungeons Guide",
       "id": "781913473872560189",
       "size": "20672",
       "invite": "https://discord.gg/vuGsXhY5Bv",
-      "description": "A general-purpose dungeon mod.",
+      "description": "A general-purpose 1.8.9 dungeon mod.",
       "aliases": [
         "DungeonsGuide"
-      ]
-    },
-    "dsm": {
-      "name": "Danker's Skyblock Mod",
-      "id": "742112973799293011",
-      "size": "19335",
-      "invite": "https://discord.gg/QsEkNQS",
-      "description": "Danker's Skyblock Mod is a general-purpose SkyBlock mod.",
-      "aliases": [
-        "Dankers Skyblock Mod",
-        "dankers",
-        "DankersSkyBlockMod",
-        "DankerSkyBlockMod",
-        "Danker SkyBlock Mod"
       ]
     },
     "bettermap": {
@@ -90,21 +64,10 @@
       "id": "898827889145942056",
       "size": "10221",
       "invite": "https://discord.gg/scatha-farmers-898827889145942056",
-      "description": "Scatha Farmers is home to Scatha-Pro, a Chat Triggers module that helps you mine for Scathas.",
+      "description": "Scatha Farmers is home to Scatha-Pro, a 1.8.9 mod focused on Scatha Mining.",
       "aliases": [
         "Scatha-Pro",
         "Scatha Pro"
-      ]
-    },
-    "bazaar": {
-      "name": "Meyi's Hangout",
-      "id": "732330745174949999",
-      "size": "5673",
-      "invite": "https://discord.gg/wjpJSVSwvD",
-      "description": "Meyi's Hangout is home to Bazaar Notifier—a mod that helps with Bazaar flipping.",
-      "aliases": [
-        "bazaar notifier",
-        "BazaarNotifier"
       ]
     },
     "apec": {
@@ -192,7 +155,7 @@
       "id": "1199540355859746897",
       "size": "443",
       "invite": "https://discord.gg/XgxDxV87zJ",
-      "description": "SkyBlock Tweaks is a SkyBlock mod.",
+      "description": "SkyBlock Tweaks is a 1.8.9 SkyBlock mod.",
       "aliases": [
         "SkyBlockTweaks"
       ]
@@ -243,6 +206,43 @@
       "aliases": [
         "Dulkir Mod",
         "DulkirMod"
+      ]
+    },
+    "drm": {
+      "name": "Dungeons Rooms Mod",
+      "id": "804143990869590066",
+      "size": "57929",
+      "invite": "https://discord.gg/kr2M7WutgJ",
+      "description": "A 1.8.9 end-of-life mod focusing on dungeon secrets and pathfinding.",
+      "aliases": [
+        "DungeonsRoomsMod",
+        "Rooms Mod",
+        "RoomsMod"
+      ]
+    },
+    "bazaar": {
+      "name": "Meyi's Hangout",
+      "id": "732330745174949999",
+      "size": "5673",
+      "invite": "https://discord.gg/wjpJSVSwvD",
+      "description": "Meyi's Hangout is home to Bazaar Notifier, a 1.8.9 end-of-life mod that helps with Bazaar flipping.",
+      "aliases": [
+        "bazaar notifier",
+        "BazaarNotifier"
+      ]
+    },
+    "dsm": {
+      "name": "Danker's Skyblock Mod",
+      "id": "742112973799293011",
+      "size": "19335",
+      "invite": "https://discord.gg/QsEkNQS",
+      "description": "Danker's Skyblock Mod is an end-of-life general-purpose SkyBlock mod.",
+      "aliases": [
+        "Dankers Skyblock Mod",
+        "dankers",
+        "DankersSkyBlockMod",
+        "DankerSkyBlockMod",
+        "Danker SkyBlock Mod"
       ]
     }
   },
