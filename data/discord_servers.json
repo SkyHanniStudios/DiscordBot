@@ -49,7 +49,7 @@
       "id": "997954712185884794",
       "size": "18401",
       "invite": "https://discord.gg/Uq5YzpaMsr",
-      "description": "A Chat Triggers module with a dungeon map.",
+      "description": "A 1.8.9 Chat Triggers module with a dungeon map.",
       "aliases": [
         "Better Maps",
         "BetterMaps",
@@ -85,7 +85,7 @@
       "id": "989400961418149908",
       "size": "2764",
       "invite": "https://discord.gg/pykzREcAuZ",
-      "description": "Bloom is a Chat Triggers module."
+      "description": "Bloom is a 1.8.9 Chat Triggers module."
     },
     "meowdding": {
       "name": "Meowdding",
@@ -104,7 +104,7 @@
       "id": "1136805313287299092",
       "size": "2207",
       "invite": "https://discord.gg/ftxB4kG2tw",
-      "description": "A Chat Triggers module focused on Crimson Isle and Kuudra.",
+      "description": "A 1.8.9 Chat Triggers module focused on Crimson Isle and Kuudra.",
       "aliases": [
         "Volc Addons",
         "VolcAddon",
@@ -123,7 +123,7 @@
       "id": "1163913835514699886",
       "size": "1294",
       "invite": "https://discord.gg/QvM6b9jsJD",
-      "description": "SkyblockOverhaul is a SkyBlock Chat Triggers module that mainly focuses on the Diana event.",
+      "description": "SkyblockOverhaul is a 1.8.9 SkyBlock Chat Triggers module that mainly focuses on the Diana event.",
       "aliases": [
         "SkyBlock Overhaul"
       ]
@@ -133,21 +133,11 @@
       "id": "1001847734766145607",
       "size": "720",
       "invite": "https://discord.gg/v4PU3WeH7z",
-      "description": "Partly Sane Studios is the home of the SkyBlock mod Partly Sane Skies.",
+      "description": "Partly Sane Studios is the home of the 1.8.9 SkyBlock mod Partly Sane Skies.",
       "aliases": [
         "Partly Sane Skies",
         "skies",
         "PartlySaneSkies"
-      ]
-    },
-    "sbu": {
-      "name": "SBU",
-      "id": "1127609092240838757",
-      "size": "637",
-      "invite": "https://discord.gg/3tUSe37gZ4",
-      "description": "SkyBlock Utils is a end-of-life SkyBlock mod.",
-      "aliases": [
-        "SkyBlockUtils"
       ]
     },
     "sbt": {
@@ -178,7 +168,7 @@
       "id": "450878205294018560",
       "size": "59329",
       "invite": "https://discord.gg/PqTAEek",
-      "description": "Biscuit Bakery is home to the end-of-life SkyBlock mod SkyBlockAddons.",
+      "description": "Biscuit Bakery is home to the end-of-life 1.8.9 SkyBlock mod SkyBlockAddons.",
       "aliases": [
         "Biscuit Bakery",
         "skyblockaddons",
@@ -191,7 +181,7 @@
       "id": "758291150707884032",
       "size": "34075",
       "invite": "https://discord.gg/dfSMq96RSN",
-      "description": "Soopy's Pog Discord is home to the end-of-life Chat Triggers module SoopyV2.",
+      "description": "Soopy's Pog Discord is home to the end-of-life 1.8.9 Chat Triggers module SoopyV2.",
       "aliases": [
         "SoopyMod",
         "Soopy Mod"
@@ -202,7 +192,7 @@
       "id": "819011720001224735",
       "size": "8120",
       "invite": "https://discord.gg/WnJwrNZQSn",
-      "description": "JustChatting is the home of Dulkir Mod, an end-of-life SkyBlock mod.",
+      "description": "JustChatting is the home of Dulkir Mod, an end-of-life 1.8.9 SkyBlock mod.",
       "aliases": [
         "Dulkir Mod",
         "DulkirMod"
@@ -236,13 +226,23 @@
       "id": "742112973799293011",
       "size": "19335",
       "invite": "https://discord.gg/QsEkNQS",
-      "description": "Danker's Skyblock Mod is an end-of-life general-purpose SkyBlock mod.",
+      "description": "Danker's Skyblock Mod is an end-of-life general-purpose 1.8.9 SkyBlock mod.",
       "aliases": [
         "Dankers Skyblock Mod",
         "dankers",
         "DankersSkyBlockMod",
         "DankerSkyBlockMod",
         "Danker SkyBlock Mod"
+      ]
+    },
+    "sbu": {
+      "name": "SBU",
+      "id": "1127609092240838757",
+      "size": "637",
+      "invite": "https://discord.gg/3tUSe37gZ4",
+      "description": "SkyBlock Utils is a end-of-life SkyBlock mod.",
+      "aliases": [
+        "SkyBlockUtils"
       ]
     }
   },
