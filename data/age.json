@@ -1,5 +1,9 @@
 {
   "releases": {
+    "foraging": {
+      "name": "Foraging Update: Galatea",
+      "date": "2025-06-23"
+    },
     "sh 1": {
       "name": "SkyHanni version 1.0.0",
       "date": "2025-01-04"
@@ -116,8 +120,8 @@
       "name": "SkyBlock Winter",
       "date": "2019-12-17"
     },
-    "foraging": {
-      "name": "Foraging Island",
+    "foraging old": {
+      "name": "Legacy Foraging Island",
       "date": "2019-11-12"
     },
     "slayer": {
