@@ -15,7 +15,7 @@
       "id": "516977525906341928",
       "size": "138831",
       "invite": "https://discord.gg/moulberry",
-      "description": "Moulberry's Bush is home to the general-purpose SkyBlock mod NotEnoughUpdates.",
+      "description": "Moulberry's Bush is home to the general-purpose 1.8.9 SkyBlock mod NotEnoughUpdates.",
       "aliases": [
         "moulberry",
         "moul",
@@ -34,40 +34,14 @@
         "hanni"
       ]
     },
-    "drm": {
-      "name": "Dungeons Rooms Mod",
-      "id": "804143990869590066",
-      "size": "57929",
-      "invite": "https://discord.gg/kr2M7WutgJ",
-      "description": "A mod focusing on dungeon secrets and pathfinding.",
-      "aliases": [
-        "DungeonsRoomsMod",
-        "Rooms Mod",
-        "RoomsMod"
-      ]
-    },
     "dg": {
       "name": "Dungeons Guide",
       "id": "781913473872560189",
       "size": "20672",
       "invite": "https://discord.gg/vuGsXhY5Bv",
-      "description": "A general-purpose dungeon mod.",
+      "description": "A general-purpose 1.8.9 dungeon mod.",
       "aliases": [
         "DungeonsGuide"
-      ]
-    },
-    "dsm": {
-      "name": "Danker's Skyblock Mod",
-      "id": "742112973799293011",
-      "size": "19335",
-      "invite": "https://discord.gg/QsEkNQS",
-      "description": "Danker's Skyblock Mod is a general-purpose SkyBlock mod.",
-      "aliases": [
-        "Dankers Skyblock Mod",
-        "dankers",
-        "DankersSkyBlockMod",
-        "DankerSkyBlockMod",
-        "Danker SkyBlock Mod"
       ]
     },
     "bettermap": {
@@ -75,7 +49,7 @@
       "id": "997954712185884794",
       "size": "18401",
       "invite": "https://discord.gg/Uq5YzpaMsr",
-      "description": "A Chat Triggers module with a dungeon map.",
+      "description": "A 1.8.9 Chat Triggers module with a dungeon map.",
       "aliases": [
         "Better Maps",
         "BetterMaps",
@@ -90,21 +64,10 @@
       "id": "898827889145942056",
       "size": "10221",
       "invite": "https://discord.gg/scatha-farmers-898827889145942056",
-      "description": "Scatha Farmers is home to Scatha-Pro, a Chat Triggers module that helps you mine for Scathas.",
+      "description": "Scatha Farmers is home to Scatha-Pro, a 1.8.9 mod focused on Scatha Mining.",
       "aliases": [
         "Scatha-Pro",
         "Scatha Pro"
-      ]
-    },
-    "bazaar": {
-      "name": "Meyi's Hangout",
-      "id": "732330745174949999",
-      "size": "5673",
-      "invite": "https://discord.gg/wjpJSVSwvD",
-      "description": "Meyi's Hangout is home to Bazaar Notifier—a mod that helps with Bazaar flipping.",
-      "aliases": [
-        "bazaar notifier",
-        "BazaarNotifier"
       ]
     },
     "apec": {
@@ -122,7 +85,7 @@
       "id": "989400961418149908",
       "size": "2764",
       "invite": "https://discord.gg/pykzREcAuZ",
-      "description": "Bloom is a Chat Triggers module."
+      "description": "Bloom is a 1.8.9 Chat Triggers module."
     },
     "meowdding": {
       "name": "Meowdding",
@@ -141,7 +104,7 @@
       "id": "1136805313287299092",
       "size": "2207",
       "invite": "https://discord.gg/ftxB4kG2tw",
-      "description": "A Chat Triggers module focused on Crimson Isle and Kuudra.",
+      "description": "A 1.8.9 Chat Triggers module focused on Crimson Isle and Kuudra.",
       "aliases": [
         "Volc Addons",
         "VolcAddon",
@@ -160,7 +123,7 @@
       "id": "1163913835514699886",
       "size": "1294",
       "invite": "https://discord.gg/QvM6b9jsJD",
-      "description": "SkyblockOverhaul is a SkyBlock Chat Triggers module that mainly focuses on the Diana event.",
+      "description": "SkyblockOverhaul is a 1.8.9 SkyBlock Chat Triggers module that mainly focuses on the Diana event.",
       "aliases": [
         "SkyBlock Overhaul"
       ]
@@ -170,21 +133,11 @@
       "id": "1001847734766145607",
       "size": "720",
       "invite": "https://discord.gg/v4PU3WeH7z",
-      "description": "Partly Sane Studios is the home of the SkyBlock mod Partly Sane Skies.",
+      "description": "Partly Sane Studios is the home of the 1.8.9 SkyBlock mod Partly Sane Skies.",
       "aliases": [
         "Partly Sane Skies",
         "skies",
         "PartlySaneSkies"
-      ]
-    },
-    "sbu": {
-      "name": "SBU",
-      "id": "1127609092240838757",
-      "size": "637",
-      "invite": "https://discord.gg/3tUSe37gZ4",
-      "description": "SkyBlock Utils is a end-of-life SkyBlock mod.",
-      "aliases": [
-        "SkyBlockUtils"
       ]
     },
     "sbt": {
@@ -192,7 +145,7 @@
       "id": "1199540355859746897",
       "size": "443",
       "invite": "https://discord.gg/XgxDxV87zJ",
-      "description": "SkyBlock Tweaks is a SkyBlock mod.",
+      "description": "SkyBlock Tweaks is a 1.8.9 SkyBlock mod.",
       "aliases": [
         "SkyBlockTweaks"
       ]
@@ -215,7 +168,7 @@
       "id": "450878205294018560",
       "size": "59329",
       "invite": "https://discord.gg/PqTAEek",
-      "description": "Biscuit Bakery is home to the end-of-life SkyBlock mod SkyBlockAddons.",
+      "description": "Biscuit Bakery is home to the end-of-life 1.8.9 SkyBlock mod SkyBlockAddons.",
       "aliases": [
         "Biscuit Bakery",
         "skyblockaddons",
@@ -228,7 +181,7 @@
       "id": "758291150707884032",
       "size": "34075",
       "invite": "https://discord.gg/dfSMq96RSN",
-      "description": "Soopy's Pog Discord is home to the end-of-life Chat Triggers module SoopyV2.",
+      "description": "Soopy's Pog Discord is home to the end-of-life 1.8.9 Chat Triggers module SoopyV2.",
       "aliases": [
         "SoopyMod",
         "Soopy Mod"
@@ -239,10 +192,57 @@
       "id": "819011720001224735",
       "size": "8120",
       "invite": "https://discord.gg/WnJwrNZQSn",
-      "description": "JustChatting is the home of Dulkir Mod, an end-of-life SkyBlock mod.",
+      "description": "JustChatting is the home of Dulkir Mod, an end-of-life 1.8.9 SkyBlock mod.",
       "aliases": [
         "Dulkir Mod",
         "DulkirMod"
+      ]
+    },
+    "drm": {
+      "name": "Dungeons Rooms Mod",
+      "id": "804143990869590066",
+      "size": "57929",
+      "invite": "https://discord.gg/kr2M7WutgJ",
+      "description": "A 1.8.9 end-of-life mod focusing on dungeon secrets and pathfinding.",
+      "aliases": [
+        "DungeonsRoomsMod",
+        "Rooms Mod",
+        "RoomsMod"
+      ]
+    },
+    "bazaar": {
+      "name": "Meyi's Hangout",
+      "id": "732330745174949999",
+      "size": "5673",
+      "invite": "https://discord.gg/wjpJSVSwvD",
+      "description": "Meyi's Hangout is home to Bazaar Notifier, a 1.8.9 end-of-life mod that helps with Bazaar flipping.",
+      "aliases": [
+        "bazaar notifier",
+        "BazaarNotifier"
+      ]
+    },
+    "dsm": {
+      "name": "Danker's Skyblock Mod",
+      "id": "742112973799293011",
+      "size": "19335",
+      "invite": "https://discord.gg/QsEkNQS",
+      "description": "Danker's Skyblock Mod is an end-of-life general-purpose 1.8.9 SkyBlock mod.",
+      "aliases": [
+        "Dankers Skyblock Mod",
+        "dankers",
+        "DankersSkyBlockMod",
+        "DankerSkyBlockMod",
+        "Danker SkyBlock Mod"
+      ]
+    },
+    "sbu": {
+      "name": "SBU",
+      "id": "1127609092240838757",
+      "size": "637",
+      "invite": "https://discord.gg/3tUSe37gZ4",
+      "description": "SkyBlock Utils is a end-of-life SkyBlock mod.",
+      "aliases": [
+        "SkyBlockUtils"
       ]
     }
   },
