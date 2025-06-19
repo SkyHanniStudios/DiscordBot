@@ -35,7 +35,7 @@ class GitHubClient(user: String, repo: String, private val token: String) {
         }
     }
 
-    fun findPullRequest(prNumber: Long): PullRequestJson? {
+    fun findPullRequest(prNumber: Int): PullRequestJson? {
         return readJson<PullRequestJson, PullRequestJson?>("$base/pulls/$prNumber") { it }
     }
 
