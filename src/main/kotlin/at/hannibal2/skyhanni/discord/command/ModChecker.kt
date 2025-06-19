@@ -128,9 +128,6 @@ object ModChecker {
         @Suppress("LoopWithTooManyJumpStatements") for ((mod, line) in activeMods) {
             val name = when (mod.name) {
 
-                // odin/odin client is weird/mixed up in the json file
-                "Odin" -> "OdinClient"
-
                 // not so essential is fancy
                 "§cNot §aSo §9Essential" -> "Not So Essential"
                 else -> mod.name
