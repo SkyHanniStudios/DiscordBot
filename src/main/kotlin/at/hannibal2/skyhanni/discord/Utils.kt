@@ -3,6 +3,7 @@ package at.hannibal2.skyhanni.discord
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.MessageEmbed
+import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion
@@ -11,7 +12,10 @@ import net.dv8tion.jda.api.utils.FileUpload
 import java.awt.Color
 import java.awt.Toolkit.getDefaultToolkit
 import java.io.File
+import java.text.NumberFormat
+import java.util.Locale
 import java.util.zip.ZipFile
+import kotlin.math.pow
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.nanoseconds
 
@@ -254,4 +258,35 @@ object Utils {
     fun readStringFromClipboard(): String? = runCatching {
         getDefaultToolkit().systemClipboard.getData(java.awt.datatransfer.DataFlavor.stringFlavor) as String
     }.getOrNull()
+
+    fun User.getLinkName(): String = "<@$id>"
+
+    fun Message.getLink(): String {
+        val messageId = id
+        val guildId = guild.id
+        val channelId = channel.id
+
+        return "https://discord.com/channels/$guildId/$channelId/$messageId"
+    }
+
+    fun String.pluralize(number: Int, withNumber: Boolean = false) = pluralize(number, this, withNumber = withNumber)
+
+    fun pluralize(number: Int, singular: String, plural: String? = null, withNumber: Boolean = false): String {
+        val pluralForm = plural ?: "${singular}s"
+        var str = if (number == 1 || number == -1) singular else pluralForm
+        if (withNumber) str = "${number.addSeparators()} $str"
+        return str
+    }
+
+    fun Number.addSeparators(): String = NumberFormat.getNumberInstance(Locale.US).format(this)
+
+    /**
+     * This code was unmodified and taken under CC BY-SA 3.0 license
+     * @link https://stackoverflow.com/a/22186845
+     * @author jpdymond
+     */
+    fun Double.roundTo(precision: Int): Double {
+        val scale = 10.0.pow(precision)
+        return kotlin.math.round(this * scale) / scale
+    }
 }

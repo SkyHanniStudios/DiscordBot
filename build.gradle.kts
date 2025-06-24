@@ -2,7 +2,7 @@ import java.util.zip.ZipFile
 
 plugins {
     application
-    kotlin("jvm") version "2.0.0"
+    kotlin("jvm") version "2.1.0"
 }
 
 group = "at.hannibal.skyhannibot"
@@ -36,6 +36,12 @@ tasks.test {
 
 kotlin {
     jvmToolchain(21)
+
+    // hides this error:
+    // The feature "break continue in inline lambdas" is experimental and should be enabled explicitly
+    compilerOptions {
+        freeCompilerArgs.add("-Xnon-local-break-continue")
+    }
 }
 
 application {

@@ -6,6 +6,7 @@ import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.command.BaseCommand
 import at.hannibal2.skyhanni.discord.command.HelpCommand
+import at.hannibal2.skyhanni.discord.command.ModChecker
 import at.hannibal2.skyhanni.discord.command.PullRequestCommand
 import at.hannibal2.skyhanni.discord.command.ServerCommands
 import at.hannibal2.skyhanni.discord.command.TagCommands
@@ -51,10 +52,17 @@ object CommandListener {
 
         if (ServerCommands.isKnownServerUrl(this, message)) return
         if (PullRequestCommand.isPullRequest(this, message)) return
+        if (ModChecker.isModList(this, message)) return
 
-        if (!isCommand(message)) return
+        var commandMessage = message
+        // ! pr arg -> !pr arg
+        while (commandMessage.startsWith("! ")) {
+            commandMessage = commandMessage.replaceFirst("! ", "!")
+        }
 
-        val split = message.substring(1).split(" ")
+        if (!isCommand(commandMessage)) return
+
+        val split = commandMessage.substring(1).split(" ")
         val literal = split.first().lowercase()
         val args = split.drop(1)
 

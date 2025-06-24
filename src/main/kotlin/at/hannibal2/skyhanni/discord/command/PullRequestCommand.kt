@@ -51,11 +51,12 @@ object PullRequestCommand : BaseCommand() {
     private val runIdRegex =
         Regex("https://github\\.com/[\\w.]+/[\\w.]+/actions/runs/(?<RunId>\\d+)/job/(?<JobId>\\d+)")
     private val pullRequestPattern = "$BASE/pull/(?<pr>\\d+)".toPattern()
+    private val cleanPullRequestPattern = "#(?<pr>\\d+)".toPattern()
 
     override fun MessageReceivedEvent.execute(args: List<String>) {
         if (args.size != 1) return wrongUsage("<number>")
-        val first = args.first()
-        val prNumber = first.toLongOrNull() ?: run {
+        val first = args.first().removePrefix("#")
+        val prNumber = first.toIntOrNull() ?: run {
             userError("Unknown number $PLEADING_FACE ($first})")
             return
         }
@@ -66,14 +67,16 @@ object PullRequestCommand : BaseCommand() {
         loadPrInfos(prNumber)
     }
 
-    private fun MessageReceivedEvent.loadPrInfos(prNumber: Long) {
+    private fun MessageReceivedEvent.loadPrInfos(prNumber: Int, showError: Boolean = true) {
         logAction("loads pr infos for #$prNumber")
 
         val prLink = "$BASE/pull/$prNumber"
 
         val pr = try {
             github.findPullRequest(prNumber) ?: run {
-                reply("pr is null!")
+                if (showError) {
+                    reply("pr is null!")
+                }
                 return
             }
         } catch (e: IllegalStateException) {
@@ -81,10 +84,14 @@ object PullRequestCommand : BaseCommand() {
                 val issueUrl = "$BASE/issues/$prNumber"
                 val issue = "issue".linkTo(issueUrl)
                 val text = "This pull request does not yet exist or is an $issue"
-                reply(embed("Not found $PLEADING_FACE", text, Color.red))
+                if (showError) {
+                    reply(embed("Not found $PLEADING_FACE", text, Color.red))
+                }
                 return
             }
-            reply("Could not load pull request infos for #$prNumber: ${e.message}")
+            if (showError) {
+                reply("Could not load pull request infos for #$prNumber: ${e.message}")
+            }
             return
         }
 
@@ -196,9 +203,10 @@ object PullRequestCommand : BaseCommand() {
         val runId = match?.groups?.get("RunId")?.value
 
         val artifactLink = "$BASE/actions/runs/$runId?pr=$prNumber"
-        val nightlyLink = "https://nightly.link/$USER/$REPO/actions/runs/$runId/Development%20Build.zip"
+        fun nightlyLink(build: String) = "https://nightly.link/$USER/$REPO/actions/runs/$runId/$build%20Build.zip"
         val artifactLine = "GitHub".linkTo(artifactLink)
-        val nightlyLine = "Nightly".linkTo(nightlyLink)
+        val nightlyLine = "Nightly (1.8.9)".linkTo(nightlyLink("Development"))
+        val latestNightlyLine = "Nightly (1.21.5)".linkTo(nightlyLink("Multi-version%20Development"))
 
         val artifactDisplay = buildString {
             append(" \n")
@@ -207,6 +215,8 @@ object PullRequestCommand : BaseCommand() {
             append("> From $artifactLine (requires a GitHub Account)")
             append("\n")
             append("> From $nightlyLine (unofficial)")
+            append("\n")
+            append("> From $latestNightlyLine (unofficial)")
             append("\n")
             append("> (updated ${passedSince(job.completedAt ?: "")})")
         }
@@ -221,26 +231,18 @@ object PullRequestCommand : BaseCommand() {
     }
 
     private val labelTypes: Map<String, Set<String>> = mapOf(
-        Pair("Type", setOf("Backend", "Bug Fix")),
-        Pair(
-            "State",
-            setOf(
-                "Detekt",
-                "Merge Conflicts",
-                "Waiting on Dependency PR",
-                "Waiting on Hypixel",
-                "Wrong Title/Changelog"
-            )
-        ),
-        Pair("Milestone", setOf("Soon")),
-        Pair("Misc", setOf("Good First Issue"))
+        "Type" to setOf("Backend", "Bug Fix"), "State" to setOf(
+            "Detekt",
+            "Fails Multi-Version",
+            "Merge Conflicts",
+            "Waiting on Dependency PR",
+            "Waiting on Hypixel",
+            "Wrong Title/Changelog"
+        ), "Milestone" to setOf("Soon"), "Misc" to setOf("Good First Issue")
     )
 
     private fun appendLabelCategory(
-        labelType: String,
-        labels: Set<String>,
-        stringBuilder: StringBuilder,
-        suffix: String = ""
+        labelType: String, labels: Set<String>, stringBuilder: StringBuilder, suffix: String = ""
     ): StringBuilder {
         val labelsWithType = labels.intersect((labelTypes[labelType] ?: setOf()).toSet())
         if (labelsWithType.isEmpty()) return stringBuilder.append(if (suffix.isNotEmpty()) "> $labelType: $suffix\n" else "")
@@ -328,16 +330,33 @@ object PullRequestCommand : BaseCommand() {
     }
 
     fun isPullRequest(event: MessageReceivedEvent, message: String): Boolean {
-        val matcher = pullRequestPattern.matcher(message)
-        if (!matcher.matches()) return false
-        val pr = matcher.group("pr")?.toLongOrNull() ?: return false
-        event.replyWithConsumer("Next time just type `!pr $pr` $PLEADING_FACE") { consumer ->
-            runDelayed(10.seconds) {
-                consumer.message.messageDelete()
+        val linkedMatcher = pullRequestPattern.matcher(message)
+        if (linkedMatcher.matches()) {
+            val pr = linkedMatcher.group("pr")?.toIntOrNull() ?: return false
+            event.replyWithConsumer("Next time just type `!pr $pr` $PLEADING_FACE") { consumer ->
+                runDelayed(10.seconds) {
+                    consumer.message.messageDelete()
+                }
+            }
+            event.loadPrInfos(pr)
+            return true
+        }
+
+        val foundPrs = mutableListOf<Int>()
+        for (line in message.split(" ")) {
+            val matcher = cleanPullRequestPattern.matcher(line)
+            if (matcher.matches()) {
+                val pr = matcher.group("pr").toIntOrNull() ?: continue
+                // we ignore too old prs, to avoid triggering on e.g. "#1 farming contest" messages
+                if (pr < 800) continue
+                foundPrs.add(pr)
             }
         }
-        event.loadPrInfos(pr)
-        return true
+        for (pr in foundPrs.take(3)) {
+            event.loadPrInfos(pr, showError = false)
+        }
+
+        return false
     }
 
 }
