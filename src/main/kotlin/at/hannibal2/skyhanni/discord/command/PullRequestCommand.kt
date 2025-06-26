@@ -1,13 +1,7 @@
 package at.hannibal2.skyhanni.discord.command
 
-import at.hannibal2.skyhanni.discord.BIG_X
-import at.hannibal2.skyhanni.discord.BOT
-import at.hannibal2.skyhanni.discord.CHECK_MARK
-import at.hannibal2.skyhanni.discord.Option
-import at.hannibal2.skyhanni.discord.PLEADING_FACE
-import at.hannibal2.skyhanni.discord.SimpleTimeMark
+import at.hannibal2.skyhanni.discord.*
 import at.hannibal2.skyhanni.discord.SimpleTimeMark.Companion.asTimeMark
-import at.hannibal2.skyhanni.discord.Utils
 import at.hannibal2.skyhanni.discord.Utils.createParentDirIfNotExist
 import at.hannibal2.skyhanni.discord.Utils.embed
 import at.hannibal2.skyhanni.discord.Utils.format
@@ -51,7 +45,7 @@ object PullRequestCommand : BaseCommand() {
     private val runIdRegex =
         Regex("https://github\\.com/[\\w.]+/[\\w.]+/actions/runs/(?<RunId>\\d+)/job/(?<JobId>\\d+)")
     private val pullRequestPattern = "$BASE/pull/(?<pr>\\d+)".toPattern()
-    private val cleanPullRequestPattern = "#(?<pr>\\d+)".toPattern()
+    private val cleanPullRequestPattern = "#(?<pr>\\d+),?".toPattern()
 
     override fun MessageReceivedEvent.execute(args: List<String>) {
         if (args.size != 1) return wrongUsage("<number>")
