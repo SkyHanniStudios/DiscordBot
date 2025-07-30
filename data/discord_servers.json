@@ -381,6 +381,17 @@
         "Sky Client",
       ]
     },
+    "prism": {
+      "name": "Prism Community",
+      "id": "1031648380885147709",
+      "size": "23650",
+      "invite": "https://discord.gg/ArX2nafFz2",
+      "description": "Prism Launcher is an alternative Minecraft launcher with numerous features.",
+      "aliases": [
+        "Prism Launcher",
+        "PrismLauncher"
+      ]
+    },
     "polyfrost": {
       "name": "Polyfrost",
       "id": "822066990423605249",
@@ -395,17 +406,6 @@
         "onelauncher"
       ]
     },
-    "prism": {
-      "name": "Prism Community",
-      "id": "1031648380885147709",
-      "size": "23650",
-      "invite": "https://discord.gg/ArX2nafFz2",
-      "description": "Prism Launcher is an alternative Minecraft launcher with numerous features.",
-      "aliases": [
-        "Prism Launcher",
-        "PrismLauncher"
-      ]
-    }
   },
   "big_communities": {
     "sbz": {
