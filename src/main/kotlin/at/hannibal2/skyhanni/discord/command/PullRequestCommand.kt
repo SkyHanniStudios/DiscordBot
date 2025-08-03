@@ -244,7 +244,7 @@ object PullRequestCommand : BaseCommand() {
     private fun appendLabelCategory(
         labelType: String, labels: Set<String>, stringBuilder: StringBuilder, suffix: String = ""
     ): StringBuilder {
-        val labelsWithType = labels.intersect(labelTypes[labelType] ?: setOf())
+        val labelsWithType = labels.intersect((labelTypes[labelType] ?: setOf()).toSet())
         if (labelsWithType.isEmpty()) return stringBuilder.append(if (suffix.isNotEmpty()) "> $labelType: $suffix\n" else "")
         return stringBuilder.append("> $labelType: `${labelsWithType.joinToString("` `")}`$suffix\n")
     }
@@ -275,8 +275,8 @@ object PullRequestCommand : BaseCommand() {
             reply("Usage: `!prupload <number>`")
             return
         }
-        val prNumber = args[1].toIntOrNull() ?: run {
-            reply("unknwon number $PLEADING_FACE (${args[1]})")
+        val prNumber = args[1].toLongOrNull() ?: run {
+            reply("unknown number $PLEADING_FACE (${args[1]})")
             return
         }
 
@@ -306,7 +306,7 @@ object PullRequestCommand : BaseCommand() {
         val (_, downloadTime) = timeExecution {
             github.downloadArtifact(artifactId, fileRaw)
         }
-        reply("artifact downnloaded in ${downloadTime.format()}")
+        reply("artifact downloaded in ${downloadTime.format()}")
 
         Utils.unzipFile(fileRaw, fileUnzipped)
         fileRaw.delete()
