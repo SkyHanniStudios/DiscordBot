@@ -41,7 +41,7 @@ fun main() {
 
     sendMessageToBotChannel("I'm awake \uD83D\uDE42")
 
-    Utils.executeAsyncTask("local command listener") {
+    Utils.runAsync("local command listener") {
         val scanner = Scanner(System.`in`)
         while (scanner.hasNextLine()) {
             when (scanner.nextLine().trim().lowercase()) {

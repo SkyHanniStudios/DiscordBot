@@ -113,8 +113,8 @@ object Utils {
 
     fun MessageReceivedEvent.inBotCommandChannel() = channel.id == BOT.config.botCommandChannelId
 
-    fun runDelayed(duration: Duration, consumer: () -> Unit) {
-        executeAsyncTask("run delayed task for $duration") {
+    fun runDelayed(taskName: String, duration: Duration, consumer: () -> Unit) {
+        runAsync("$taskName (delayed by $duration)") {
             Thread.sleep(duration.inWholeMilliseconds)
             consumer()
         }
@@ -279,12 +279,12 @@ object Utils {
         return kotlin.math.round(this * scale) / scale
     }
 
-    fun executeAsyncTask(name: String, executor: () -> Unit) {
+    fun runAsync(taskName: String, executor: () -> Unit) {
         Thread {
             try {
                 executor()
             } catch (e: Exception) {
-                e.handleError("Async error in task $name")
+                e.handleError("Async error in task `$taskName`.")
             }
         }.start()
     }

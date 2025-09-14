@@ -288,7 +288,7 @@ class ServerUpdate : BaseCommand() {
     )
 
     init {
-        Utils.runDelayed(1.seconds) {
+        Utils.runDelayed("init load servers", 1.seconds) {
             loadServers()
         }
     }
