@@ -1,5 +1,6 @@
 package at.hannibal2.skyhanni.discord
 
+import at.hannibal2.skyhanni.discord.utils.ErrorManager.handleError
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.MessageEmbed
@@ -13,7 +14,7 @@ import java.awt.Color
 import java.awt.Toolkit.getDefaultToolkit
 import java.io.File
 import java.text.NumberFormat
-import java.util.Locale
+import java.util.*
 import java.util.zip.ZipFile
 import kotlin.math.pow
 import kotlin.time.Duration
@@ -113,10 +114,10 @@ object Utils {
     fun MessageReceivedEvent.inBotCommandChannel() = channel.id == BOT.config.botCommandChannelId
 
     fun runDelayed(duration: Duration, consumer: () -> Unit) {
-        Thread {
+        executeAsyncTask("run delayed task for $duration") {
             Thread.sleep(duration.inWholeMilliseconds)
             consumer()
-        }.start()
+        }
     }
 
     fun unzipFile(zipFile: File, destDir: File) {
@@ -276,5 +277,15 @@ object Utils {
     fun Double.roundTo(precision: Int): Double {
         val scale = 10.0.pow(precision)
         return kotlin.math.round(this * scale) / scale
+    }
+
+    fun executeAsyncTask(name: String, executor: () -> Unit) {
+        Thread {
+            try {
+                executor()
+            } catch (e: Exception) {
+                e.handleError("Async error in task $name")
+            }
+        }.start()
     }
 }

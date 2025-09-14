@@ -1,16 +1,12 @@
 package at.hannibal2.skyhanni.discord
 
+import at.hannibal2.skyhanni.discord.Utils.getLink
 import at.hannibal2.skyhanni.discord.Utils.hasAdminPermissions
 import at.hannibal2.skyhanni.discord.Utils.inBotCommandChannel
 import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.reply
-import at.hannibal2.skyhanni.discord.command.BaseCommand
-import at.hannibal2.skyhanni.discord.command.HelpCommand
-import at.hannibal2.skyhanni.discord.command.ModChecker
-import at.hannibal2.skyhanni.discord.command.PullRequestCommand
-import at.hannibal2.skyhanni.discord.command.ServerCommands
-import at.hannibal2.skyhanni.discord.command.TagCommands
-import at.hannibal2.skyhanni.discord.command.TagUndo
+import at.hannibal2.skyhanni.discord.command.*
+import at.hannibal2.skyhanni.discord.utils.ErrorManager.handleError
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.reflections.Reflections
 import java.lang.reflect.Modifier
@@ -95,6 +91,10 @@ object CommandListener {
             }
         } catch (e: Exception) {
             reply("Error: ${e.message}")
+            e.handleError(
+                "Discord command: `${command.name}`",
+                "Started at: ${getMessage().getLink()}",
+            )
         }
     }
 
@@ -123,7 +123,10 @@ object CommandListener {
                 }
                 commands.add(command)
             } catch (e: Exception) {
-                e.printStackTrace()
+                e.handleError(
+                    "in loadCommands!",
+                    "class name: ${clazz.name}",
+                )
             }
         }
         this.commands = commands
