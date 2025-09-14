@@ -71,7 +71,6 @@ object ServerCommands {
         val json = github.getFileContent("data/discord_servers.json") ?: error("Error loading discord_servers data")
 //        val json = Utils.readStringFromClipboard() ?: error("error loading discord_servers json from clipboard")
 
-        println("json: '$json'")
         val servers = parseStringToServers(json)
         checkForDuplicates(servers)
         checkForFakes(servers) { removed ->
