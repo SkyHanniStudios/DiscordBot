@@ -60,7 +60,7 @@ object ServerCommands {
         val size: String,
         val invite: String,
         val description: String,
-        val aliases: List<String>? = null,
+        val aliases: List<String?>? = null,
     )
 
     var servers = setOf<Server>()
@@ -71,6 +71,7 @@ object ServerCommands {
         val json = github.getFileContent("data/discord_servers.json") ?: error("Error loading discord_servers data")
 //        val json = Utils.readStringFromClipboard() ?: error("error loading discord_servers json from clipboard")
 
+        println("json: '$json'")
         val servers = parseStringToServers(json)
         checkForDuplicates(servers)
         checkForFakes(servers) { removed ->
@@ -185,7 +186,7 @@ object ServerCommands {
                     data.invite,
                     data.size.toInt(),
                     data.description,
-                    data.aliases?.map { it.lowercase() } ?: emptyList())
+                    data.aliases?.map { it?.lowercase() ?: error("aliases contains null for server id ${data.id}") } ?: emptyList())
             }
         }.toMutableSet()
     }
