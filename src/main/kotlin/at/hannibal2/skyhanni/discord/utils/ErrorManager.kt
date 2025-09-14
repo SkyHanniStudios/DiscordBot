@@ -3,8 +3,22 @@ package at.hannibal2.skyhanni.discord.utils
 import at.hannibal2.skyhanni.discord.PING_HANNIBAL
 import at.hannibal2.skyhanni.discord.PLEADING_FACE
 import at.hannibal2.skyhanni.discord.Utils.sendMessageToBotChannel
+import at.hannibal2.skyhanni.discord.command.BaseCommand
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
 object ErrorManager {
+
+    @Suppress("unused")
+    class AgeCommand3 : BaseCommand() {
+        override val name: String = "testerror"
+        override val description: String = "this is a test error"
+
+        override val userCommand: Boolean = false
+
+        override fun MessageReceivedEvent.execute(args: List<String>) {
+            error("test error")
+        }
+    }
 
     fun Exception.handleError(vararg customMessages: String) {
         printStackTrace()
@@ -28,7 +42,7 @@ object ErrorManager {
         }
     }
 
-    private fun Throwable.formattedStackTrace(): String = getCustomStackTrace(fullStackTrace = true).joinToString("\n")
+    private fun Throwable.formattedStackTrace(): String = getCustomStackTrace(fullStackTrace = false).joinToString("\n")
 
     private fun Throwable.getCustomStackTrace(
         fullStackTrace: Boolean,
@@ -77,21 +91,14 @@ object ErrorManager {
     )
 
     private val replace = mapOf(
+        "net.dv8tion.jda." to "JDA.",
         "at.hannibal2.skyhanni." to "SH.",
-        "io.moulberry.notenoughupdates." to "NEU.",
-        "net.minecraft." to "MC.",
-        "net.minecraftforge.fml." to "FML.",
         "knot//" to "",
         "java.base/" to "",
     )
 
     private val breakAfter = listOf(
-        "at at.hannibal2.skyhanni.config.commands.Commands\$createCommand",
-        "at net.minecraftforge.fml.common.eventhandler.EventBus.post",
-        "at at.hannibal2.skyhanni.mixins.hooks.NetHandlerPlayClientHookKt.onSendPacket",
-        "at net.minecraft.client.main.Main.main",
-        "at.hannibal2.skyhanni.api.event.EventListeners.createZeroParameterConsumer",
-        "at.hannibal2.skyhanni.api.event.EventListeners.createSingleParameterConsumer",
+        "at net.dv8tion.jda.api.hooks.ListenerAdapter.onEvent",
     )
 
     private val ignored = listOf(
