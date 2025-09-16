@@ -1,16 +1,13 @@
 package at.hannibal2.skyhanni.discord.command
 
-import at.hannibal2.skyhanni.discord.BOT
-import at.hannibal2.skyhanni.discord.Database
-import at.hannibal2.skyhanni.discord.OPEN_PR_TAG
-import at.hannibal2.skyhanni.discord.Option
-import at.hannibal2.skyhanni.discord.PLEADING_FACE
+import at.hannibal2.skyhanni.discord.*
 import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.Utils.userError
 import at.hannibal2.skyhanni.discord.Utils.userSuccess
 import at.hannibal2.skyhanni.discord.command.LinkCommand.setTags
 import at.hannibal2.skyhanni.discord.command.LinkCommand.setTitle
+import at.hannibal2.skyhanni.discord.command.PullRequestCommand.parseValidPrNumber
 import at.hannibal2.skyhanni.discord.github.GitHubClient
 import net.dv8tion.jda.api.entities.channel.ChannelType
 import net.dv8tion.jda.api.entities.channel.forums.ForumTag
@@ -27,11 +24,7 @@ object LinkCommand : BaseCommand() {
 
     override fun MessageReceivedEvent.execute(args: List<String>) {
         if (args.size != 1) return wrongUsage("<number>")
-        val first = args.first()
-        val prNumber = first.toIntOrNull() ?: run {
-            userError("Unknown number $PLEADING_FACE ($first})")
-            return
-        }
+        val prNumber = parseValidPrNumber(args.first()) ?: return
 
         if (!isValidPrNumber(prNumber)) return
 
@@ -70,10 +63,6 @@ object LinkCommand : BaseCommand() {
     private val github = GitHubClient(USER, REPO, BOT.config.githubTokenPullRequests)
 
     private fun MessageReceivedEvent.isValidPrNumber(number: Int): Boolean {
-        if (number <= 0) {
-            userError("PR number needs to be positive $PLEADING_FACE")
-            return false
-        }
         if (!isFromType(ChannelType.GUILD_PUBLIC_THREAD)) {
             userError("Wrong channel $PLEADING_FACE")
             return false

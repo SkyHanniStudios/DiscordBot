@@ -55,17 +55,22 @@ object PullRequestCommand : BaseCommand() {
 
             Database.getPullrequest(channel.id) ?: 0
         } else {
-            val first = args.first().removePrefix("#")
-            first.toIntOrNull() ?: run {
-                userError("Unknown number $PLEADING_FACE ($first})")
-                return
-            }
-        }
-        if (prNumber < 1) {
-            userError("PR number needs to be positive $PLEADING_FACE")
-            return
+            parseValidPrNumber(args.first().removePrefix("#")) ?: return
         }
         loadPrInfos(prNumber)
+    }
+
+    fun MessageReceivedEvent.parseValidPrNumber(rawNumber: String): Int? {
+        val number = rawNumber.toIntOrNull() ?: run {
+            userError("Unknown number $PLEADING_FACE ($rawNumber)")
+            return null
+        }
+        if (number < 1) {
+            userError("PR number needs to be positive $PLEADING_FACE")
+            return null
+        }
+
+        return number
     }
 
     private fun MessageReceivedEvent.loadPrInfos(prNumber: Int, showError: Boolean = true) {
