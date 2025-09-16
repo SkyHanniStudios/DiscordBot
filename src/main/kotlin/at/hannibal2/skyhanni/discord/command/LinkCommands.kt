@@ -39,7 +39,10 @@ object LinkCommand : BaseCommand() {
         Database.addLink(post.id, prNumber)
         logAction("linked pr #$prNumber to this channel")
 
-        manager.setTitle("${post.name} (PR #$prNumber)")
+        val titleFormat = prNumber.titleFormat()
+        if (!post.name.contains(titleFormat)) {
+            manager.setTitle("${post.name}$titleFormat")
+        }
 
         val tags = post.appliedTags
         if (tags.none { it.id == OPEN_PR_TAG }) {
@@ -81,6 +84,8 @@ object LinkCommand : BaseCommand() {
     }
 }
 
+private fun Int.titleFormat() = " (PR #$this)"
+
 object UnlinkCommand : BaseCommand() {
     override val name = "unlink"
 
@@ -103,7 +108,10 @@ object UnlinkCommand : BaseCommand() {
         Database.deleteLink(post.id)
         logAction("unlinked pr #$pr from this channel")
 
-        if (post.name.contains("(PR #")) manager.setTitle(post.name.split("(PR #")[0])
+        val titleFormat = pr.titleFormat()
+        if (post.name.contains(titleFormat)) {
+            manager.setTitle(post.name.replace(titleFormat, ""))
+        }
 
         val tags = post.appliedTags
         if (tags.any { it.id == OPEN_PR_TAG }) {
