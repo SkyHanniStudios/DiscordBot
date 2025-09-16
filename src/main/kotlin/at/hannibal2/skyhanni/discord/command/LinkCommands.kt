@@ -31,13 +31,13 @@ object LinkCommand : BaseCommand() {
         val post = channel.asThreadChannel()
         val manager = post.manager
 
-        if (Database.isLinked(post.id)) {
-            reply("Post already linked to ${Database.getPullrequest(channel.id)} $PLEADING_FACE")
+        Database.getPullrequest(channel.id)?.let {
+            reply("Post already linked to $it $PLEADING_FACE")
             return
         }
 
         Database.addLink(post.id, prNumber)
-        logAction("${author.name} linked pr $prNumber")
+        logAction("linked pr #$prNumber to this channel")
 
         manager.setTitle("${post.name} (PR #$prNumber)")
 
@@ -92,7 +92,7 @@ object UnlinkCommand : BaseCommand() {
             return
         }
 
-        if (!Database.isLinked(channel.id)) {
+        val pr = Database.getPullrequest(channel.id) ?: run {
             userError("Post isn't linked to any pull request $PLEADING_FACE")
             return
         }
@@ -101,7 +101,7 @@ object UnlinkCommand : BaseCommand() {
         val manager = post.manager
 
         Database.deleteLink(post.id)
-        logAction("${author.name} unlinked the pull request")
+        logAction("unlinked pr #$pr from this channel")
 
         if (post.name.contains("(PR #")) manager.setTitle(post.name.split("(PR #")[0])
 

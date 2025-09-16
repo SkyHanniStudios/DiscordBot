@@ -145,6 +145,4 @@ object Database {
     }
 
     fun containsKeyword(keyword: String): Boolean = tags.containsKey(keyword.lowercase())
-
-    fun isLinked(channelId: String): Boolean = linkedForumPosts.containsKey(channelId)
 }

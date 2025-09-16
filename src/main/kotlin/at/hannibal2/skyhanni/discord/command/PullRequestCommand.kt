@@ -51,9 +51,7 @@ object PullRequestCommand : BaseCommand() {
     override fun MessageReceivedEvent.execute(args: List<String>) {
         val prNumber = if (args.isEmpty()) {
             if (!isFromType(ChannelType.GUILD_PUBLIC_THREAD)) return
-            if (!Database.isLinked(channel.id)) return
-
-            Database.getPullrequest(channel.id) ?: 0
+            Database.getPullrequest(channel.id) ?: return
         } else {
             parseValidPrNumber(args.first().removePrefix("#")) ?: return
         }
