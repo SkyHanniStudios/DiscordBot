@@ -43,6 +43,9 @@ object CommandListener {
             if (this.author.id == BOT_ID) {
                 BotMessageHandler.handle(this)
             }
+            if (this.author.id == BOT.config.githubWebhookUserId) {
+                LinkListener.onMessage(bot, this)
+            }
             return
         }
 

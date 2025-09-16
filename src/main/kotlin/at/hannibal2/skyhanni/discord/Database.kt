@@ -4,12 +4,11 @@ import java.sql.Connection
 import java.sql.DriverManager
 
 data class Tag(val keyword: String, var response: String, var uses: Int)
-data class Link(val channel: String, val pr: Int)
 
 object Database {
     private val connection: Connection = DriverManager.getConnection("jdbc:sqlite:bot.db")
     private val tags = mutableMapOf<String, Tag>()
-    private val links = mutableMapOf<String, Link>()
+    private val linkedForumPosts = mutableMapOf<String, Int>() // key = channel id, value = pr number
 
     init {
         val statement = connection.createStatement()
@@ -25,8 +24,8 @@ object Database {
         statement.execute(buildString {
             append("CREATE TABLE IF NOT EXISTS linkedposts (")
             append("id INTEGER PRIMARY KEY AUTOINCREMENT, ")
-            append("channelid STRING UNIQUE, ")
-            append("pullrequestid INTEGER UNIQUE)")
+            append("channel_id STRING UNIQUE, ")
+            append("pullrequest_id INTEGER UNIQUE)")
         })
 
         loadTagCache()
@@ -46,12 +45,12 @@ object Database {
     }
 
     private fun loadLinkCache() {
-        val statement = connection.prepareStatement("SELECT channelid, pullrequestid FROM linkedposts")
+        val statement = connection.prepareStatement("SELECT channel_id, pullrequest_id FROM linkedposts")
         val resultSet = statement.executeQuery()
         while (resultSet.next()) {
-            val channel = resultSet.getString("channelid")
-            val pr = resultSet.getInt("pullrequestid")
-            links[channel] = Link(channel, pr)
+            val channelId = resultSet.getString("channel_id")
+            val pr = resultSet.getInt("pullrequest_id")
+            linkedForumPosts[channelId] = pr
         }
         resultSet.close()
     }
@@ -88,15 +87,15 @@ object Database {
         return updated
     }
 
-    fun addLink(channel: String, pr: Int): Boolean {
+    fun addLink(channelId: String, pr: Int): Boolean {
         val statement = connection.prepareStatement(
-            "INSERT OR REPLACE INTO linkedposts (channelid, pullrequestid) VALUES (?, ?)"
+            "INSERT OR REPLACE INTO linkedposts (channel_id, pullrequest_id) VALUES (?, ?)"
         )
-        statement.setString(1, channel)
+        statement.setString(1, channelId)
         statement.setInt(2, pr)
         val updated = statement.executeUpdate() > 0
         if (updated) {
-            links[channel] = Link(channel, pr)
+            linkedForumPosts[channelId] = pr
         }
         return updated
     }
@@ -116,9 +115,9 @@ object Database {
         return kObj.response
     }
 
-    fun getLink(prNumber: Int): Link? = links.values.find { it.pr == prNumber }
+    fun getChannelId(prNumber: Int): String? = linkedForumPosts.entries.find { it.value == prNumber }?.key
 
-    fun getPullrequest(channel: String): Int? = links[channel]?.pr
+    fun getPullrequest(channelId: String): Int? = linkedForumPosts[channelId]
 
     fun deleteTag(keyword: String): Boolean {
         val key = keyword.lowercase()
@@ -129,17 +128,17 @@ object Database {
         return updated
     }
 
-    fun deleteLink(channel: String): Boolean {
-        val statement = connection.prepareStatement("DELETE FROM linkedposts WHERE channelid = ?")
-        statement.setString(1, channel)
+    fun deleteLink(channelId: String): Boolean {
+        val statement = connection.prepareStatement("DELETE FROM linkedposts WHERE channel_id = ?")
+        statement.setString(1, channelId)
         val updated = statement.executeUpdate() > 0
-        if (updated) links.remove(channel)
+        if (updated) linkedForumPosts.remove(channelId)
         return updated
     }
 
     fun listTags(): List<Tag> = tags.values.toList()
 
-    fun listLinks(): List<Link> = links.values.toList()
+    fun listLinks(): Map<String, Int> = linkedForumPosts
 
     fun getTagCount(keyword: String): Int? {
         return tags[keyword.lowercase()]?.uses
@@ -147,5 +146,5 @@ object Database {
 
     fun containsKeyword(keyword: String): Boolean = tags.containsKey(keyword.lowercase())
 
-    fun isLinked(channel: String): Boolean = links.containsKey(channel)
+    fun isLinked(channelId: String): Boolean = linkedForumPosts.containsKey(channelId)
 }

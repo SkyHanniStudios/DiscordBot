@@ -1,5 +1,6 @@
 package at.hannibal2.skyhanni.discord.command
 
+import at.hannibal2.skyhanni.discord.BOT
 import at.hannibal2.skyhanni.discord.Database
 import at.hannibal2.skyhanni.discord.OPEN_PR_TAG
 import at.hannibal2.skyhanni.discord.Option
@@ -10,6 +11,7 @@ import at.hannibal2.skyhanni.discord.Utils.userError
 import at.hannibal2.skyhanni.discord.Utils.userSuccess
 import at.hannibal2.skyhanni.discord.command.LinkCommand.setTags
 import at.hannibal2.skyhanni.discord.command.LinkCommand.setTitle
+import at.hannibal2.skyhanni.discord.github.GitHubClient
 import net.dv8tion.jda.api.entities.channel.ChannelType
 import net.dv8tion.jda.api.entities.channel.forums.ForumTag
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
@@ -30,15 +32,8 @@ object LinkCommand : BaseCommand() {
             userError("Unknown number $PLEADING_FACE ($first})")
             return
         }
-        if (prNumber < 1) {
-            userError("PR number needs to be positive $PLEADING_FACE")
-            return
-        }
 
-        if (!isFromType(ChannelType.GUILD_PUBLIC_THREAD)) {
-            userError("Wrong channel $PLEADING_FACE")
-            return
-        }
+        if (!isValidPrNumber(prNumber)) return
 
         val post = channel.asThreadChannel()
         val manager = post.manager
@@ -51,7 +46,7 @@ object LinkCommand : BaseCommand() {
         Database.addLink(post.id, prNumber)
         logAction("${author.name} linked pr $prNumber")
 
-        if (!post.name.contains("(PR #")) manager.setTitle("${post.name} (PR #$prNumber)")
+        manager.setTitle("${post.name} (PR #$prNumber)")
 
         val tags = post.appliedTags
         if (tags.none { it.id == OPEN_PR_TAG }) {
@@ -68,6 +63,32 @@ object LinkCommand : BaseCommand() {
 
     fun ThreadChannelManager.setTitle(name: String) {
         setName(name).queue()
+    }
+
+    private const val USER = "hannibal002"
+    private const val REPO = "SkyHanni"
+    private val github = GitHubClient(USER, REPO, BOT.config.githubTokenPullRequests)
+
+    private fun MessageReceivedEvent.isValidPrNumber(number: Int): Boolean {
+        if (number <= 0) {
+            userError("PR number needs to be positive $PLEADING_FACE")
+            return false
+        }
+        if (!isFromType(ChannelType.GUILD_PUBLIC_THREAD)) {
+            userError("Wrong channel $PLEADING_FACE")
+            return false
+        }
+
+        try {
+            github.findPullRequest(number) ?: run {
+                userError("Pull request with number $number not found")
+                return false
+            }
+        } catch (e: Exception) {
+            userError("Pull request with number $number not found")
+            return false
+        }
+        return true
     }
 }
 

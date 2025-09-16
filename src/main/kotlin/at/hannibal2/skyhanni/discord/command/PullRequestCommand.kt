@@ -18,6 +18,7 @@ import at.hannibal2.skyhanni.discord.github.GitHubClient
 import at.hannibal2.skyhanni.discord.json.discord.Conclusion
 import at.hannibal2.skyhanni.discord.json.discord.PullRequestJson
 import at.hannibal2.skyhanni.discord.json.discord.RunStatus
+import net.dv8tion.jda.api.entities.channel.ChannelType
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import java.awt.Color
 import java.io.File
@@ -48,11 +49,17 @@ object PullRequestCommand : BaseCommand() {
     private val cleanPullRequestPattern = "#(?<pr>\\d+),?".toPattern()
 
     override fun MessageReceivedEvent.execute(args: List<String>) {
-        if (args.size != 1) return wrongUsage("<number>")
-        val first = args.first().removePrefix("#")
-        val prNumber = first.toIntOrNull() ?: run {
-            userError("Unknown number $PLEADING_FACE ($first})")
-            return
+        val prNumber = if (args.isEmpty()) {
+            if (!isFromType(ChannelType.GUILD_PUBLIC_THREAD)) return
+            if (!Database.isLinked(channel.id)) return
+
+            Database.getPullrequest(channel.id) ?: 0
+        } else {
+            val first = args.first().removePrefix("#")
+            first.toIntOrNull() ?: run {
+                userError("Unknown number $PLEADING_FACE ($first})")
+                return
+            }
         }
         if (prNumber < 1) {
             userError("PR number needs to be positive $PLEADING_FACE")
@@ -269,7 +276,7 @@ object PullRequestCommand : BaseCommand() {
             reply("Usage: `!prupload <number>`")
             return
         }
-        val prNumber = args[1].toLongOrNull() ?: run {
+        val prNumber = args[1].toIntOrNull() ?: run {
             reply("unknown number $PLEADING_FACE (${args[1]})")
             return
         }
