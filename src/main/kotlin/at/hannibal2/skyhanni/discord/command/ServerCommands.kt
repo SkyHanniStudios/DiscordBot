@@ -60,7 +60,7 @@ object ServerCommands {
         val size: String,
         val invite: String,
         val description: String,
-        val aliases: List<String>? = null,
+        val aliases: List<String?>? = null,
     )
 
     var servers = setOf<Server>()
@@ -185,7 +185,7 @@ object ServerCommands {
                     data.invite,
                     data.size.toInt(),
                     data.description,
-                    data.aliases?.map { it.lowercase() } ?: emptyList())
+                    data.aliases?.map { it?.lowercase() ?: error("aliases contains null for server id ${data.id}") } ?: emptyList())
             }
         }.toMutableSet()
     }

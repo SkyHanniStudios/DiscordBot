@@ -372,14 +372,13 @@
       ]
     },
     "skyclient": {
-      "name": "SkyClient by Polyfrost",
+      "name": "SkyClient",
       "id": "780181693100982273",
       "size": "40819",
       "invite": "https://discord.gg/VH6fdBYzQQ",
-      "description": "SkyClient is an installer that helps you easily get lots of SkyBlock mods.",
+      "description": "SkyClient is an installer that helps you easily get lots of Forge 1.8 mods.",
       "aliases": [
-        "Sky Client",
-        "polyfrost"
+        "Sky Client"
       ]
     },
     "prism": {
@@ -391,6 +390,20 @@
       "aliases": [
         "Prism Launcher",
         "PrismLauncher"
+      ]
+    },
+    "polyfrost": {
+      "name": "Polyfrost",
+      "id": "822066990423605249",
+      "size": "7720",
+      "invite": "https://discord.gg/polyfrost",
+      "description": "A dev team with projects like OneConfig, OneClient, and OneLauncher, and mods like Chatting, Hytils Reborn, and CrashPatch.",
+      "aliases": [
+        "Poly Frost",
+        "poly",
+        "oneconfig",
+        "oneclient",
+        "onelauncher"
       ]
     }
   },
@@ -540,7 +553,7 @@
       "name": "Collectors Hub",
       "id": "934240413974417439",
       "size": "5213",
-      "invite": "https://discord.gg/collectors",
+      "invite": "https://discord.gg/U4AhKex6N2",
       "description": "A community for trading rare items in SkyBlock.",
       "aliases": [
         "collections",
