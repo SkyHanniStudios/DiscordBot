@@ -18,6 +18,7 @@ import at.hannibal2.skyhanni.discord.github.GitHubClient
 import at.hannibal2.skyhanni.discord.json.discord.Conclusion
 import at.hannibal2.skyhanni.discord.json.discord.PullRequestJson
 import at.hannibal2.skyhanni.discord.json.discord.RunStatus
+import at.hannibal2.skyhanni.discord.utils.ErrorManager.handleError
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import java.awt.Color
 import java.io.File
@@ -123,6 +124,10 @@ object PullRequestCommand : BaseCommand() {
                 val releases = try {
                     github.getReleases()
                 } catch (e: Exception) {
+                    e.handleError(
+                        "In load pr infos!",
+                        "PR number: $prNumber",
+                    )
                     null
                 }
 
@@ -328,7 +333,7 @@ object PullRequestCommand : BaseCommand() {
         if (linkedMatcher.matches()) {
             val pr = linkedMatcher.group("pr")?.toIntOrNull() ?: return false
             event.replyWithConsumer("Next time just type `!pr $pr` $PLEADING_FACE") { consumer ->
-                runDelayed(10.seconds) {
+                runDelayed("pr tip deletion", 10.seconds) {
                     consumer.message.messageDelete()
                 }
             }

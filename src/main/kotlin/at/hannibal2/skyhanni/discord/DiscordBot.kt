@@ -8,7 +8,7 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.requests.GatewayIntent
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.Scanner
+import java.util.*
 
 lateinit var BOT: DiscordBot
     private set
@@ -41,7 +41,7 @@ fun main() {
 
     sendMessageToBotChannel("I'm awake \uD83D\uDE42")
 
-    Thread {
+    Utils.runAsync("local command listener") {
         val scanner = Scanner(System.`in`)
         while (scanner.hasNextLine()) {
             when (scanner.nextLine().trim().lowercase()) {
@@ -51,7 +51,7 @@ fun main() {
                 }
             }
         }
-    }.start()
+    }
 
     Runtime.getRuntime().addShutdownHook(Thread {
         if (!bot.manualShutdown) {
