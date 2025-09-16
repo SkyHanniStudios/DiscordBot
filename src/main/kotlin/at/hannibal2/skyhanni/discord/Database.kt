@@ -22,10 +22,10 @@ object Database {
         })
 
         statement.execute(buildString {
-            append("CREATE TABLE IF NOT EXISTS linkedposts (")
+            append("CREATE TABLE IF NOT EXISTS linked_posts (")
             append("id INTEGER PRIMARY KEY AUTOINCREMENT, ")
             append("channel_id STRING UNIQUE, ")
-            append("pullrequest_id INTEGER UNIQUE)")
+            append("pull_request_id INTEGER UNIQUE)")
         })
 
         loadTagCache()
@@ -45,11 +45,11 @@ object Database {
     }
 
     private fun loadLinkCache() {
-        val statement = connection.prepareStatement("SELECT channel_id, pullrequest_id FROM linkedposts")
+        val statement = connection.prepareStatement("SELECT channel_id, pull_request_id FROM linked_posts")
         val resultSet = statement.executeQuery()
         while (resultSet.next()) {
             val channelId = resultSet.getString("channel_id")
-            val pr = resultSet.getInt("pullrequest_id")
+            val pr = resultSet.getInt("pull_request_id")
             linkedForumPosts[channelId] = pr
         }
         resultSet.close()
@@ -89,7 +89,7 @@ object Database {
 
     fun addLink(channelId: String, pr: Int): Boolean {
         val statement = connection.prepareStatement(
-            "INSERT OR REPLACE INTO linkedposts (channel_id, pullrequest_id) VALUES (?, ?)"
+            "INSERT OR REPLACE INTO linked_posts (channel_id, pull_request_id) VALUES (?, ?)"
         )
         statement.setString(1, channelId)
         statement.setInt(2, pr)
@@ -129,7 +129,7 @@ object Database {
     }
 
     fun deleteLink(channelId: String): Boolean {
-        val statement = connection.prepareStatement("DELETE FROM linkedposts WHERE channel_id = ?")
+        val statement = connection.prepareStatement("DELETE FROM linked_posts WHERE channel_id = ?")
         statement.setString(1, channelId)
         val updated = statement.executeUpdate() > 0
         if (updated) linkedForumPosts.remove(channelId)
