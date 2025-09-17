@@ -1,6 +1,9 @@
 package at.hannibal2.skyhanni.discord.command
 
-import at.hannibal2.skyhanni.discord.*
+import at.hannibal2.skyhanni.discord.BOT
+import at.hannibal2.skyhanni.discord.Database
+import at.hannibal2.skyhanni.discord.Option
+import at.hannibal2.skyhanni.discord.PLEADING_FACE
 import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.Utils.userError
@@ -45,8 +48,8 @@ object LinkCommand : BaseCommand() {
         }
 
         val tags = post.appliedTags
-        if (tags.none { it.id == OPEN_PR_TAG }) {
-            val tag = post.parentChannel.asForumChannel().getAvailableTagById(OPEN_PR_TAG) ?: return
+        if (tags.none { it.id == BOT.config.openPrTagId }) {
+            val tag = post.parentChannel.asForumChannel().getAvailableTagById(BOT.config.openPrTagId) ?: return
             manager.setTags(tags + tag)
         }
 
@@ -114,8 +117,8 @@ object UnlinkCommand : BaseCommand() {
         }
 
         val tags = post.appliedTags
-        if (tags.any { it.id == OPEN_PR_TAG }) {
-            val tag = post.parentChannel.asForumChannel().getAvailableTagById(OPEN_PR_TAG) ?: return
+        if (tags.any { it.id == BOT.config.openPrTagId }) {
+            val tag = post.parentChannel.asForumChannel().getAvailableTagById(BOT.config.openPrTagId) ?: return
             manager.setTags(tags.filter { it != tag })
         }
 
