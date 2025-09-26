@@ -13,6 +13,8 @@ import at.hannibal2.skyhanni.discord.command.LinkCommand.setTitle
 import at.hannibal2.skyhanni.discord.command.PullRequestCommand.parseValidPrNumber
 import at.hannibal2.skyhanni.discord.github.GitHubClient
 import net.dv8tion.jda.api.entities.channel.ChannelType
+import net.dv8tion.jda.api.entities.channel.concrete.ForumChannel
+import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel
 import net.dv8tion.jda.api.entities.channel.forums.ForumTag
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.managers.channel.concrete.ThreadChannelManager
@@ -47,11 +49,7 @@ object LinkCommand : BaseCommand() {
             manager.setTitle("${post.name}$titleFormat")
         }
 
-        val tags = post.appliedTags
-        if (tags.none { it.id == BOT.config.openPrTagId }) {
-            val tag = post.parentChannel.asForumChannel().getAvailableTagById(BOT.config.openPrTagId) ?: return
-            manager.setTags(tags + tag)
-        }
+        post.updateTags(true)
 
         userSuccess("Successfully linked PR $prNumber to this post.")
     }
@@ -87,6 +85,14 @@ object LinkCommand : BaseCommand() {
     }
 }
 
+private fun ThreadChannel.updateTags(add: Boolean) {
+    val tags = appliedTags
+    val tag = parentChannel.asForumChannel().getAvailableTagById(BOT.config.openPrTagId) ?: return
+    if (add && tag !in tags) tags.add(tag) else if (!add && tag in tags) tags.remove(tag)
+
+    manager.setTags(tags)
+}
+
 private fun Int.titleFormat() = " (PR #$this)"
 
 object UnlinkCommand : BaseCommand() {
@@ -116,11 +122,7 @@ object UnlinkCommand : BaseCommand() {
             manager.setTitle(post.name.replace(titleFormat, ""))
         }
 
-        val tags = post.appliedTags
-        if (tags.any { it.id == BOT.config.openPrTagId }) {
-            val tag = post.parentChannel.asForumChannel().getAvailableTagById(BOT.config.openPrTagId) ?: return
-            manager.setTags(tags.filter { it != tag })
-        }
+        post.updateTags(false)
 
         userSuccess("Successfully unlinked this post.")
     }
