@@ -11,6 +11,8 @@ data class BotConfig(
     val githubTokenOwn: String,
     val githubTokenPullRequests: String,
     val editPermissionRoleIds: Map<String, String>,
+	val githubWebhookUserId: String,
+	val openPrTagId: String
 )
 
 object ConfigLoader {
@@ -24,7 +26,9 @@ object ConfigLoader {
 		"TODO: github token with sh mod repo access",
 		mapOf(
 			"user friendly (non important) name" to "TODO: role id"
-		)
+		),
+		"TODO: github webhook 'user' id",
+		"TODO: discord forum open pull request tag id"
 	)
 	fun load(filePath: String): BotConfig {
 	    try {

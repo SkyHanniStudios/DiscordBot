@@ -11,6 +11,7 @@ import at.hannibal2.skyhanni.discord.command.PullRequestCommand
 import at.hannibal2.skyhanni.discord.command.ServerCommands
 import at.hannibal2.skyhanni.discord.command.TagCommands
 import at.hannibal2.skyhanni.discord.command.TagUndo
+import net.dv8tion.jda.api.entities.channel.ChannelType
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.reflections.Reflections
 import java.lang.reflect.Modifier
@@ -42,6 +43,9 @@ object CommandListener {
             if (this.author.id == BOT_ID) {
                 BotMessageHandler.handle(this)
             }
+            if (this.author.id == BOT.config.githubWebhookUserId) {
+                LinkListener.onMessage(bot, this)
+            }
             return
         }
 
@@ -70,7 +74,7 @@ object CommandListener {
             return
         }
 
-        if (!command.userCommand) {
+        if (!command.userCommand && channelType != ChannelType.GUILD_PUBLIC_THREAD) {
             if (!hasAdminPermissions()) {
                 reply("No permissions $PLEADING_FACE")
                 return
@@ -82,7 +86,7 @@ object CommandListener {
             }
         }
 
-        // allows to use `!<command> -help` instaed of `!help -<command>`
+        // allows to use `!<command> -help` instead of `!help -<command>`
         if (args.size == 1 && args.first() == "-help") {
             with(HelpCommand) {
                 sendUsageReply(literal)

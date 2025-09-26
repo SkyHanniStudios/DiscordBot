@@ -18,6 +18,7 @@ import at.hannibal2.skyhanni.discord.github.GitHubClient
 import at.hannibal2.skyhanni.discord.json.discord.Conclusion
 import at.hannibal2.skyhanni.discord.json.discord.PullRequestJson
 import at.hannibal2.skyhanni.discord.json.discord.RunStatus
+import net.dv8tion.jda.api.entities.channel.ChannelType
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import java.awt.Color
 import java.io.File
@@ -48,17 +49,26 @@ object PullRequestCommand : BaseCommand() {
     private val cleanPullRequestPattern = "#(?<pr>\\d+),?".toPattern()
 
     override fun MessageReceivedEvent.execute(args: List<String>) {
-        if (args.size != 1) return wrongUsage("<number>")
-        val first = args.first().removePrefix("#")
-        val prNumber = first.toIntOrNull() ?: run {
-            userError("Unknown number $PLEADING_FACE ($first})")
-            return
-        }
-        if (prNumber < 1) {
-            userError("PR number needs to be positive $PLEADING_FACE")
-            return
+        val prNumber = if (args.isEmpty()) {
+            if (!isFromType(ChannelType.GUILD_PUBLIC_THREAD)) return
+            Database.getPullrequest(channel.id) ?: return
+        } else {
+            parseValidPrNumber(args.first().removePrefix("#")) ?: return
         }
         loadPrInfos(prNumber)
+    }
+
+    fun MessageReceivedEvent.parseValidPrNumber(rawNumber: String): Int? {
+        val number = rawNumber.toIntOrNull() ?: run {
+            userError("Unknown number $PLEADING_FACE ($rawNumber)")
+            return null
+        }
+        if (number < 1) {
+            userError("PR number needs to be positive $PLEADING_FACE")
+            return null
+        }
+
+        return number
     }
 
     private fun MessageReceivedEvent.loadPrInfos(prNumber: Int, showError: Boolean = true) {
@@ -238,7 +248,7 @@ object PullRequestCommand : BaseCommand() {
     private fun appendLabelCategory(
         labelType: String, labels: Set<String>, stringBuilder: StringBuilder, suffix: String = ""
     ): StringBuilder {
-        val labelsWithType = labels.intersect(labelTypes[labelType] ?: setOf())
+        val labelsWithType = labels.intersect((labelTypes[labelType] ?: setOf()).toSet())
         if (labelsWithType.isEmpty()) return stringBuilder.append(if (suffix.isNotEmpty()) "> $labelType: $suffix\n" else "")
         return stringBuilder.append("> $labelType: `${labelsWithType.joinToString("` `")}`$suffix\n")
     }
@@ -270,7 +280,7 @@ object PullRequestCommand : BaseCommand() {
             return
         }
         val prNumber = args[1].toIntOrNull() ?: run {
-            reply("unknwon number $PLEADING_FACE (${args[1]})")
+            reply("unknown number $PLEADING_FACE (${args[1]})")
             return
         }
 
@@ -300,7 +310,7 @@ object PullRequestCommand : BaseCommand() {
         val (_, downloadTime) = timeExecution {
             github.downloadArtifact(artifactId, fileRaw)
         }
-        reply("artifact downnloaded in ${downloadTime.format()}")
+        reply("artifact downloaded in ${downloadTime.format()}")
 
         Utils.unzipFile(fileRaw, fileUnzipped)
         fileRaw.delete()
