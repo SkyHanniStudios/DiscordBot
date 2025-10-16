@@ -43,7 +43,10 @@ object PullRequestCommand : BaseCommand() {
     private const val BASE = "https://github.com/$USER/$REPO"
 
     private val runIdRegex =
-        Regex("https://github\\.com/[\\w.]+/[\\w.]+/actions/runs/(?<RunId>\\d+)/job/(?<JobId>\\d+)")
+        Regex("https://github\\.com/[\\w.]+/[\\w.]+/actions/runs/(?<runId>\\d+)/job/(?<jobId>\\d+)")
+    private val buildVersionRegex =
+        Regex("Build (?<version>1\\.\\d+\\.\\d+)")
+
     private val pullRequestPattern = "$BASE/pull/(?<pr>\\d+)".toPattern()
     private val cleanPullRequestPattern = "#(?<pr>\\d+),?".toPattern()
 
@@ -150,7 +153,7 @@ object PullRequestCommand : BaseCommand() {
 
         val lastCommit = head.sha
 
-        val job = github.getRun(lastCommit, "Build and test") ?: run {
+        val checkRun = github.getCheckRun(lastCommit, "Build and test") ?: run {
             result(buildString {
                 append(title)
                 append(time)
@@ -162,13 +165,13 @@ object PullRequestCommand : BaseCommand() {
             return
         }
 
-        if (job.startedAt?.let { toTimeMark(it).passedSince() > 90.days } == true && !inBeta) {
+        if (checkRun.startedAt?.let { toTimeMark(it).passedSince() > 90.days } == true && !inBeta) {
             result("${title}${time} \nBuild download has expired $PLEADING_FACE")
             return
         }
 
-        if (job.status != RunStatus.COMPLETED) {
-            val text = when (job.status) {
+        if (checkRun.status != RunStatus.COMPLETED) {
+            val text = when (checkRun.status) {
                 RunStatus.REQUESTED -> "Build has been requested $PLEADING_FACE"
                 RunStatus.QUEUED -> "Build is in queue $PLEADING_FACE"
                 RunStatus.IN_PROGRESS -> "Build is in progress $PLEADING_FACE"
@@ -188,19 +191,34 @@ object PullRequestCommand : BaseCommand() {
             return
         }
 
-        if (job.conclusion != Conclusion.SUCCESS && !inBeta) {
+        if (checkRun.conclusion != Conclusion.SUCCESS && !inBeta) {
             result("$title$time\nLast development build failed $PLEADING_FACE", Color.red)
             return
         }
 
-        val match = job.htmlUrl?.let { runIdRegex.matchEntire(it) }
-        val runId = match?.groups?.get("RunId")?.value
+        val match = checkRun.htmlUrl?.let { runIdRegex.matchEntire(it) }
+        val runId = match?.groups?.get("runId")?.value!!
+
+        val uploadedVersions = mutableSetOf<String>()
+
+        for (job in github.getJobs(runId)) {
+            val versionMatch = buildVersionRegex.matchEntire(job.name) ?: continue
+
+            val versionGroup = versionMatch.groups["version"]?.value ?: continue
+
+            uploadedVersions.add(versionGroup)
+        }
 
         val artifactLink = "$BASE/actions/runs/$runId?pr=$prNumber"
         fun nightlyLink(build: String) = "https://nightly.link/$USER/$REPO/actions/runs/$runId/$build%20Build.zip"
         val artifactLine = "GitHub".linkTo(artifactLink)
-        val nightlyLine = "Nightly (1.8.9)".linkTo(nightlyLink("Development"))
-        val latestNightlyLine = "Nightly (1.21.5)".linkTo(nightlyLink("Multi-version%20Development"))
+
+        val versionDownloads =
+            if (uploadedVersions.isNotEmpty())
+                uploadedVersions.joinToString(" ") { "`$it`".linkTo(nightlyLink("$it%20Development")) }
+            else
+                // Continue supporting prs built before the workflow changed
+                "${"`1.8.9`".linkTo(nightlyLink("Development"))} ${"`1.21.5/7`".linkTo(nightlyLink("Multi-version%20Development"))}"
 
         val artifactDisplay = buildString {
             append(" \n")
@@ -208,11 +226,11 @@ object PullRequestCommand : BaseCommand() {
             append("\n")
             append("> From $artifactLine (requires a GitHub Account)")
             append("\n")
-            append("> From $nightlyLine (unofficial)")
+            append("> From Nightly (unofficial)")
             append("\n")
-            append("> From $latestNightlyLine (unofficial)")
+            append("> $versionDownloads")
             append("\n")
-            append("> (updated ${passedSince(job.completedAt ?: "")})")
+            append("> (updated ${passedSince(checkRun.completedAt ?: "")})")
         }
 
         result(buildString {

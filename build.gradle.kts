@@ -14,7 +14,7 @@ repositories {
 
 dependencies {
     testImplementation(kotlin("test"))
-    implementation("net.dv8tion:JDA:5.3.0") // JDA Library
+    implementation("net.dv8tion:JDA:5.6.1") // JDA Library
     implementation("org.xerial:sqlite-jdbc:3.49.1.0") // SQLite Driver
     implementation("com.google.code.gson:gson:2.12.1") // Gson
 

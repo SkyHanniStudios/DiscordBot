@@ -50,7 +50,7 @@ class GitHubClient(user: String, repo: String, private val token: String) {
         }
     }
 
-    fun getRun(commitSha: String, checkName: String): CheckRun? {
+    fun getCheckRun(commitSha: String, checkName: String): CheckRun? {
         val url = "$base/commits/$commitSha/check-runs?check_name=$checkName"
         return readJson<CheckRunsResponse, CheckRun?>(url) { response ->
             response.checkRuns.firstOrNull()
@@ -58,10 +58,10 @@ class GitHubClient(user: String, repo: String, private val token: String) {
     }
 
     // might come handy later
-    fun getJob(artifactId: String): Job? {
-        return readJson<JobsResponse, Job?>("$base/actions/runs/$artifactId/jobs") { response ->
-            response.jobs.firstOrNull { job -> job.name == "Build and test" }
-        }
+    fun getJobs(runId: String): List<Job> {
+        return readJson<JobsResponse, List<Job>>("$base/actions/runs/$runId/jobs") { response ->
+            response.jobs
+        } ?: emptyList()
     }
 
     private inline fun <reified T : Any, R> readJson(url: String, crossinline block: (T) -> R): R? =
