@@ -218,7 +218,7 @@ object PullRequestCommand : BaseCommand() {
                 uploadedVersions.joinToString(" ") { "`$it`".linkTo(nightlyLink("$it%20Development")) }
             else
                 // Continue supporting prs built before the workflow changed
-                "${"`1.8.9`".linkTo(nightlyLink("Development"))} ${"`1.21.5/7`".linkTo(nightlyLink("Multi-version%20Development"))}"
+                "${"`1.8.9`".linkTo(nightlyLink("Development"))} ${"`1.21.x`".linkTo(nightlyLink("Multi-version%20Development"))}"
 
         val artifactDisplay = buildString {
             append(" \n")
