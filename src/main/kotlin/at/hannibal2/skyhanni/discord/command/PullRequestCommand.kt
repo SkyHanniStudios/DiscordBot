@@ -199,8 +199,8 @@ object PullRequestCommand : BaseCommand() {
         val artifactLink = "$BASE/actions/runs/$runId?pr=$prNumber"
         fun nightlyLink(build: String) = "https://nightly.link/$USER/$REPO/actions/runs/$runId/$build%20Build.zip"
         val artifactLine = "GitHub".linkTo(artifactLink)
-        val nightlyLine = "Nightly (1.8.9)".linkTo(nightlyLink("Development"))
-        val latestNightlyLine = "Nightly (1.21.5)".linkTo(nightlyLink("Multi-version%20Development"))
+        val nightlyLine = "Nightly (1.21.5)".linkTo(nightlyLink("Development"))
+        val latestNightlyLine = "Nightly (all versions)".linkTo(nightlyLink("Multi-version%20Development"))
 
         val artifactDisplay = buildString {
             append(" \n")
