@@ -89,25 +89,30 @@ object ServerCommands {
     private fun checkForFakes(servers: MutableSet<Server>, onFinish: (Int) -> Unit) {
         var removed = 0
         val latch = CountDownLatch(servers.size)
-
         val memberCountDiff = mutableMapOf<String, Double>()
         // we need to throw the errors outside of Invite.resolve, sadly
         val errors = mutableListOf<Throwable>()
+
+        fun remove(server: Server) {
+            removed++
+            servers.remove(server)
+            latch.countDown()
+        }
+
         for (server in servers.toList()) {
             Invite.resolve(BOT.jda, server.invite.split("/").last(), true).queue({ invite ->
                 val guild = invite.guild ?: run {
+                    remove(server)
                     BOT.logger.info("Server not found in discord api '${server.name}'!")
                     Utils.sendMessageToBotChannel(buildList {
                         add("Server not found in discord api '${server.name}'!")
                         add("but the invite exists? somehow? - ${server.invite}")
                         add("Removed the server from the local cache!")
                     })
-                    servers.remove(server)
-                    latch.countDown()
                     return@queue
                 }
                 if (server.id != guild.id) {
-                    removed++
+                    remove(server)
                     BOT.logger.info("Wrong server id! ${server.name} (${server.id} != ${guild.id})")
                     Utils.sendMessageToBotChannel(buildList {
                         add("Wrong server id found for '${server.name}'!")
@@ -116,13 +121,13 @@ object ServerCommands {
                         add("invite: " + "link".linkTo(server.invite))
                         add("Removed the server from the local cache!")
                     })
-                    servers.remove(server)
+                    return@queue
                 }
                 memberCountDiff.calcualteMemberCount(guild, server)
                 latch.countDown()
             }, { error ->
                 if (error.message == "10006: Unknown Invite") {
-                    removed++
+                    remove(server)
                     BOT.logger.info("Unknown server invite: ${server.name} (${server.id}) = ${server.invite}")
                     Utils.sendMessageToBotChannel(buildList {
                         add("Invite not found in discord api for '${server.name}'!")
@@ -130,10 +135,8 @@ object ServerCommands {
                         add("Old invite: <${server.invite}>")
                         add("Removed the server from the local cache!")
                     })
-                    servers.remove(server)
-                    latch.countDown()
                 } else if (error.message == "50270: Invite is expired.") {
-                    removed++
+                    remove(server)
                     BOT.logger.info("Expired server invite: ${server.name} (${server.id}) = ${server.invite}")
                     Utils.sendMessageToBotChannel(buildList {
                         add("Invite expired for '${server.name}'!")
@@ -141,10 +144,8 @@ object ServerCommands {
                         add("Expired invite: <${server.invite}>")
                         add("Removed the server from the local cache!")
                     })
-                    servers.remove(server)
-                    latch.countDown()
                 } else {
-                    removed++
+                    remove(server)
                     BOT.logger.info("Error with server invite: ${server.name} (${server.id}) = ${server.invite}")
                     Utils.sendMessageToBotChannel(buildList {
                         add("Error while parsing discord api for '${server.name}'!")
@@ -154,8 +155,6 @@ object ServerCommands {
                         add("Old invite: <${server.invite}>")
                         add("Removed the server from the local cache!")
                     })
-                    servers.remove(server)
-                    latch.countDown()
                     errors.add(error)
                 }
             })
