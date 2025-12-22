@@ -48,6 +48,7 @@ object ErrorManager {
 
     private fun Throwable.formattedStackTrace(): String = getCustomStackTrace(fullStackTrace = false).joinToString("\n")
 
+    // TODO add logic to make thee final stack trace shorter, like in sh mod
     private fun Throwable.getCustomStackTrace(
         fullStackTrace: Boolean,
         parent: List<String> = emptyList(),
