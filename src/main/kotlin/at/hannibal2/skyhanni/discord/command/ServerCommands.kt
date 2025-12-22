@@ -9,7 +9,6 @@ import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.pluralize
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.Utils.roundTo
-import at.hannibal2.skyhanni.discord.Utils.sendMessageToBotChannel
 import at.hannibal2.skyhanni.discord.Utils.userError
 import at.hannibal2.skyhanni.discord.command.ServerCommands.loadServers
 import at.hannibal2.skyhanni.discord.github.GitHubClient
@@ -78,9 +77,9 @@ object ServerCommands {
                 BOT.logger.info("Checked for fake server with no results.")
             } else {
                 val amount = "server".pluralize(removed, withNumber = true)
-                val message = "Removed $amount from local cache because of fakes or not found!"
+                val message = "Removed $amount from local cache because of fakes/not found/expired!"
                 BOT.logger.info(message)
-                sendMessageToBotChannel(message)
+                Utils.sendMessageToBotChannel(message)
             }
             onFinish(removed)
             this.servers = servers
@@ -96,10 +95,10 @@ object ServerCommands {
             Invite.resolve(BOT.jda, server.invite.split("/").last(), true).queue({ invite ->
                 val guild = invite.guild ?: run {
                     BOT.logger.info("Server not found in discord api '${server.name}'!")
-                    sendMessageToBotChannel(buildString {
-                        append("Server not found in discord api '${server.name}'!\n")
-                        append("but the invite exists? somehow? - ${server.invite}\n")
-                        append("Removed the server from the local cache!")
+                    Utils.sendMessageToBotChannel(buildList {
+                        add("Server not found in discord api '${server.name}'!")
+                        add("but the invite exists? somehow? - ${server.invite}")
+                        add("Removed the server from the local cache!")
                     })
                     servers.remove(server)
                     latch.countDown()
@@ -108,23 +107,37 @@ object ServerCommands {
                 if (server.id != guild.id) {
                     removed++
                     BOT.logger.info("Wrong server id! ${server.name} (${server.id} != ${guild.id})")
-                    sendMessageToBotChannel(buildList {
+                    Utils.sendMessageToBotChannel(buildList {
                         add("Wrong server id found for '${server.name}'!")
                         add("json id: `${server.id}`")
                         add("discord api id: `${guild.id}`")
                         add("invite: " + "link".linkTo(server.invite))
                         add("Removed the server from the local cache!")
-                    }.joinToString("\n"))
+                    })
                     servers.remove(server)
                 }
                 memberCountDiff.calcualteMemberCount(guild, server)
                 latch.countDown()
             }, { error ->
                 if (error.message == "10006: Unknown Invite") {
-                    sendMessageToBotChannel(buildString {
-                        append("Invite not found in discord api for '${server.name}'!\n")
-                        append("Old invite: <${server.invite}>\n")
-                        append("Removed the server from the local cache!")
+                    removed++
+                    BOT.logger.info("Unknown server invite: ${server.name} (${server.id}) = ${server.invite}")
+                    Utils.sendMessageToBotChannel(buildList {
+                        add("Invite not found in discord api for '${server.name}'!")
+                        add("json id: `${server.id}`")
+                        add("Old invite: <${server.invite}>")
+                        add("Removed the server from the local cache!")
+                    })
+                    servers.remove(server)
+                    latch.countDown()
+                } else if (error.message == "50270: Invite is expired.") {
+                    removed++
+                    BOT.logger.info("Expired server invite: ${server.name} (${server.id}) = ${server.invite}")
+                    Utils.sendMessageToBotChannel(buildList {
+                        add("Invite expired for '${server.name}'!")
+                        add("json id: `${server.id}`")
+                        add("Expired invite: <${server.invite}>")
+                        add("Removed the server from the local cache!")
                     })
                     servers.remove(server)
                     latch.countDown()
@@ -179,13 +192,15 @@ object ServerCommands {
 
         return data.flatMap { (_, serverCategories) ->
             serverCategories.map { (id, data) ->
-                Server(id.lowercase(),
+                Server(
+                    id.lowercase(),
                     data.id,
                     data.name,
                     data.invite,
                     data.size.toInt(),
                     data.description,
-                    data.aliases?.map { it?.lowercase() ?: error("aliases contains null for server id ${data.id}") } ?: emptyList())
+                    data.aliases?.map { it?.lowercase() ?: error("aliases contains null for server id ${data.id}") }
+                        ?: emptyList())
             }
         }.toMutableSet()
     }
@@ -215,7 +230,7 @@ object ServerCommands {
         if (count > 0) {
             BOT.logger.warn("$count duplicate servers found!")
             val message = "Found $count duplicate servers:\n${duplicates.joinToString("\n")}"
-            sendMessageToBotChannel(message)
+            Utils.sendMessageToBotChannel(message)
         } else {
             BOT.logger.info("no duplicate servers found.")
         }

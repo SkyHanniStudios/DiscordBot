@@ -87,6 +87,10 @@ object Utils {
         BOT.jda.getTextChannelById(BOT.config.botCommandChannelId)?.messageSend(text, instantly)
     }
 
+    fun sendMessageToBotChannel(text: List<String>, instantly: Boolean = false) {
+        sendMessageToBotChannel(text.joinToString("\n"), instantly)
+    }
+
     fun MessageReceivedEvent.logAction(action: String, raw: Boolean = false) {
         if (raw) {
             logger.info(action)
