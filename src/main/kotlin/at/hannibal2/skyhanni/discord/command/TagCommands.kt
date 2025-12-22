@@ -1,12 +1,6 @@
 package at.hannibal2.skyhanni.discord.command
 
-import at.hannibal2.skyhanni.discord.CommandListener
-import at.hannibal2.skyhanni.discord.Database
-import at.hannibal2.skyhanni.discord.Option
-import at.hannibal2.skyhanni.discord.PING_HANNIBAL
-import at.hannibal2.skyhanni.discord.PLEADING_FACE
-import at.hannibal2.skyhanni.discord.Tag
-import at.hannibal2.skyhanni.discord.Utils
+import at.hannibal2.skyhanni.discord.*
 import at.hannibal2.skyhanni.discord.Utils.getLinkName
 import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.messageDelete
@@ -243,7 +237,7 @@ object TagUndo : BaseCommand() {
             message.replyWithConsumer("No last tag to undo found!") { consumer ->
                 addLastMessage(author, consumer.message)
             }
-            Utils.runDelayed(2.seconds) {
+            Utils.runDelayed("undo last tag", 2.seconds) {
                 undo(author)
             }
         }

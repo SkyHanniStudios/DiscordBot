@@ -1,5 +1,6 @@
 package at.hannibal2.skyhanni.discord
 
+import at.hannibal2.skyhanni.discord.utils.ErrorManager.handleError
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.MessageEmbed
@@ -82,6 +83,44 @@ object Utils {
         messageSend(text)
     }
 
+    fun splitMessage(message: String, maxLength: Int = 1900): List<String> {
+        if (message.length <= maxLength) return listOf(message)
+
+        val parts = mutableListOf<String>()
+        val lines = message.split("\n")
+        val currentBuilder = StringBuilder()
+
+        for (line in lines) {
+            if (line.length > maxLength) {
+                if (currentBuilder.isNotEmpty()) {
+                    parts.add(currentBuilder.toString())
+                    currentBuilder.clear()
+                }
+                line.chunked(maxLength).forEach { parts.add(it) }
+                continue
+            }
+
+            val newLength = currentBuilder.length + line.length + if (currentBuilder.isEmpty()) 0 else 1
+            if (newLength > maxLength) {
+                parts.add(currentBuilder.toString())
+                currentBuilder.clear()
+            }
+
+            if (currentBuilder.isNotEmpty()) currentBuilder.append("\n")
+            currentBuilder.append(line)
+        }
+
+        if (currentBuilder.isNotEmpty()) {
+            parts.add(currentBuilder.toString())
+        }
+
+        return parts
+    }
+
+    fun sendMessageToBotChannelFailSave(message: String, instantly: Boolean = false) {
+        splitMessage(message).forEach { sendMessageToBotChannel(it, instantly) }
+    }
+
     fun sendMessageToBotChannel(text: String, instantly: Boolean = false) {
         BOT.jda.getTextChannelById(BOT.config.botCommandChannelId)?.messageSend(text, instantly)
     }
@@ -116,11 +155,11 @@ object Utils {
 
     fun MessageReceivedEvent.inBotCommandChannel() = channel.id == BOT.config.botCommandChannelId
 
-    fun runDelayed(duration: Duration, consumer: () -> Unit) {
-        Thread {
+    fun runDelayed(taskName: String, duration: Duration, consumer: () -> Unit) {
+        runAsync("$taskName (delayed by $duration)") {
             Thread.sleep(duration.inWholeMilliseconds)
             consumer()
-        }.start()
+        }
     }
 
     fun unzipFile(zipFile: File, destDir: File) {
@@ -280,5 +319,15 @@ object Utils {
     fun Double.roundTo(precision: Int): Double {
         val scale = 10.0.pow(precision)
         return kotlin.math.round(this * scale) / scale
+    }
+
+    fun runAsync(taskName: String, executor: () -> Unit) {
+        Thread {
+            try {
+                executor()
+            } catch (e: Throwable) {
+                e.handleError("Async error in task `$taskName`.")
+            }
+        }.start()
     }
 }

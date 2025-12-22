@@ -91,6 +91,8 @@ object ServerCommands {
         val latch = CountDownLatch(servers.size)
 
         val memberCountDiff = mutableMapOf<String, Double>()
+        // we need to throw the errors outside of Invite.resolve, sadly
+        val errors = mutableListOf<Throwable>()
         for (server in servers.toList()) {
             Invite.resolve(BOT.jda, server.invite.split("/").last(), true).queue({ invite ->
                 val guild = invite.guild ?: run {
@@ -142,7 +144,19 @@ object ServerCommands {
                     servers.remove(server)
                     latch.countDown()
                 } else {
-                    throw error
+                    removed++
+                    BOT.logger.info("Error with server invite: ${server.name} (${server.id}) = ${server.invite}")
+                    Utils.sendMessageToBotChannel(buildList {
+                        add("Error while parsing discord api for '${server.name}'!")
+                        add("error name: ${error.javaClass.name}")
+                        add("error message: ${error.message}")
+                        add("json id: `${server.id}`")
+                        add("Old invite: <${server.invite}>")
+                        add("Removed the server from the local cache!")
+                    })
+                    servers.remove(server)
+                    latch.countDown()
+                    errors.add(error)
                 }
             })
         }
@@ -151,6 +165,9 @@ object ServerCommands {
         onFinish(removed)
 
         memberCountDiff.memberCountFormat()
+        for (error in errors) {
+            throw error
+        }
     }
 
     private fun Map<String, Double>.memberCountFormat() {
@@ -303,7 +320,7 @@ class ServerUpdate : BaseCommand() {
     )
 
     init {
-        Utils.runDelayed(1.seconds) {
+        Utils.runDelayed("init load servers", 1.seconds) {
             loadServers()
         }
     }
