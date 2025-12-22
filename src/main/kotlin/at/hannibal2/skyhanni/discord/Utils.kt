@@ -13,7 +13,7 @@ import java.awt.Color
 import java.awt.Toolkit.getDefaultToolkit
 import java.io.File
 import java.text.NumberFormat
-import java.util.Locale
+import java.util.*
 import java.util.zip.ZipFile
 import kotlin.math.pow
 import kotlin.time.Duration
@@ -84,6 +84,10 @@ object Utils {
 
     fun sendMessageToBotChannel(text: String, instantly: Boolean = false) {
         BOT.jda.getTextChannelById(BOT.config.botCommandChannelId)?.messageSend(text, instantly)
+    }
+
+    fun sendMessageToBotChannel(text: List<String>, instantly: Boolean = false) {
+        sendMessageToBotChannel(text.joinToString("\n"), instantly)
     }
 
     fun MessageReceivedEvent.logAction(action: String, raw: Boolean = false) {
