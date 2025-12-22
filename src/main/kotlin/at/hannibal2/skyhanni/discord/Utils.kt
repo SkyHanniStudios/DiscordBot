@@ -83,6 +83,44 @@ object Utils {
         messageSend(text)
     }
 
+    fun splitMessage(message: String, maxLength: Int = 1900): List<String> {
+        if (message.length <= maxLength) return listOf(message)
+
+        val parts = mutableListOf<String>()
+        val lines = message.split("\n")
+        val currentBuilder = StringBuilder()
+
+        for (line in lines) {
+            if (line.length > maxLength) {
+                if (currentBuilder.isNotEmpty()) {
+                    parts.add(currentBuilder.toString())
+                    currentBuilder.clear()
+                }
+                line.chunked(maxLength).forEach { parts.add(it) }
+                continue
+            }
+
+            val newLength = currentBuilder.length + line.length + if (currentBuilder.isEmpty()) 0 else 1
+            if (newLength > maxLength) {
+                parts.add(currentBuilder.toString())
+                currentBuilder.clear()
+            }
+
+            if (currentBuilder.isNotEmpty()) currentBuilder.append("\n")
+            currentBuilder.append(line)
+        }
+
+        if (currentBuilder.isNotEmpty()) {
+            parts.add(currentBuilder.toString())
+        }
+
+        return parts
+    }
+
+    fun sendMessageToBotChannelFailSave(message: String, instantly: Boolean = false) {
+        splitMessage(message).forEach { sendMessageToBotChannel(it, instantly) }
+    }
+
     fun sendMessageToBotChannel(text: String, instantly: Boolean = false) {
         BOT.jda.getTextChannelById(BOT.config.botCommandChannelId)?.messageSend(text, instantly)
     }
@@ -287,7 +325,7 @@ object Utils {
         Thread {
             try {
                 executor()
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 e.handleError("Async error in task `$taskName`.")
             }
         }.start()

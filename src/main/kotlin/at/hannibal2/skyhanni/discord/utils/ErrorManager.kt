@@ -2,7 +2,7 @@ package at.hannibal2.skyhanni.discord.utils
 
 import at.hannibal2.skyhanni.discord.PING_HANNIBAL
 import at.hannibal2.skyhanni.discord.PLEADING_FACE
-import at.hannibal2.skyhanni.discord.Utils.sendMessageToBotChannel
+import at.hannibal2.skyhanni.discord.Utils
 import at.hannibal2.skyhanni.discord.command.BaseCommand
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
@@ -20,7 +20,7 @@ object ErrorManager {
         }
     }
 
-    fun Exception.handleError(vararg customMessages: String) {
+    fun Throwable.handleError(vararg customMessages: String) {
         printStackTrace()
         val message = buildList {
             add("Caught SkyHanniBot error!")
@@ -32,12 +32,16 @@ object ErrorManager {
 
         }.joinToString("\n")
         try {
-            sendMessageToBotChannel(message)
+            Utils.sendMessageToBotChannelFailSave(message)
         } catch (e: Throwable) {
+            Utils.sendMessageToBotChannel("can not send error message to bot channel! $PING_HANNIBAL $PLEADING_FACE")
             println("can not send error message to bot channel!")
             println("message:")
             println(" \n$message\n ")
+            println("the error we want to print:")
             printStackTrace()
+            println("the error why we cant print:")
+            Utils.sendMessageToBotChannel("the error why we cant print: ${e.message}")
             e.printStackTrace()
         }
     }
