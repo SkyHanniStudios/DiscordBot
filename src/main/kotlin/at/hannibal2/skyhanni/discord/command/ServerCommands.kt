@@ -132,6 +132,7 @@ object ServerCommands {
             finish()
 
             memberCountDiff.memberCountFormat()
+            serverLoader = null
             for (error in errors) {
                 throw error
             }
@@ -182,7 +183,7 @@ object ServerCommands {
                 })
                 return
             }
-            memberCountDiff.calcualteMemberCount(guild, this)
+            memberCountDiff.calculateMemberCount(guild, this)
             latch.countDown()
         }
 
@@ -226,7 +227,7 @@ object ServerCommands {
     }
 
     private fun Map<String, Double>.memberCountFormat() {
-        if (!isNotEmpty()) {
+        if (isEmpty()) {
             println("no member count update necessary")
             return
         }
@@ -239,7 +240,7 @@ object ServerCommands {
         println(" ")
     }
 
-    private fun MutableMap<String, Double>.calcualteMemberCount(guild: Invite.Guild, server: Server) {
+    private fun MutableMap<String, Double>.calculateMemberCount(guild: Invite.Guild, server: Server) {
         val accuracy = 0.01
 
         val realSize = guild.memberCount
