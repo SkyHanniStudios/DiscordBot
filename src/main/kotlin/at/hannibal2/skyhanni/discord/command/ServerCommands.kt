@@ -77,7 +77,6 @@ object ServerCommands {
                 BOT.logger.info("Checked for fake server with no results.")
             } else {
                 val amount = "server".pluralize(removed, withNumber = true)
-
                 val message = "Removed $amount from local cache because of fakes/not found/expired!"
                 BOT.logger.info(message)
                 Utils.sendMessageToBotChannel(message)
