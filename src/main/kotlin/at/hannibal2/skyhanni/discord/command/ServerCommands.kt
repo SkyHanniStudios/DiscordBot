@@ -67,12 +67,14 @@ object ServerCommands {
     private val discordServerPattern = "(https?://)?(www\\.)?(discord\\.gg|discord\\.com/invite)/[\\w-]+".toPattern()
 
     var serverLoader: ServerLoader? = null
+        private set
+
 
     class ServerLoader(val onFinish: (Int) -> Unit = { _ -> }) {
 
         val servers: MutableSet<Server>
-        var removed: AtomicInteger
-        var latch: CountDownLatch
+        val removed: AtomicInteger
+        val latch: CountDownLatch
 
         init {
             val json = github.getFileContent("data/discord_servers.json") ?: error("Error loading discord_servers data")
@@ -136,7 +138,7 @@ object ServerCommands {
             }
         }
 
-        fun finish() {
+        private fun finish() {
             val removed = removed.get()
             if (removed == 0) {
                 BOT.logger.info("Checked for fake server with no results.")
@@ -151,7 +153,7 @@ object ServerCommands {
             serverLoader = null
         }
 
-        fun Server.remove() {
+        private fun Server.remove() {
             removed.incrementAndGet()
             servers.remove(this)
             latch.countDown()
