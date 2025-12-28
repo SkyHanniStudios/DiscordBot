@@ -86,8 +86,11 @@ object ServerCommands {
         val log = LiveLog(Utils.getBotChannel(), "Server List Update")
 
         init {
+            log.startAutoUpdate()
+            try {
+                log.status("Loading from GitHub...")
             val json = github.getFileContent("data/discord_servers.json") ?: error("Error loading discord_servers data")
-//        val json = Utils.readStringFromClipboard() ?: error("error loading discord_servers json from clipboard")
+//                val json = Utils.readStringFromClipboard() ?: error("error loading discord_servers json from clipboard")
 
                 log.log("Parsing JSON...")
                 servers = parseStringToServers(json)
