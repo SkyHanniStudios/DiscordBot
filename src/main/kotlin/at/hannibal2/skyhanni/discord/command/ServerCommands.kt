@@ -123,8 +123,8 @@ object ServerCommands {
 
             for (server in servers.toList()) {
                 Invite.resolve(BOT.jda, server.invite.split("/").last(), true).queue(
-                    { normal(it, server, memberCountDiff) },
-                    { error(it, server, errors) },
+                    { server.normal(it, memberCountDiff) },
+                    { server.error(it, errors) },
                 )
             }
 
@@ -157,61 +157,63 @@ object ServerCommands {
             latch.countDown()
         }
 
-        private fun normal(invite: Invite, server: Server, memberCountDiff: MutableMap<String, Double>) {
+        private fun Server.normal(invite: Invite, memberCountDiff: MutableMap<String, Double>) {
             val guild = invite.guild ?: run {
-                remove(server)
-                BOT.logger.info("Server not found in discord api '${server.name}'!")
+                remove(this)
+                BOT.logger.info("Server not found in discord api '$name'!")
                 Utils.sendMessageToBotChannel(buildList {
-                    add("Server not found in discord api '${server.name}'!")
-                    add("but the invite exists? somehow? - ${server.invite}")
+                    add("Server not found in discord api '$name'!")
+                    add("but the invite exists? somehow? - $invite")
                     add("Removed the server from the local cache!")
                 })
                 return
             }
-            if (server.id != guild.id) {
-                remove(server)
-                BOT.logger.info("Wrong server id! ${server.name} (${server.id} != ${guild.id})")
+            if (id != guild.id) {
+                // TODO make this server var here inline
+                val server = this
+                remove(this)
+                BOT.logger.info("Wrong server id! $name ($id != ${guild.id})")
                 Utils.sendMessageToBotChannel(buildList {
-                    add("Wrong server id found for '${server.name}'!")
-                    add("json id: `${server.id}`")
+                    add("Wrong server id found for '$name'!")
+                    add("json id: `id`")
                     add("discord api id: `${guild.id}`")
                     add("invite: (probably a scam server!?)" + "link".linkTo(server.invite))
                     add("Removed the server from the local cache!")
                 })
                 return
             }
-            memberCountDiff.calcualteMemberCount(guild, server)
+            memberCountDiff.calcualteMemberCount(guild, this)
             latch.countDown()
         }
 
-        private fun error(error: Throwable, server: Server, errors: MutableList<Throwable>) {
+        private fun Server.error(error: Throwable, errors: MutableList<Throwable>) {
             if (error.message == "10006: Unknown Invite") {
-                remove(server)
-                BOT.logger.info("Unknown server invite: ${server.name} (${server.id}) = ${server.invite}")
+                remove(this)
+                BOT.logger.info("Unknown server invite: $name (${id}) = $invite")
                 Utils.sendMessageToBotChannel(buildList {
-                    add("Invite not found in discord api for '${server.name}'!")
-                    add("json id: `${server.id}`")
-                    add("Old invite: <${server.invite}>")
+                    add("Invite not found in discord api for '${name}'!")
+                    add("json id: `${id}`")
+                    add("Old invite: <${invite}>")
                     add("Removed the server from the local cache!")
                 })
             } else if (error.message == "50270: Invite is expired.") {
-                remove(server)
-                BOT.logger.info("Expired server invite: ${server.name} (${server.id}) = ${server.invite}")
+                remove(this)
+                BOT.logger.info("Expired server invite: $name (${id}) = $invite")
                 Utils.sendMessageToBotChannel(buildList {
-                    add("Invite expired for '${server.name}'!")
-                    add("json id: `${server.id}`")
-                    add("Expired invite: <${server.invite}>")
+                    add("Invite expired for '${name}'!")
+                    add("json id: `${id}`")
+                    add("Expired invite: <${invite}>")
                     add("Removed the server from the local cache!")
                 })
             } else {
-                remove(server)
-                BOT.logger.info("Error with server invite: ${server.name} (${server.id}) = ${server.invite}")
+                remove(this)
+                BOT.logger.info("Error with server invite: $name (${id}) = $invite")
                 Utils.sendMessageToBotChannel(buildList {
-                    add("Error while parsing discord api for '${server.name}'!")
+                    add("Error while parsing discord api for '${name}'!")
                     add("error name: ${error.javaClass.name}")
                     add("error message: ${error.message}")
-                    add("json id: `${server.id}`")
-                    add("Old invite: <${server.invite}>")
+                    add("json id: `${id}`")
+                    add("Old invite: <${invite}>")
                     add("Removed the server from the local cache!")
                 })
                 errors.add(error)
