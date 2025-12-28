@@ -132,7 +132,6 @@ object ServerCommands {
             finish()
 
             memberCountDiff.memberCountFormat()
-            serverLoader = null
             for (error in errors) {
                 throw error
             }
@@ -150,35 +149,34 @@ object ServerCommands {
             }
             onFinish(removed)
             this@ServerCommands.servers = servers
+            serverLoader = null
         }
 
-        fun remove(server: Server) {
+        fun Server.remove() {
             removed.incrementAndGet()
-            servers.remove(server)
+            servers.remove(this)
             latch.countDown()
         }
 
-        private fun Server.validate(invite: Invite, memberCountDiff: MutableMap<String, Double>) {
-            val guild = invite.guild ?: run {
-                remove(this)
+        private fun Server.validate(resolvedInvite: Invite, memberCountDiff: MutableMap<String, Double>) {
+            val guild = resolvedInvite.guild ?: run {
+                remove()
                 BOT.logger.info("Server not found in discord api '$name'!")
                 Utils.sendMessageToBotChannel(buildList {
                     add("Server not found in discord api '$name'!")
-                    add("but the invite exists? somehow? - $invite")
+                    add("but the invite exists? somehow? - ${resolvedInvite.url}")
                     add("Removed the server from the local cache!")
                 })
                 return
             }
             if (id != guild.id) {
-                // TODO make this server var here inline
-                val server = this
-                remove(this)
+                remove()
                 BOT.logger.info("Wrong server id! $name ($id != ${guild.id})")
                 Utils.sendMessageToBotChannel(buildList {
                     add("Wrong server id found for '$name'!")
-                    add("json id: `id`")
+                    add("json id: `$id`")
                     add("discord api id: `${guild.id}`")
-                    add("invite: (probably a scam server!?)" + "link".linkTo(server.invite))
+                    add("invite: (probably a scam server!?)" + "link".linkTo(invite))
                     add("Removed the server from the local cache!")
                 })
                 return
@@ -189,7 +187,7 @@ object ServerCommands {
 
         private fun Server.validateError(error: Throwable, errors: MutableList<Throwable>) {
             if (error.message == "10006: Unknown Invite") {
-                remove(this)
+                remove()
                 BOT.logger.info("Unknown server invite: $name ($id) = $invite")
                 Utils.sendMessageToBotChannel(buildList {
                     add("Invite not found in discord api for '$name'!")
@@ -198,7 +196,7 @@ object ServerCommands {
                     add("Removed the server from the local cache!")
                 })
             } else if (error.message == "50270: Invite is expired.") {
-                remove(this)
+                remove()
                 BOT.logger.info("Expired server invite: $name ($id) = $invite")
                 Utils.sendMessageToBotChannel(buildList {
                     add("Invite expired for '$name'!")
@@ -207,7 +205,7 @@ object ServerCommands {
                     add("Removed the server from the local cache!")
                 })
             } else {
-                remove(this)
+                remove()
                 BOT.logger.info("Error with server invite: $name ($id) = $invite")
                 Utils.sendMessageToBotChannel(buildList {
                     add("Error while parsing discord api for '$name'!")
@@ -232,7 +230,7 @@ object ServerCommands {
             return
         }
         println(" ")
-        for ((text, diff) in entries.sortedBy { it.value }.reversed()) {
+        for ((text, _) in entries.sortedByDescending { it.value }) {
             println(text)
         }
         println(" ")
@@ -351,11 +349,12 @@ class ServerUpdate : BaseCommand() {
     }
 
     override fun MessageReceivedEvent.execute(args: List<String>) {
-        reply("updating server list ...")
         if (ServerCommands.serverLoader != null) {
             reply("Server list is already updating!")
             return
         }
+
+        reply("Updating server list ...")
         ServerCommands.loadServers { removed ->
             val removedSuffix = if (removed > 0) {
                 " (removed $removed servers)"
