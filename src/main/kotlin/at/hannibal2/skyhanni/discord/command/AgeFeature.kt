@@ -2,9 +2,11 @@ package at.hannibal2.skyhanni.discord.command
 
 import at.hannibal2.skyhanni.discord.BOT
 import at.hannibal2.skyhanni.discord.PLEADING_FACE
+import at.hannibal2.skyhanni.discord.Utils
 import at.hannibal2.skyhanni.discord.Utils.linkTo
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.github.GitHubClient
+import at.hannibal2.skyhanni.discord.useClipboardInAge
 import com.google.gson.Gson
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import java.time.LocalDate
@@ -21,8 +23,11 @@ object AgeFeature {
     var releases = mapOf<String, ReleaseInfo>()
 
     private fun loadFromRepo() {
-        val json = github.getFileContent("data/age.json") ?: error("Error loading age json from github")
-//        val json = Utils.readStringFromClipboard() ?: error("error loading age json from clipboard")
+        val json = if (useClipboardInAge) {
+            Utils.readStringFromClipboard() ?: error("error loading age json from clipboard")
+        } else {
+            github.getFileContent("data/age.json") ?: error("Error loading age json from github")
+        }
 
         val gson = Gson()
         val data = gson.fromJson(json, TimeSinceJson::class.java)

@@ -12,6 +12,7 @@ import at.hannibal2.skyhanni.discord.Utils.replyLong
 import at.hannibal2.skyhanni.discord.Utils.roundTo
 import at.hannibal2.skyhanni.discord.Utils.userError
 import at.hannibal2.skyhanni.discord.github.GitHubClient
+import at.hannibal2.skyhanni.discord.useClipboardInServerList
 import at.hannibal2.skyhanni.discord.utils.LiveLog
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -85,10 +86,15 @@ object ServerCommands {
         val removed get() = removedInvalidInvite + removedWrongId + removedOther
 
         val pendingMessages = mutableListOf<List<String>>()
+        val githubLink =
+            "GitHub".linkTo("https://github.com/SkyHanniStudios/DiscordBot/blob/master/data/discord_servers.json")
+
+        val viaText = if (useClipboardInServerList) {
+            "dev clipboard"
+        } else githubLink
         val log = LiveLog(
             Utils.getBotChannel(),
-            "Server List Update"
-                .linkTo("https://github.com/SkyHanniStudios/DiscordBot/blob/master/data/discord_servers.json")
+            "Server List Update (via $viaText)"
         )
 
         init {

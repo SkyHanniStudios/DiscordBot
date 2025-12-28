@@ -36,6 +36,13 @@ const val BIG_X = "❌"
 const val CHECK_MARK = "✅"
 const val PING_HANNIBAL = "<@239858538959077376>"
 
+
+val useClipboardFor = ""
+
+val useClipboardInServerList get() = useClipboardFor == "serverlist"
+val useClipboardInAge get() = useClipboardFor == "age"
+val useClipboardInModChecker get() = useClipboardFor == "modchecker"
+
 fun main() {
     val bot = startBot()
 

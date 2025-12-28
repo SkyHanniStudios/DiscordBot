@@ -7,10 +7,7 @@ package at.hannibal2.skyhanni.discord.command
 // See LICENSE for copyright and license notices.
 //
 
-import at.hannibal2.skyhanni.discord.BOT
-import at.hannibal2.skyhanni.discord.PARTY_FACE
-import at.hannibal2.skyhanni.discord.PLEADING_FACE
-import at.hannibal2.skyhanni.discord.Utils
+import at.hannibal2.skyhanni.discord.*
 import at.hannibal2.skyhanni.discord.Utils.getLink
 import at.hannibal2.skyhanni.discord.Utils.getLinkName
 import at.hannibal2.skyhanni.discord.Utils.linkTo
@@ -345,8 +342,11 @@ object ModChecker {
     }
 
     private fun loadModDataFromRepo() {
-        val json = github.getFileContent("data/mods.json") ?: error("Error loading mods json data")
-//        val json = Utils.readStringFromClipboard() ?: error("error loading mods json from clipboard")
+        val json = if (useClipboardInModChecker) {
+            Utils.readStringFromClipboard() ?: error("error loading mods json from clipboard")
+        } else {
+            github.getFileContent("data/mods.json") ?: error("Error loading mods json data")
+        }
 
         val gson = Gson()
         val modData = gson.fromJson(json, ModDataJson::class.java)
