@@ -79,11 +79,18 @@ object ServerCommands {
 
     // Constructor blocks until all validation completes
     private class ServerLoader {
-
         val servers: MutableSet<Server>
-        var removed = 0
+        var removedInvalidInvite = 0
+        var removedWrongId = 0
+        var removedOther = 0
+        val removed get() = removedInvalidInvite + removedWrongId + removedOther
+
         val pendingMessages = mutableListOf<List<String>>()
-        val log = LiveLog(Utils.getBotChannel(), "Server List Update")
+        val log = LiveLog(
+            Utils.getBotChannel(),
+            "Server List Update"
+                .linkTo("https://github.com/SkyHanniStudios/DiscordBot/blob/master/data/discord_servers.json")
+        )
 
         init {
             log.startAutoUpdate()
@@ -161,13 +168,12 @@ object ServerCommands {
                 result.onSuccess { validate(it, memberCountDiff) }
                 result.onFailure { validateError(it, errors) }
             }
-            finish()
 
+            finish(errors)  // Pass errors here
             memberCountDiff.memberCountFormat()
-            for (error in errors) {
-                throw error
-            }
+            // Remove the throw loop
         }
+
 
         private fun expensiveFetchRequests(): ConcurrentHashMap<Server, Result<Invite>> {
             val results = ConcurrentHashMap<Server, Result<Invite>>(servers.size)
@@ -195,7 +201,7 @@ object ServerCommands {
             return results
         }
 
-        private fun finish() {
+        private fun finish(errors: List<Throwable>) {
             if (checkIfAllFailed()) {
                 // Only show first 3 messages during outage for context
                 val onlyFirst = 3
@@ -217,15 +223,25 @@ object ServerCommands {
                 BOT.logger.info("Removed $amount from local cache because of fakes/not found/expired!")
             }
 
-            val link = "https://github.com/SkyHanniStudios/DiscordBot/blob/master/data/discord_servers.json"
-            val githubLink = "GitHub".linkTo(link)
-            val count = "server".pluralize(servers.size, withNumber = true)
+            val found = servers.size + removed
+            val active = servers.size
 
-            val removedInfo = if (removed > 0) ", $removed removed" else ""
-            log.complete(
-                logMessage = "$count loaded$removedInfo",
-                status = "Updated from $githubLink"
-            )
+            val breakdown = buildList {
+                if (removedInvalidInvite > 0) add("$removedInvalidInvite bad invite")
+                if (removedWrongId > 0) add("$removedWrongId wrong ID")
+                if (removedOther > 0) add("$removedOther other")
+            }.joinToString(", ")
+
+            val removedInfo = if (removed > 0) ", $removed removed ($breakdown)" else ""
+
+            // Add error info
+            val errorInfo = if (errors.isNotEmpty()) {
+                errors.forEach { BOT.logger.error("Unexpected validation error", it) }
+                ", ${errors.size} unexpected errors"
+            } else ""
+
+            val status = if (errors.isNotEmpty()) "Done (with errors)" else "Done"
+            log.complete("$found found, $active active$removedInfo$errorInfo", status = status)
 
             this@ServerCommands.servers = servers.toSet()
         }
@@ -243,15 +259,11 @@ object ServerCommands {
             return true
         }
 
-        private fun Server.remove() {
-            removed++
-            servers.remove(this)
-        }
-
         private fun Server.validate(resolvedInvite: Invite, memberCountDiff: MutableMap<String, Double>) {
             val guild = resolvedInvite.guild ?: run {
+                removedOther++
                 log.issue("Server not found in discord api '$name'!")
-                remove()
+                servers.remove(this)
                 BOT.logger.info("Server not found in discord api '$name'!")
                 pendingMessages.add(buildList {
                     add("Server not found in discord api '$name'!")
@@ -261,8 +273,9 @@ object ServerCommands {
                 return
             }
             if (id != guild.id) {
+                removedWrongId++
                 log.issue("Wrong server id for '$name'! (scam?)")
-                remove()
+                servers.remove(this)
                 BOT.logger.info("Wrong server id! $name ($id != ${guild.id})")
                 pendingMessages.add(buildList {
                     add("Wrong server id found for '$name'!")
@@ -279,7 +292,7 @@ object ServerCommands {
         private fun Server.validateError(error: Throwable, errors: MutableList<Throwable>) {
             fun handle(reason: String, vararg extraLines: String) {
                 log.issue("$reason for '$name'!")
-                remove()
+                servers.remove(this)
                 BOT.logger.info("$reason: $name ($id) = $invite")
                 pendingMessages.add(
                     listOf("$reason for '$name'!") + extraLines.toList() + listOf(
@@ -291,9 +304,18 @@ object ServerCommands {
             }
 
             when (error.message) {
-                "10006: Unknown Invite" -> handle("Invite not found in discord api")
-                "50270: Invite is expired." -> handle("Invite expired")
+                "10006: Unknown Invite" -> {
+                    removedInvalidInvite++
+                    handle("Invite not found in discord api")
+                }
+
+                "50270: Invite is expired." -> {
+                    removedInvalidInvite++
+                    handle("Invite expired")
+                }
+
                 else -> {
+                    removedOther++
                     handle(
                         "Error while parsing discord api",
                         "error name: ${error.javaClass.name}",
@@ -433,7 +455,9 @@ class ServerUpdate : BaseCommand() {
 
     init {
         Utils.runDelayed("init load servers", 1.seconds) {
-            ServerCommands.loadServers()
+            if (!ServerCommands.isLoading) {
+                ServerCommands.loadServers()
+            }
         }
     }
 
@@ -444,7 +468,6 @@ class ServerUpdate : BaseCommand() {
         }
 
         logAction("Started server list update")
-        reply("Updating server list ...")
         ServerCommands.loadServers()
     }
 }
