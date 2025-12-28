@@ -141,11 +141,11 @@
       ]
     },
     "sbt": {
-      "name": "SkyBlock Tweaks",
+      "name": "Cheeze's Place",
       "id": "1199540355859746897",
-      "size": "443",
-      "invite": "https://discord.gg/XgxDxV87zJ",
-      "description": "SkyBlock Tweaks is a 1.8.9 SkyBlock mod.",
+      "size": "192",
+      "invite": "https://discord.gg/YH3hw926hz",
+      "description": "SkyBlock Tweaks is a 1.21 SkyBlock mod.",
       "aliases": [
         "SkyBlockTweaks"
       ]
@@ -503,11 +503,12 @@
     "council": {
       "name": "Farming Council",
       "id": "1020742260683448450",
-      "size": "17724",
-      "invite": "https://discord.gg/farmers",
-      "description": "A community centered on farming.",
+      "size": "17226",
+      "invite": "https://discord.gg/farming-council-skyblock-guides-more-1020742260683448450",
+      "description": "A community centered around farming.",
       "aliases": [
-        "FarmingCouncil"
+        "FarmingCouncil",
+        "Council"
       ]
     },
     "hunter": {
