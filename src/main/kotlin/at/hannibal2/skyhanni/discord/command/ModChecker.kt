@@ -139,14 +139,14 @@ object ModChecker {
         return ModInfo(name, version, fileName)
     }
 
-    enum class ModCategory {
-        UNKNOWN_MOD,
-        UNKNOWN_VERSION,
-        UP_TO_DATE,
-        TO_REMOVE,
-        UPDATE_AVAILABLE,
-        RESULT,
-        IGNORED
+    enum class ModCategory(val label: String, val notifySupport: Boolean = false) {
+        UNKNOWN_MOD("unknown mods", notifySupport = true),
+        UNKNOWN_VERSION("unknown mod versions", notifySupport = true),
+        UP_TO_DATE("up to date mods"),
+        TO_REMOVE("to remove mods"),
+        UPDATE_AVAILABLE("update available"),
+        RESULT("result"),
+        IGNORED("ignored mods")
     }
 
     private fun analyzeMods(activeMods: Map<ModInfo, String>): Map<ModCategory, MutableList<String>> {
@@ -262,13 +262,8 @@ object ModChecker {
         }
 
         val categories = analyzeMods(activeMods)
-        val unknownMod = categories[ModCategory.UNKNOWN_MOD]!!
-        val unknownVersion = categories[ModCategory.UNKNOWN_VERSION]!!
-        val upToDate = categories[ModCategory.UP_TO_DATE]!!
         val modToRemove = categories[ModCategory.TO_REMOVE]!!
-        val updateAvaliable = categories[ModCategory.UPDATE_AVAILABLE]!!
         val result = categories[ModCategory.RESULT]!!
-        val ignored = categories[ModCategory.IGNORED]!!
 
         val debugList = mutableListOf<String>()
         fun debug(text: String) {
@@ -294,52 +289,28 @@ object ModChecker {
 
         val forSupportChannel = mutableListOf<String>()
 
-        debug(" ")
-        if (unknownMod.size > 0) {
-            forSupportChannel.add("${unknownMod.size} unknown mods:")
-            forSupportChannel.addAll(unknownMod)
-            forSupportChannel.add(" ")
-        }
-        debug("${unknownMod.size} unknown mods:")
-        for (line in unknownMod) {
-            debug(line)
+        ModCategory.entries.filter { it.notifySupport }.forEach { category ->
+            val items = categories[category]!!
+            if (items.isNotEmpty()) {
+                forSupportChannel.add("${items.size} ${category.label}:")
+                forSupportChannel.addAll(items)
+                forSupportChannel.add(" ")
+            }
         }
 
-        debug(" ")
-        debug("${ignored.size} ignored mods:")
-        for (line in ignored) {
-            debug(line)
+        fun debugCategory(category: ModCategory) {
+            val items = categories[category]!!
+            debug(" ")
+            debug("${items.size} ${category.label}:")
+            items.forEach { debug(it) }
         }
 
-        debug(" ")
-        debug("${upToDate.size} up to date mods:")
-        for (line in upToDate) {
-            debug(line)
-        }
-
-        debug(" ")
-        debug("${modToRemove.size} to remove mods:")
-        for (line in modToRemove) {
-            debug(line)
-        }
-
-        if (unknownVersion.size > 0) {
-            forSupportChannel.add("${unknownVersion.size} unknown mod versions:")
-            forSupportChannel.addAll(unknownVersion)
-            forSupportChannel.add(" ")
-        }
-        debug(" ")
-        debug("${unknownVersion.size} unknown mod versions:")
-        for (line in unknownVersion) {
-            debug(line)
-        }
-
-        debug(" ")
-
-        debug("Update avaliable for ${updateAvaliable.size} mods:")
-        for (line in updateAvaliable) {
-            debug(line)
-        }
+        debugCategory(ModCategory.UNKNOWN_VERSION)
+        debugCategory(ModCategory.UNKNOWN_MOD)
+        debugCategory(ModCategory.IGNORED)
+        debugCategory(ModCategory.UP_TO_DATE)
+        debugCategory(ModCategory.TO_REMOVE)
+        debugCategory(ModCategory.UPDATE_AVAILABLE)
 
         if (debug) {
             reply("debug data for ${activeMods.size} mods in that message:\n${debugList.joinToString("\n")}")
