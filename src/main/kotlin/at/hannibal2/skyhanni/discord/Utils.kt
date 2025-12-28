@@ -5,7 +5,6 @@ import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.entities.User
-import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
@@ -206,10 +205,8 @@ object Utils {
     }
 
     fun MessageChannelUnion.uploadFile(jarFile: File, comment: String) {
-        val textChannel = this as? TextChannel ?: error("not a text channel: $name")
         val fileUpload = FileUpload.fromData(jarFile, jarFile.name)
-        textChannel.sendFiles(fileUpload).addContent(comment).queue()
-
+        sendFiles(fileUpload).addContent(comment).queue()
     }
 
     fun String.linkTo(link: String): String = "[$this](<$link>)"
