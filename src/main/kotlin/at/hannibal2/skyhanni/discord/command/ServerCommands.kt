@@ -73,7 +73,7 @@ object ServerCommands {
     private val gson = Gson()
 
     // Constructor blocks until all validation completes
-    private class ServerLoader(val onFinish: (Int) -> Unit = { }) {
+    private class ServerLoader(val onFinish: (removedCount: Int, errorCount: Int) -> Unit = { _, _ -> }) {
 
         val servers: MutableSet<Server>
         var removed = 0
@@ -130,7 +130,7 @@ object ServerCommands {
                 result.onSuccess { validate(it, memberCountDiff) }
                 result.onFailure { validateError(it, errors) }
             }
-            finish()
+            finish(errors.size)
 
             memberCountDiff.memberCountFormat()
             for (error in errors) {
@@ -154,7 +154,7 @@ object ServerCommands {
             return results
         }
 
-        private fun finish() {
+        private fun finish(errorCount: Int) {
             if (removed == 0) {
                 BOT.logger.info("Checked for fake server with no results.")
             } else {
@@ -163,7 +163,7 @@ object ServerCommands {
                 BOT.logger.info(message)
                 Utils.sendMessageToBotChannel(message)
             }
-            onFinish(removed)
+            onFinish(removed, errorCount)
             this@ServerCommands.servers = servers
         }
 
@@ -226,7 +226,7 @@ object ServerCommands {
         }
     }
 
-    fun loadServers(onFinish: (Int) -> Unit = { }) {
+    fun loadServers(onFinish: (Int, Int) -> Unit = { _, _ -> }) {
         isLoading = true
         Utils.runAsync("load servers") {
             try {
@@ -239,7 +239,7 @@ object ServerCommands {
 
     private fun Map<String, Double>.memberCountFormat() {
         if (isEmpty()) {
-            println("no member count update necessary")
+            println("No member count update necessary")
             return
         }
         println(" ")
@@ -247,7 +247,7 @@ object ServerCommands {
             println(text)
         }
         println(" ")
-        println("member count update necessary: $size")
+        println("Member count update necessary: $size")
         println(" ")
     }
 
@@ -347,6 +347,8 @@ class ServerUpdate : BaseCommand() {
     override val aliases: List<String> = listOf(
         "updateservers", "updateserverlist", "serverlistupdate", "listupdateserver", "updateserver"
     )
+    private val link = "https://github.com/SkyHanniStudios/DiscordBot/blob/master/data/discord_servers.json"
+    private val githubLink = "GitHub".linkTo(link)
 
     init {
         Utils.runDelayed("init load servers", 1.seconds) {
@@ -361,14 +363,15 @@ class ServerUpdate : BaseCommand() {
         }
 
         reply("Updating server list ...")
-        ServerCommands.loadServers { removed ->
-            val removedSuffix = if (removed > 0) {
-                " (removed $removed servers)"
-            } else ""
-            val source =
-                "GitHub".linkTo("https://github.com/SkyHanniStudios/DiscordBot/blob/master/data/discord_servers.json")
-            reply("Updated server list from $source.$removedSuffix")
-            logAction("updated server list from github")
+        ServerCommands.loadServers { removedCount, errorCount ->
+            val removedServers = "server".pluralize(removedCount, withNumber = true)
+            val suffix = when {
+                removedCount == 0 -> ""
+                errorCount == 0 -> " (removed $removedServers)"
+                else -> " (removed $removedServers, $errorCount with errors)"
+            }
+            reply("Updated server list from $githubLink$suffix.")
+            logAction("Updated server list from github")
         }
     }
 
