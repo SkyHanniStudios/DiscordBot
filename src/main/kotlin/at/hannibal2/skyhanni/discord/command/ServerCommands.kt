@@ -74,7 +74,7 @@ object ServerCommands {
 
         var servers = mutableSetOf<Server>()
         val removed = AtomicInteger(0)
-        val latch = CountDownLatch(servers.size)
+        var latch = CountDownLatch(0)
 
         fun start() {
             val json = github.getFileContent("data/discord_servers.json") ?: error("Error loading discord_servers data")
@@ -120,12 +120,15 @@ object ServerCommands {
             val memberCountDiff = mutableMapOf<String, Double>()
             // we need to throw the errors outside of Invite.resolve, sadly
             val errors = mutableListOf<Throwable>()
+            latch = CountDownLatch(servers.size)
 
             for (server in servers.toList()) {
-                Invite.resolve(BOT.jda, server.invite.split("/").last(), true).queue(
-                    { server.normal(it, memberCountDiff) },
-                    { server.error(it, errors) },
-                )
+                with(server) {
+                    Invite.resolve(BOT.jda, invite.split("/").last(), true).queue(
+                        { check(it, memberCountDiff) },
+                        { errorOnCheck(it, errors) },
+                    )
+                }
             }
 
             latch.await() // wait for all servers to be checked
@@ -157,7 +160,7 @@ object ServerCommands {
             latch.countDown()
         }
 
-        private fun Server.normal(invite: Invite, memberCountDiff: MutableMap<String, Double>) {
+        private fun Server.check(invite: Invite, memberCountDiff: MutableMap<String, Double>) {
             val guild = invite.guild ?: run {
                 remove(this)
                 BOT.logger.info("Server not found in discord api '$name'!")
@@ -186,7 +189,7 @@ object ServerCommands {
             latch.countDown()
         }
 
-        private fun Server.error(error: Throwable, errors: MutableList<Throwable>) {
+        private fun Server.errorOnCheck(error: Throwable, errors: MutableList<Throwable>) {
             if (error.message == "10006: Unknown Invite") {
                 remove(this)
                 BOT.logger.info("Unknown server invite: $name (${id}) = $invite")
