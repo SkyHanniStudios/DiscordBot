@@ -12,40 +12,56 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import kotlin.time.Duration.Companion.seconds
 
 object AgeFeature {
     private val github = GitHubClient("SkyHanniStudios", "DiscordBot", BOT.config.githubTokenOwn)
+    private val githubLink = "GitHub".linkTo("https://github.com/SkyHanniStudios/DiscordBot/blob/master/data/age.json")
 
     data class ReleaseInfo(val name: String, val date: String)
-
     data class TimeSinceJson(val releases: Map<String, ReleaseInfo>)
 
     var releases = mapOf<String, ReleaseInfo>()
+        private set
+    var isLoading = false
+        private set
 
-    private fun loadFromRepo() {
-        val json = if (useClipboardInAge) {
-            Utils.readStringFromClipboard() ?: error("error loading age json from clipboard")
-        } else {
-            github.getFileContent("data/age.json") ?: error("Error loading age json from github")
+    fun loadFromRepo() {
+        isLoading = true
+        Utils.runAsync("load age") {
+            try {
+                val json = if (useClipboardInAge) {
+                    Utils.readStringFromClipboard() ?: error("error loading age json from clipboard")
+                } else {
+                    github.getFileContent("data/age.json") ?: error("Error loading age json from github")
+                }
+
+                val data = Gson().fromJson(json, TimeSinceJson::class.java)
+                releases = data.releases
+                BOT.logger.info("Loaded ${releases.size} age entries from repo")
+            } finally {
+                isLoading = false
+            }
         }
+    }
 
-        val gson = Gson()
-        val data = gson.fromJson(json, TimeSinceJson::class.java)
-        releases = data.releases
+    fun format(name: String, date: String): String {
+        val localDate = LocalDate.parse(date, DateTimeFormatter.ISO_LOCAL_DATE)
+        val dateTime = localDate.atStartOfDay(ZoneId.of("CET"))
+        val seconds = dateTime.toEpochSecond() + 60 * 60 * 12
+        return buildString {
+            append("### $name was released <t:$seconds:R>.\n")
+            append("### It was released on <t:$seconds:D>")
+        }
     }
 
     @Suppress("unused")
     class AgeCommand : BaseCommand() {
-        override val name: String = "age"
-        override val description: String = "Show the age of something."
-
-        override val userCommand: Boolean = true
+        override val name = "age"
+        override val description = "Show the age of something."
+        override val userCommand = true
 
         override fun MessageReceivedEvent.execute(args: List<String>) {
-            if (releases.isEmpty()) {
-                loadFromRepo()
-            }
-
             val tip = "\nTry one of those: ${releases.keys}"
             if (args.isEmpty()) {
                 return reply("Usage: /age <term>$tip")
@@ -59,28 +75,28 @@ object AgeFeature {
         }
     }
 
-    @Suppress("SameParameterValue")
-    fun format(name: String, date: String): String {
-        val localDate = LocalDate.parse(date, DateTimeFormatter.ISO_LOCAL_DATE)
-        val dateTime = localDate.atStartOfDay(ZoneId.of("CET"))
-        val seconds = dateTime.toEpochSecond() + 60 * 60 * 12
-        return buildString {
-            append("### $name was released <t:$seconds:R>.\n")
-            append("### It was released on <t:$seconds:D>")
-        }
-    }
-
     @Suppress("unused")
     class UpdateAgeListCommand : BaseCommand() {
-        override val name: String = "updateagelist"
-        override val description: String = "Updates the age list."
-        override val aliases: List<String> = listOf("ageupdate", "updateage")
+        override val name = "updateagelist"
+        override val description = "Updates the age list."
+        override val aliases = listOf("ageupdate", "updateage")
+
+        init {
+            Utils.runDelayed("init load age", 1.seconds) {
+                if (!isLoading) {
+                    loadFromRepo()
+                }
+            }
+        }
 
         override fun MessageReceivedEvent.execute(args: List<String>) {
-            reply("updating age list ...")
+            if (isLoading) {
+                reply("Age list is already updating!")
+                return
+            }
+
             loadFromRepo()
-            val link = "GitHub".linkTo("https://github.com/SkyHanniStudios/DiscordBot/blob/master/data/age.json")
-            reply("Updated age list from $link.")
+            reply("Updated age list from $githubLink. (${releases.size} entries loaded)")
         }
     }
 }
