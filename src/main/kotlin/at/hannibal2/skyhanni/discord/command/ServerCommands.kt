@@ -82,18 +82,7 @@ object ServerCommands {
 
             servers = parseStringToServers(json)
             checkForDuplicates()
-            checkForFakes { removed ->
-                if (removed == 0) {
-                    BOT.logger.info("Checked for fake server with no results.")
-                } else {
-                    val amount = "server".pluralize(removed, withNumber = true)
-                    val message = "Removed $amount from local cache because of fakes/not found/expired!"
-                    BOT.logger.info(message)
-                    Utils.sendMessageToBotChannel(message)
-                }
-                onFinish(removed)
-                this@ServerCommands.servers = servers
-            }
+            checkForFakes()
         }
 
         private fun checkForDuplicates() {
@@ -127,7 +116,7 @@ object ServerCommands {
             }
         }
 
-        private fun checkForFakes(onFinish: (Int) -> Unit) {
+        private fun checkForFakes() {
             val memberCountDiff = mutableMapOf<String, Double>()
             // we need to throw the errors outside of Invite.resolve, sadly
             val errors = mutableListOf<Throwable>()
@@ -140,12 +129,26 @@ object ServerCommands {
             }
 
             latch.await() // wait for all servers to be checked
-            onFinish(removed.get())
+            finish()
 
             memberCountDiff.memberCountFormat()
             for (error in errors) {
                 throw error
             }
+        }
+
+        fun finish() {
+            val removed = removed.get()
+            if (removed == 0) {
+                BOT.logger.info("Checked for fake server with no results.")
+            } else {
+                val amount = "server".pluralize(removed, withNumber = true)
+                val message = "Removed $amount from local cache because of fakes/not found/expired!"
+                BOT.logger.info(message)
+                Utils.sendMessageToBotChannel(message)
+            }
+            onFinish(removed)
+            this@ServerCommands.servers = servers
         }
 
         fun remove(server: Server) {
