@@ -69,6 +69,7 @@ object ServerCommands {
     var isLoading = false
         private set
 
+    // Constructor blocks until all validation completes
     private class ServerLoader(val onFinish: (Int) -> Unit = { _ -> }) {
 
         val servers: MutableSet<Server>
