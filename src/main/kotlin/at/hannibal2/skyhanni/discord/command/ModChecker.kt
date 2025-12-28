@@ -139,6 +139,117 @@ object ModChecker {
         return ModInfo(name, version, fileName)
     }
 
+    enum class ModCategory {
+        UNKNOWN_MOD,
+        UNKNOWN_VERSION,
+        UP_TO_DATE,
+        TO_REMOVE,
+        UPDATE_AVAILABLE,
+        RESULT,
+        IGNORED
+    }
+
+    private fun analyzeMods(activeMods: Map<ModInfo, String>): Map<ModCategory, MutableList<String>> {
+        val categories = ModCategory.entries.associateWith { mutableListOf<String>() }
+
+        for ((mod, line) in activeMods) {
+            val name = when (mod.name) {
+                // odin/odin client is weird/mixed up in the json file
+                "Odin" -> "OdinClient"
+                // not so essential is fancy
+                "§cNot §aSo §9Essential" -> "Not So Essential"
+                else -> mod.name
+            }
+
+            val fileName = mod.fileName
+            val version = mod.version
+
+            // hide minecraft/forge/mod loader stuff
+            if (fileName == "minecraft.jar") {
+                categories[ModCategory.IGNORED]!!.add(line)
+                continue
+            }
+
+            if (fileName.contains("forge-1.8.9-11.15.1.2318-1.8.9")) {
+                categories[ModCategory.IGNORED]!!.add(line)
+                continue
+            }
+
+            if (name == "Forge Mod Loader") {
+                categories[ModCategory.UNKNOWN_MOD]!!.add("unkown forge version: '$fileName'")
+                continue
+            }
+
+            // has auto update, and too many small updates all the time, so no one cares
+            if (name == "Essential") {
+                categories[ModCategory.IGNORED]!!.add(line)
+                continue
+            }
+            if (name == "OneConfig") {
+                categories[ModCategory.IGNORED]!!.add(line)
+                continue
+            }
+
+            // comes bundled with other mods
+            if (name == "Hypixel Mod API") {
+                categories[ModCategory.IGNORED]!!.add(line)
+                continue
+            }
+
+            // dulkir version bug
+            if (name == "Dulkir Mod" && version == "\${version}") {
+                categories[ModCategory.IGNORED]!!.add(line)
+                continue
+            }
+
+            // spark version bug
+            if (name == "spark" && version == "\${pluginVersion}") {
+                categories[ModCategory.IGNORED]!!.add(line)
+                continue
+            }
+
+            val latestFullMod = findModFromName(name)
+            val latestBetaMod = findBetaFromName(name)
+
+            if (latestFullMod == null || latestBetaMod == null) {
+                categories[ModCategory.UNKNOWN_MOD]!!.add(line)
+                continue
+            }
+
+            val reasonNotToUse = latestFullMod.reasonNotToUse ?: latestBetaMod.reasonNotToUse
+            reasonNotToUse?.let {
+                categories[ModCategory.TO_REMOVE]!!.add("- $name ($it)")
+                return@let
+            }
+            if (reasonNotToUse != null) continue
+
+            if (latestFullMod.version == version || latestBetaMod.version == version) {
+                categories[ModCategory.UP_TO_DATE]!!.add(name)
+                continue
+            }
+
+            val currentVersion = knownMods.firstOrNull { it.name == mod.name && it.version == version }
+            if (currentVersion == null) {
+                val link = "Download".linkTo(latestBetaMod.downloadLink)
+                categories[ModCategory.UNKNOWN_VERSION]!!.add("$name ($version) - $link")
+                continue
+            }
+
+            val latestVersion = if (latestBetaMod.beta) latestBetaMod.version else latestFullMod.version
+
+            if (name == "Velox Caelo" && version == "1.0.2" && latestVersion == "1.1.0") {
+                categories[ModCategory.IGNORED]!!.add("velox wrong version format: $line")
+                continue
+            }
+
+            val link = "Download".linkTo(latestBetaMod.downloadLink)
+            categories[ModCategory.UPDATE_AVAILABLE]!!.add("$name (current: $version, latest: $latestVersion) - $link")
+            categories[ModCategory.RESULT]!!.add("- $name ($version -> $latestVersion) $link")
+        }
+
+        return categories
+    }
+
     @Suppress("CyclomaticComplexMethod", "LongMethod")
     private fun MessageReceivedEvent.run(activeMods: Map<ModInfo, String>, debug: Boolean) {
         if (knownMods.isEmpty() && !isLoading) {
@@ -150,109 +261,14 @@ object ModChecker {
             return
         }
 
-        val unknownMod = mutableListOf<String>()
-        val unknownVersion = mutableListOf<String>()
-        val upToDate = mutableListOf<String>()
-        val modToRemove = mutableListOf<String>()
-        val updateAvaliable = mutableListOf<String>()
-
-        val result = mutableListOf<String>()
-
-        val ignored = mutableListOf<String>()
-
-        @Suppress("LoopWithTooManyJumpStatements") for ((mod, line) in activeMods) {
-            val name = when (mod.name) {
-
-                // odin/odin client is weird/mixed up in the json file
-                "Odin" -> "OdinClient"
-
-                // not so essential is fancy
-                "§cNot §aSo §9Essential" -> "Not So Essential"
-                else -> mod.name
-            }
-
-            val fileName = mod.fileName
-            val version = mod.version
-
-            // hide minecraft/forge/mod loader stuff
-            if (fileName == "minecraft.jar") {
-                ignored.add(line)
-                continue
-            }
-
-            if (fileName.contains("forge-1.8.9-11.15.1.2318-1.8.9")) {
-                ignored.add(line)
-                continue
-            }
-
-            if (name == "Forge Mod Loader") {
-                unknownMod.add("unkown forge version: '$fileName'")
-                continue
-            }
-
-            // has auto update, and too many small updates all the time, so no one cares
-            if (name == "Essential") {
-                ignored.add(line)
-                continue
-            }
-            if (name == "OneConfig") {
-                ignored.add(line)
-                continue
-            }
-
-            // comes bundelled with other mods
-            if (name == "Hypixel Mod API") {
-                ignored.add(line)
-                continue
-            }
-
-            // dulkir version bug
-            if (name == "Dulkir Mod" && version == "\${version}") {
-                ignored.add(line)
-                continue
-            }
-
-            // spark version bug
-            if (name == "spark" && version == "\${pluginVersion}") {
-                ignored.add(line)
-                continue
-            }
-
-            val latestFullMod = findModFromName(name)
-            val latestBetaMod = findBetaFromName(name)
-
-            if (latestFullMod == null || latestBetaMod == null) {
-                unknownMod.add(line)
-                continue
-            }
-            val reasonNotToUse = latestFullMod.reasonNotToUse ?: latestBetaMod.reasonNotToUse
-            reasonNotToUse?.let {
-                modToRemove.add("- $name ($it)")
-                continue
-            }
-
-            if (latestFullMod.version == version || latestBetaMod.version == version) {
-                upToDate.add(name)
-                continue
-            }
-            val currentVersion = knownMods.firstOrNull { it.name == mod.name && it.version == version }
-            if (currentVersion == null) {
-                val link = "Download".linkTo(latestBetaMod.downloadLink)
-                unknownVersion.add("$name ($version) - $link")
-                continue
-            }
-            val latestVersion = if (latestBetaMod.beta) latestBetaMod.version else latestFullMod.version
-
-            if (name == "Velox Caelo" && version == "1.0.2" && latestVersion == "1.1.0") {
-                ignored.add("velox wrong version format: $line")
-                continue
-            }
-
-            val link = "Download".linkTo(latestBetaMod.downloadLink)
-            updateAvaliable.add("$name (current: $version, latest: $latestVersion) - $link")
-
-            result.add("- $name ($version -> $latestVersion) $link")
-        }
+        val categories = analyzeMods(activeMods)
+        val unknownMod = categories[ModCategory.UNKNOWN_MOD]!!
+        val unknownVersion = categories[ModCategory.UNKNOWN_VERSION]!!
+        val upToDate = categories[ModCategory.UP_TO_DATE]!!
+        val modToRemove = categories[ModCategory.TO_REMOVE]!!
+        val updateAvaliable = categories[ModCategory.UPDATE_AVAILABLE]!!
+        val result = categories[ModCategory.RESULT]!!
+        val ignored = categories[ModCategory.IGNORED]!!
 
         val debugList = mutableListOf<String>()
         fun debug(text: String) {
@@ -263,8 +279,7 @@ object ModChecker {
 
         debug("found mods in total: ${activeMods.size}")
 
-        val errorMods =
-            activeMods.size - unknownMod.size - upToDate.size - unknownVersion.size - updateAvaliable.size - ignored.size - modToRemove.size
+        val errorMods = activeMods.size - categories.values.sumOf { it.size }
 
         if (errorMods != 0) {
             if (debug) {

@@ -56,7 +56,7 @@ object AgeFeature {
         }
     }
 
-    fun format(name: String, date: String): String {
+    private fun format(name: String, date: String): String {
         val localDate = LocalDate.parse(date, DateTimeFormatter.ISO_LOCAL_DATE)
         val dateTime = localDate.atStartOfDay(ZoneId.of("CET"))
         val seconds = dateTime.toEpochSecond() + 60 * 60 * 12
