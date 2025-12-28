@@ -10,8 +10,6 @@ import at.hannibal2.skyhanni.discord.Utils.pluralize
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.Utils.roundTo
 import at.hannibal2.skyhanni.discord.Utils.userError
-import at.hannibal2.skyhanni.discord.command.ServerCommands.loadServers
-import at.hannibal2.skyhanni.discord.command.ServerCommands.serverLoader
 import at.hannibal2.skyhanni.discord.github.GitHubClient
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -72,16 +70,18 @@ object ServerCommands {
 
     class ServerLoader(val onFinish: (Int) -> Unit = { _ -> }) {
 
-        var servers = mutableSetOf<Server>()
-        val removed = AtomicInteger(0)
-        var latch = CountDownLatch(0)
+        val servers: MutableSet<Server>
+        var removed: AtomicInteger
+        var latch: CountDownLatch
 
-        fun start() {
+        init {
             val json = github.getFileContent("data/discord_servers.json") ?: error("Error loading discord_servers data")
 //        val json = Utils.readStringFromClipboard() ?: error("error loading discord_servers json from clipboard")
 
             servers = parseStringToServers(json)
             checkForDuplicates()
+            latch = CountDownLatch(servers.size)
+            removed = AtomicInteger(0)
             checkForFakes()
         }
 
@@ -120,7 +120,6 @@ object ServerCommands {
             val memberCountDiff = mutableMapOf<String, Double>()
             // we need to throw the errors outside of Invite.resolve, sadly
             val errors = mutableListOf<Throwable>()
-            latch = CountDownLatch(servers.size)
 
             for (server in servers.toList()) {
                 with(server) {
@@ -192,31 +191,31 @@ object ServerCommands {
         private fun Server.errorOnCheck(error: Throwable, errors: MutableList<Throwable>) {
             if (error.message == "10006: Unknown Invite") {
                 remove(this)
-                BOT.logger.info("Unknown server invite: $name (${id}) = $invite")
+                BOT.logger.info("Unknown server invite: $name ($id) = $invite")
                 Utils.sendMessageToBotChannel(buildList {
-                    add("Invite not found in discord api for '${name}'!")
-                    add("json id: `${id}`")
-                    add("Old invite: <${invite}>")
+                    add("Invite not found in discord api for '$name'!")
+                    add("json id: `$id`")
+                    add("Old invite: <$invite>")
                     add("Removed the server from the local cache!")
                 })
             } else if (error.message == "50270: Invite is expired.") {
                 remove(this)
-                BOT.logger.info("Expired server invite: $name (${id}) = $invite")
+                BOT.logger.info("Expired server invite: $name ($id) = $invite")
                 Utils.sendMessageToBotChannel(buildList {
-                    add("Invite expired for '${name}'!")
-                    add("json id: `${id}`")
-                    add("Expired invite: <${invite}>")
+                    add("Invite expired for '$name'!")
+                    add("json id: `$id`")
+                    add("Expired invite: <$invite>")
                     add("Removed the server from the local cache!")
                 })
             } else {
                 remove(this)
-                BOT.logger.info("Error with server invite: $name (${id}) = $invite")
+                BOT.logger.info("Error with server invite: $name ($id) = $invite")
                 Utils.sendMessageToBotChannel(buildList {
-                    add("Error while parsing discord api for '${name}'!")
+                    add("Error while parsing discord api for '$name'!")
                     add("error name: ${error.javaClass.name}")
                     add("error message: ${error.message}")
-                    add("json id: `${id}`")
-                    add("Old invite: <${invite}>")
+                    add("json id: `$id`")
+                    add("Old invite: <$invite>")
                     add("Removed the server from the local cache!")
                 })
                 errors.add(error)
@@ -225,9 +224,7 @@ object ServerCommands {
     }
 
     fun loadServers(onFinish: (Int) -> Unit = { _ -> }) {
-        serverLoader = ServerLoader(onFinish).also {
-            it.start()
-        }
+        serverLoader = ServerLoader(onFinish)
     }
 
     private fun Map<String, Double>.memberCountFormat() {
@@ -350,17 +347,17 @@ class ServerUpdate : BaseCommand() {
 
     init {
         Utils.runDelayed("init load servers", 1.seconds) {
-            loadServers()
+            ServerCommands.loadServers()
         }
     }
 
     override fun MessageReceivedEvent.execute(args: List<String>) {
         reply("updating server list ...")
-        if (serverLoader != null) {
+        if (ServerCommands.serverLoader != null) {
             reply("Server list is already updating!")
             return
         }
-        loadServers { removed ->
+        ServerCommands.loadServers { removed ->
             val removedSuffix = if (removed > 0) {
                 " (removed $removed servers)"
             } else ""
