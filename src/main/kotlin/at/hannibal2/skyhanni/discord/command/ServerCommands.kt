@@ -145,7 +145,7 @@ object ServerCommands {
                 result.onSuccess { validate(it, memberCountDiff) }
                 result.onFailure { validateError(it, errors) }
             }
-            finish(errors.size)
+            finish()
 
             memberCountDiff.memberCountFormat()
             for (error in errors) {
@@ -169,8 +169,8 @@ object ServerCommands {
             return results
         }
 
-        private fun finish(errorCount: Int) {
-            if (checkIfAllFailed(errorCount)) return
+        private fun finish() {
+            if (checkIfAllFailed()) return
 
             this@ServerCommands.outage = false
             pendingMessages.forEach { Utils.sendMessageToBotChannel(it) }
@@ -186,20 +186,20 @@ object ServerCommands {
 
             val link = "https://github.com/SkyHanniStudios/DiscordBot/blob/master/data/discord_servers.json"
             val githubLink = "GitHub".linkTo(link)
-            Utils.sendMessageToBotChannel("Updated server list from $githubLink.")
+            val count = "server".pluralize(servers.size, withNumber = true)
+            Utils.sendMessageToBotChannel("Updated server list from $githubLink. ($count loaded)")
 
             this@ServerCommands.servers = servers.toSet()
         }
 
-        private fun checkIfAllFailed(errorCount: Int): Boolean {
-            val totalOriginal = servers.size + removed
-            val allFailed = removed == totalOriginal && errorCount > 0
+        private fun checkIfAllFailed(): Boolean {
+            val allFailed = servers.isEmpty() && removed > 0
 
             if (!allFailed) return false
             this@ServerCommands.outage = true
 
             BOT.logger.warn("All servers failed validation - likely API outage. Clearing data.")
-            Utils.sendMessageToBotChannel("All servers failed validation - likely API outage. Server list cleared. Please retry manually with `!serverupdate`.")
+            Utils.sendMessageToBotChannel("All servers failed validation. Server list cleared. Please retry manually with `!serverupdate`.")
 
             this@ServerCommands.servers = emptySet()
             return true
@@ -370,7 +370,7 @@ class ServerCommand : BaseCommand() {
         val server = ServerCommands.getServer(keyword)
         if (server == null) {
             if (ServerCommands.outage) {
-                userError("Server list unavailable due to API outage. Please try again later.")
+                userError("Server list currently unavailable. Please try again later.")
             } else {
                 userError("Server with keyword '$keyword' not found.")
             }
@@ -417,9 +417,9 @@ class ServerList : BaseCommand() {
     override fun MessageReceivedEvent.execute(args: List<String>) {
         if (ServerCommands.servers.isEmpty()) {
             if (ServerCommands.outage) {
-                reply("Server list unavailable due to API outage.")
+                reply("Server list currently unavailable.")
             } else {
-                reply("No servers found.")
+                reply("The serverlist is empty.")
             }
             return
         }
