@@ -33,7 +33,7 @@ object ServerCommands {
         val description: String,
         val aliases: List<String>,
     ) {
-        val allKeys: List<String> get() = (listOf(keyword, name) + aliases).map { it.lowercase() }
+        val allKeys: Set<String> get() = (listOf(keyword, name) + aliases).map { it.lowercase() }.toSet()
 
         fun print(tutorial: Boolean = false): String = buildString {
             append("**$name**\n\n")
@@ -94,10 +94,21 @@ object ServerCommands {
         private fun checkForDuplicates() {
             // Check for self-overlapping keys first
             servers.forEach { server ->
-                val selfDuplicates = server.allKeys.groupingBy { it }.eachCount().filter { it.value > 1 }.keys
-                if (selfDuplicates.isNotEmpty()) {
-                    BOT.logger.warn("Server '${server.name}' has overlapping keys: $selfDuplicates")
-                    Utils.sendMessageToBotChannel("Server '${server.name}' has overlapping keys: $selfDuplicates")
+                val keywordLower = server.keyword.lowercase()
+                val nameLower = server.name.lowercase()
+
+                val problemAliases = server.aliases
+                    .map { it.lowercase() }
+                    .filter { alias ->
+                        alias == keywordLower ||
+                                alias == nameLower ||
+                                server.aliases.count { it.lowercase() == alias } > 1
+                    }
+                    .distinct()
+
+                if (problemAliases.isNotEmpty()) {
+                    BOT.logger.warn("Server '${server.name}' has overlapping aliases: $problemAliases")
+                    Utils.sendMessageToBotChannel("Server '${server.name}' has overlapping aliases: $problemAliases")
                 }
             }
 
