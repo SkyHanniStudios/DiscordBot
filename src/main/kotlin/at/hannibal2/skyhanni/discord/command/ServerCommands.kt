@@ -82,7 +82,6 @@ object ServerCommands {
             checkForDuplicates()
             latch = CountDownLatch(servers.size)
             removed = AtomicInteger(0)
-            validate()
         }
 
         private fun checkForDuplicates() {
@@ -116,7 +115,7 @@ object ServerCommands {
             }
         }
 
-        private fun validate() {
+        fun validate() {
             val memberCountDiff = mutableMapOf<String, Double>()
             // we need to throw the errors outside of Invite.resolve, sadly
             val errors = mutableListOf<Throwable>()
@@ -222,6 +221,7 @@ object ServerCommands {
 
     fun loadServers(onFinish: (Int) -> Unit = { _ -> }) {
         serverLoader = ServerLoader(onFinish)
+        serverLoader?.validate()
     }
 
     private fun Map<String, Double>.memberCountFormat() {
