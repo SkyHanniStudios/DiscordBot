@@ -77,7 +77,6 @@ object ServerCommands {
         private set
     private val gson = Gson()
 
-    // Constructor blocks until all validation completes
     private class ServerLoader {
         val servers: MutableSet<Server>
         var removedInvalidInvite = 0
@@ -169,9 +168,8 @@ object ServerCommands {
                 result.onFailure { validateError(it, errors) }
             }
 
-            finish(errors)  // Pass errors here
+            finish(errors)
             memberCountDiff.memberCountFormat()
-            // Remove the throw loop
         }
 
 
@@ -234,7 +232,6 @@ object ServerCommands {
 
             val removedInfo = if (removed > 0) ", $removed removed ($breakdown)" else ""
 
-            // Add error info
             val errorInfo = if (errors.isNotEmpty()) {
                 errors.forEach { BOT.logger.error("Unexpected validation error", it) }
                 ", ${errors.size} unexpected errors"

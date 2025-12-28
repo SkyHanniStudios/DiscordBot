@@ -29,6 +29,7 @@ class LiveLog(
     }
 
     fun startAutoUpdate(intervalMs: Long = 1000L) {
+        doUpdate()
         autoUpdateJob = scheduler.scheduleAtFixedRate(
             { doUpdate() },
             intervalMs,
