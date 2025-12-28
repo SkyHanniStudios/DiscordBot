@@ -76,7 +76,7 @@ object ServerCommands {
     private val gson = Gson()
 
     // Constructor blocks until all validation completes
-    private class ServerLoader(val onFinish: (removedCount: Int, errorCount: Int) -> Unit = { _, _ -> }) {
+    private class ServerLoader {
 
         val servers: MutableSet<Server>
         var removed = 0
@@ -172,7 +172,11 @@ object ServerCommands {
                 BOT.logger.info(message)
                 Utils.sendMessageToBotChannel(message)
             }
-            onFinish(removed, errorCount)
+
+            val link = "https://github.com/SkyHanniStudios/DiscordBot/blob/master/data/discord_servers.json"
+            val githubLink = "GitHub".linkTo(link)
+            Utils.sendMessageToBotChannel("Updated server list from $githubLink.")
+
             this@ServerCommands.servers = servers.toSet()
         }
 
@@ -213,7 +217,7 @@ object ServerCommands {
                     add("Wrong server id found for '$name'!")
                     add("json id: `$id`")
                     add("discord api id: `${guild.id}`")
-                    add("invite: (probably a scam server!?)" + "link".linkTo(invite))
+                    add("invite: (probably a scam server!?) `$invite`")
                     add("Removed the server from the local cache!")
                 })
                 return
@@ -228,7 +232,7 @@ object ServerCommands {
                 pendingMessages.add(
                     listOf("$reason for '$name'!") + extraLines.toList() + listOf(
                         "id: `$id`",
-                        "invite: <$invite>",
+                        "invite: `$invite`",
                         "Removed the server from the local cache!",
                     )
                 )
@@ -249,11 +253,11 @@ object ServerCommands {
         }
     }
 
-    fun loadServers(onFinish: (Int, Int) -> Unit = { _, _ -> }) {
+    fun loadServers() {
         isLoading = true
         Utils.runAsync("load servers") {
             try {
-                ServerLoader(onFinish)
+                ServerLoader()
             } finally {
                 isLoading = false
             }
@@ -374,8 +378,6 @@ class ServerUpdate : BaseCommand() {
     override val aliases: List<String> = listOf(
         "updateservers", "updateserverlist", "serverlistupdate", "listupdateserver", "updateserver"
     )
-    private val link = "https://github.com/SkyHanniStudios/DiscordBot/blob/master/data/discord_servers.json"
-    private val githubLink = "GitHub".linkTo(link)
 
     init {
         Utils.runDelayed("init load servers", 1.seconds) {
@@ -389,19 +391,10 @@ class ServerUpdate : BaseCommand() {
             return
         }
 
+        logAction("Started server list update")
         reply("Updating server list ...")
-        ServerCommands.loadServers { removedCount, errorCount ->
-            val removedServers = "server".pluralize(removedCount, withNumber = true)
-            val suffix = when {
-                removedCount == 0 -> ""
-                errorCount == 0 -> " (removed $removedServers)"
-                else -> " (removed $removedServers, $errorCount with errors)"
-            }
-            reply("Updated server list from $githubLink$suffix.")
-            logAction("Updated server list from github")
-        }
+        ServerCommands.loadServers()
     }
-
 }
 
 @Suppress("unused")
