@@ -32,7 +32,7 @@ object ErrorManager {
 
         }.joinToString("\n")
         try {
-            Utils.sendMessageToBotChannelFailSave(message)
+            Utils.sendMessageToBotChannelFailsave(message)
         } catch (e: Throwable) {
             Utils.sendMessageToBotChannel("can not send error message to bot channel! $PING_HANNIBAL $PLEADING_FACE")
             println("can not send error message to bot channel!")
