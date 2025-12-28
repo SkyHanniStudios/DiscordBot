@@ -15,8 +15,8 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import net.dv8tion.jda.api.entities.Invite
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.absoluteValue
 import kotlin.time.Duration.Companion.seconds
 
@@ -69,11 +69,10 @@ object ServerCommands {
     var isLoading = false
         private set
 
-    class ServerLoader(val onFinish: (Int) -> Unit = { _ -> }) {
+    private class ServerLoader(val onFinish: (Int) -> Unit = { _ -> }) {
 
         val servers: MutableSet<Server>
-        val removed: AtomicInteger
-        val latch: CountDownLatch
+        var removed = 0
 
         init {
             val json = github.getFileContent("data/discord_servers.json") ?: error("Error loading discord_servers data")
@@ -81,8 +80,6 @@ object ServerCommands {
 
             servers = parseStringToServers(json)
             checkForDuplicates()
-            latch = CountDownLatch(servers.size)
-            removed = AtomicInteger(0)
             validate()
         }
 
@@ -129,18 +126,15 @@ object ServerCommands {
         }
 
         private fun validate() {
+            val results = expensiveFetchRequests()
+
             val memberCountDiff = mutableMapOf<String, Double>()
-            // we need to throw the errors outside of Invite.resolve, sadly
             val errors = mutableListOf<Throwable>()
 
-            for (server in servers.toList()) with(server) {
-                Invite.resolve(BOT.jda, invite.split("/").last(), true).queue(
-                    { validate(it, memberCountDiff) },
-                    { error -> validateError(error, errors) },
-                )
+            for ((server, result) in results) with(server) {
+                result.onSuccess { validate(it, memberCountDiff) }
+                result.onFailure { validateError(it, errors) }
             }
-
-            latch.await() // wait for all servers to be checked
             finish()
 
             memberCountDiff.memberCountFormat()
@@ -149,8 +143,23 @@ object ServerCommands {
             }
         }
 
+        private fun expensiveFetchRequests(): ConcurrentHashMap<Server, Result<Invite>> {
+            val results = ConcurrentHashMap<Server, Result<Invite>>()
+            val latch = CountDownLatch(servers.size)
+
+            for (server in servers) {
+                val code = server.invite.split("/").last()
+                Invite.resolve(BOT.jda, code, true).queue(
+                    { results[server] = Result.success(it); latch.countDown() },
+                    { results[server] = Result.failure(it); latch.countDown() },
+                )
+            }
+
+            latch.await()
+            return results
+        }
+
         private fun finish() {
-            val removed = removed.get()
             if (removed == 0) {
                 BOT.logger.info("Checked for fake server with no results.")
             } else {
@@ -164,9 +173,8 @@ object ServerCommands {
         }
 
         private fun Server.remove() {
-            removed.incrementAndGet()
+            removed++
             servers.remove(this)
-            latch.countDown()
         }
 
         private fun Server.validate(resolvedInvite: Invite, memberCountDiff: MutableMap<String, Double>) {
@@ -193,7 +201,6 @@ object ServerCommands {
                 return
             }
             memberCountDiff.calculateMemberCount(guild, this)
-            latch.countDown()
         }
 
         private fun Server.validateError(error: Throwable, errors: MutableList<Throwable>) {
@@ -263,12 +270,12 @@ object ServerCommands {
 
         val diffFormat = " (diff=${diff.addSeparators()})"
         val percentageChanged = ((diff.absoluteValue / realSize.toDouble()) * 100).roundTo(5)
-        val name = "${s(server, storedSize, realSize)} $diffFormat ${server.id}"
+        val name = "${formatMemberDiff(server, storedSize, realSize)} $diffFormat ${server.id}"
         val text = "$name - $percentageChanged% ($realSize)"
         this[text] = percentageChanged
     }
 
-    private fun s(
+    private fun formatMemberDiff(
         server: Server, storedSize: Int, realSize: Int
     ) = "${server.name}: ${storedSize.addSeparators()} -> ${realSize.addSeparators()}"
 
