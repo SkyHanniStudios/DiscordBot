@@ -117,7 +117,7 @@ object Utils {
         return parts
     }
 
-    fun sendMessageToBotChannelFailsave(message: String, instantly: Boolean = false) {
+    fun sendMessageToBotChannelFailSafe(message: String, instantly: Boolean = false) {
         splitMessage(message).forEach { sendMessageToBotChannel(it, instantly) }
     }
 
