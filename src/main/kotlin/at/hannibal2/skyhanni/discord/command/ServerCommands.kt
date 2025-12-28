@@ -118,7 +118,7 @@ object ServerCommands {
                         add("Wrong server id found for '${server.name}'!")
                         add("json id: `${server.id}`")
                         add("discord api id: `${guild.id}`")
-                        add("invite: " + "link".linkTo(server.invite))
+                        add("invite: (probably a scam server!?)" + "link".linkTo(server.invite))
                         add("Removed the server from the local cache!")
                     })
                     return@queue
