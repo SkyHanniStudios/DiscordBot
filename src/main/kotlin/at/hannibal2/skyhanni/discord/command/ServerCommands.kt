@@ -8,6 +8,7 @@ import at.hannibal2.skyhanni.discord.Utils.linkTo
 import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.pluralize
 import at.hannibal2.skyhanni.discord.Utils.reply
+import at.hannibal2.skyhanni.discord.Utils.replyLong
 import at.hannibal2.skyhanni.discord.Utils.roundTo
 import at.hannibal2.skyhanni.discord.Utils.userError
 import at.hannibal2.skyhanni.discord.github.GitHubClient
@@ -65,6 +66,8 @@ object ServerCommands {
     )
 
     var servers = setOf<Server>()
+        private set
+    var outage = false
         private set
     private val discordServerPattern = "(https?://)?(www\\.)?(discord\\.gg|discord\\.com/invite)/[\\w-]+".toPattern()
 
@@ -158,6 +161,7 @@ object ServerCommands {
         private fun finish(errorCount: Int) {
             if (checkIfAllFailed(errorCount)) return
 
+            this@ServerCommands.outage = false
             pendingMessages.forEach { Utils.sendMessageToBotChannel(it) }
 
             if (removed == 0) {
@@ -177,6 +181,7 @@ object ServerCommands {
             val allFailed = removed == totalOriginal && errorCount > 0
 
             if (!allFailed) return false
+            this@ServerCommands.outage = true
 
             BOT.logger.warn("All servers failed validation - likely API outage. Clearing data.")
             Utils.sendMessageToBotChannel("All servers failed validation - likely API outage. Server list cleared. Please retry manually with `!serverupdate`.")
@@ -349,7 +354,11 @@ class ServerCommand : BaseCommand() {
         val debug = args.getOrNull(1) == "-d"
         val server = ServerCommands.getServer(keyword)
         if (server == null) {
-            userError("Server with keyword '$keyword' not found.")
+            if (ServerCommands.outage) {
+                userError("Server list unavailable due to API outage. Please try again later.")
+            } else {
+                userError("Server with keyword '$keyword' not found.")
+            }
             return
         }
         if (debug) reply(server.printDebug())
@@ -403,7 +412,11 @@ class ServerList : BaseCommand() {
 
     override fun MessageReceivedEvent.execute(args: List<String>) {
         if (ServerCommands.servers.isEmpty()) {
-            reply("No servers found.")
+            if (ServerCommands.outage) {
+                reply("Server list unavailable due to API outage.")
+            } else {
+                reply("No servers found.")
+            }
             return
         }
         val list = ServerCommands.servers.joinToString("\n") { server ->
@@ -411,6 +424,6 @@ class ServerList : BaseCommand() {
             if (aliases.isNotEmpty()) "${server.keyword} [${aliases.joinToString(", ")}]"
             else server.keyword
         }
-        reply("Server list:\n$list")
+        replyLong("Server list:\n$list")
     }
 }

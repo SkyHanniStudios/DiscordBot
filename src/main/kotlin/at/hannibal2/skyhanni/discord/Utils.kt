@@ -28,6 +28,14 @@ object Utils {
         message.messageReply(text)
     }
 
+    // splitting one long message into multiple smaller ones
+    fun MessageReceivedEvent.replyLong(text: String) {
+        require(text.isNotEmpty()) { "Cannot reply with empty message" }
+        val parts = splitMessage(text)
+        reply(parts.first())
+        parts.drop(1).forEach { channel.messageSend(it) }
+    }
+
     fun MessageReceivedEvent.userError(text: String) {
         message.messageReply("❌ $text")
     }
@@ -116,7 +124,8 @@ object Utils {
         return parts
     }
 
-    fun sendMessageToBotChannelFailSafe(message: String, instantly: Boolean = false) {
+    // splitting one long message into multiple smaller ones
+    fun sendMessageToBotChannelLong(message: String, instantly: Boolean = false) {
         splitMessage(message).forEach { sendMessageToBotChannel(it, instantly) }
     }
 
