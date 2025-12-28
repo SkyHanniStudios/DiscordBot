@@ -104,7 +104,7 @@ object ServerCommands {
             }
 
             val duplicates = mutableSetOf<String>()
-            for ((key, serverList) in keyToServers.filter { it.value.size > 1 }) {
+            for ((key, serverList) in keyToServers.filter { it.value.distinct().size > 1 }) {
                 if (serverList.size == 2) {
                     val nameA = serverList[0].name
                     val nameB = serverList[1].name
@@ -204,36 +204,29 @@ object ServerCommands {
         }
 
         private fun Server.validateError(error: Throwable, errors: MutableList<Throwable>) {
-            if (error.message == "10006: Unknown Invite") {
+            fun handle(reason: String, vararg extraLines: String) {
                 remove()
-                BOT.logger.info("Unknown server invite: $name ($id) = $invite")
-                Utils.sendMessageToBotChannel(buildList {
-                    add("Invite not found in discord api for '$name'!")
-                    add("json id: `$id`")
-                    add("Old invite: <$invite>")
-                    add("Removed the server from the local cache!")
-                })
-            } else if (error.message == "50270: Invite is expired.") {
-                remove()
-                BOT.logger.info("Expired server invite: $name ($id) = $invite")
-                Utils.sendMessageToBotChannel(buildList {
-                    add("Invite expired for '$name'!")
-                    add("json id: `$id`")
-                    add("Expired invite: <$invite>")
-                    add("Removed the server from the local cache!")
-                })
-            } else {
-                remove()
-                BOT.logger.info("Error with server invite: $name ($id) = $invite")
-                Utils.sendMessageToBotChannel(buildList {
-                    add("Error while parsing discord api for '$name'!")
-                    add("error name: ${error.javaClass.name}")
-                    add("error message: ${error.message}")
-                    add("json id: `$id`")
-                    add("Old invite: <$invite>")
-                    add("Removed the server from the local cache!")
-                })
-                errors.add(error)
+                BOT.logger.info("$reason: $name ($id) = $invite")
+                Utils.sendMessageToBotChannel(
+                    listOf("$reason for '$name'!") + extraLines.toList() + listOf(
+                        "id: `$id`",
+                        "invite: <$invite>",
+                        "Removed the server from the local cache!",
+                    )
+                )
+            }
+
+            when (error.message) {
+                "10006: Unknown Invite" -> handle("Invite not found in discord api")
+                "50270: Invite is expired." -> handle("Invite expired")
+                else -> {
+                    handle(
+                        "Error while parsing discord api",
+                        "error name: ${error.javaClass.name}",
+                        "error message: ${error.message}",
+                    )
+                    errors.add(error)
+                }
             }
         }
     }
@@ -241,8 +234,11 @@ object ServerCommands {
     fun loadServers(onFinish: (Int) -> Unit = { _ -> }) {
         isLoading = true
         Utils.runAsync("load servers") {
-            ServerLoader(onFinish)
-            isLoading = false
+            try {
+                ServerLoader(onFinish)
+            } finally {
+                isLoading = false
+            }
         }
     }
 
