@@ -1,31 +1,60 @@
 package at.hannibal2.skyhanni.discord.command
 
-// taken and edited from https://github.com/PartlySaneStudios/partly-sane-skies/blob/main/src/main/kotlin/me/partlysanestudios/partlysaneskies/features/security/modschecker/ModChecker.kt
-
-//
-// Written by hannibal002 and Su386.
-// See LICENSE for copyright and license notices.
-//
-
 import at.hannibal2.skyhanni.discord.*
 import at.hannibal2.skyhanni.discord.Utils.getLink
 import at.hannibal2.skyhanni.discord.Utils.getLinkName
 import at.hannibal2.skyhanni.discord.Utils.linkTo
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.github.GitHubClient
+import at.hannibal2.skyhanni.discord.utils.LiveLog
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import kotlin.time.Duration.Companion.seconds
 
 object ModChecker {
+    private val github = GitHubClient("SkyHanniStudios", "DiscordBot", BOT.config.githubTokenOwn)
+    private val githubLink = "GitHub".linkTo("https://github.com/SkyHanniStudios/DiscordBot/blob/master/data/mods.json")
+
     private var knownMods = listOf<KnownMod>()
+    var isLoading = false
+        private set
 
     // https://regex101.com/r/0W4NCa/1
     private val pattern = "\\[(?<modName>.*)]\\[(?<fileName>.*) \\((?<version>.*)\\)]".toPattern()
 
-    private val github = GitHubClient("SkyHanniStudios", "DiscordBot", BOT.config.githubTokenOwn)
-
     class ModInfo(val name: String, val version: String, val fileName: String)
+
+    fun loadModDataFromRepo() {
+        isLoading = true
+        Utils.runAsync("load mod data") {
+            val log = LiveLog(
+                Utils.getBotChannel(),
+                "Mod List Update (via ${if (useClipboardInModChecker) "dev clipboard" else githubLink})"
+            )
+            log.startAutoUpdate()
+            try {
+                log.status("Loading from GitHub...")
+                val json = if (useClipboardInModChecker) {
+                    Utils.readStringFromClipboard() ?: error("error loading mods json from clipboard")
+                } else {
+                    github.getFileContent("data/mods.json") ?: error("Error loading mods json data")
+                }
+
+                log.log("Parsing JSON...")
+                val modData = Gson().fromJson(json, ModDataJson::class.java)
+                knownMods = read(modData)
+
+                log.complete("${knownMods.size} mod versions loaded")
+                BOT.logger.info("Loaded ${knownMods.size} mod versions from repo")
+            } catch (e: Exception) {
+                log.complete("Error: ${e.message}", status = "Failed")
+                throw e
+            } finally {
+                isLoading = false
+            }
+        }
+    }
 
     @Suppress("unused")
     class DebugModsCommand : BaseCommand() {
@@ -51,16 +80,24 @@ object ModChecker {
 
     @Suppress("unused")
     class UpdateModListCommand : BaseCommand() {
-        override val name: String = "modlistupdate"
-        override val description: String = "Updates the server list."
-        override val aliases: List<String> = listOf("updatemodlist", "updatemods")
+        override val name = "modlistupdate"
+        override val description = "Updates the mod list."
+        override val aliases = listOf("updatemodlist", "updatemods")
+
+        init {
+            Utils.runDelayed("init load mods", 1.seconds) {
+                if (!isLoading) {
+                    loadModDataFromRepo()
+                }
+            }
+        }
 
         override fun MessageReceivedEvent.execute(args: List<String>) {
-            reply("updating mod list ...")
-
+            if (isLoading) {
+                reply("Mod list is already updating!")
+                return
+            }
             loadModDataFromRepo()
-            val link = "GitHub".linkTo("https://github.com/SkyHanniStudios/DiscordBot/blob/master/data/mods.json")
-            reply("Updated mod list from $link.")
         }
     }
 
@@ -100,17 +137,18 @@ object ModChecker {
         val fileName = matcher.group("fileName")
         val version = matcher.group("version")
         return ModInfo(name, version, fileName)
-
     }
 
     @Suppress("CyclomaticComplexMethod", "LongMethod")
     private fun MessageReceivedEvent.run(activeMods: Map<ModInfo, String>, debug: Boolean) {
-
-        if (knownMods.isEmpty()) {
+        if (knownMods.isEmpty() && !isLoading) {
             loadModDataFromRepo()
         }
 
-        if (knownMods.isEmpty()) error("known mods is empty")
+        if (knownMods.isEmpty()) {
+            reply("Mod list not loaded yet, please try again in a moment.")
+            return
+        }
 
         val unknownMod = mutableListOf<String>()
         val unknownVersion = mutableListOf<String>()
@@ -329,28 +367,13 @@ object ModChecker {
 
         class ModInfo {
             var name: String = ""
-
             val download: String = ""
 
             @SerializedName("do_not_use_reason")
             val reasonNotToUse: String? = null
-
             val versions: Map<String, String> = HashMap()
-
             val betaVersions: Map<String, String> = HashMap()
         }
-    }
-
-    private fun loadModDataFromRepo() {
-        val json = if (useClipboardInModChecker) {
-            Utils.readStringFromClipboard() ?: error("error loading mods json from clipboard")
-        } else {
-            github.getFileContent("data/mods.json") ?: error("Error loading mods json data")
-        }
-
-        val gson = Gson()
-        val modData = gson.fromJson(json, ModDataJson::class.java)
-        knownMods = read(modData)
     }
 
     private fun read(modData: ModDataJson): List<KnownMod> {
@@ -383,10 +406,8 @@ object ModChecker {
 
     private fun findModFromName(name: String): KnownMod? {
         for (mod in knownMods) {
-            if (mod.name == name) {
-                if (mod.latest && !mod.beta) {
-                    return mod
-                }
+            if (mod.name == name && mod.latest && !mod.beta) {
+                return mod
             }
         }
         return null
@@ -394,10 +415,8 @@ object ModChecker {
 
     private fun findBetaFromName(name: String): KnownMod? {
         for (mod in knownMods) {
-            if (mod.name == name) {
-                if (mod.latest && mod.beta) {
-                    return mod
-                }
+            if (mod.name == name && mod.latest && mod.beta) {
+                return mod
             }
         }
         return null

@@ -7,6 +7,7 @@ import at.hannibal2.skyhanni.discord.Utils.linkTo
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.github.GitHubClient
 import at.hannibal2.skyhanni.discord.useClipboardInAge
+import at.hannibal2.skyhanni.discord.utils.LiveLog
 import com.google.gson.Gson
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import java.time.LocalDate
@@ -29,16 +30,26 @@ object AgeFeature {
     fun loadFromRepo() {
         isLoading = true
         Utils.runAsync("load age") {
+            val viaText = if (useClipboardInAge) "dev clipboard" else githubLink
+            val log = LiveLog(Utils.getBotChannel(), "Age List Update (via $viaText)")
+            log.startAutoUpdate()
             try {
+                log.status("Loading from GitHub...")
                 val json = if (useClipboardInAge) {
                     Utils.readStringFromClipboard() ?: error("error loading age json from clipboard")
                 } else {
                     github.getFileContent("data/age.json") ?: error("Error loading age json from github")
                 }
 
+                log.log("Parsing JSON...")
                 val data = Gson().fromJson(json, TimeSinceJson::class.java)
                 releases = data.releases
+
+                log.complete("${releases.size} entries loaded")
                 BOT.logger.info("Loaded ${releases.size} age entries from repo")
+            } catch (e: Exception) {
+                log.complete("Error: ${e.message}", status = "Failed")
+                throw e
             } finally {
                 isLoading = false
             }
@@ -96,7 +107,6 @@ object AgeFeature {
             }
 
             loadFromRepo()
-            reply("Updated age list from $githubLink. (${releases.size} entries loaded)")
         }
     }
 }

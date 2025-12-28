@@ -98,8 +98,13 @@ class LiveLog(
     }
 
     private fun formatElapsed(): String {
-        val seconds = (System.currentTimeMillis() - startTime) / 1000
-        return if (seconds < 60) "${seconds}s" else "${seconds / 60}m ${seconds % 60}s"
+        val millis = System.currentTimeMillis() - startTime
+        return when {
+            millis < 1000 -> "${millis}ms"
+            millis < 3000 -> "${"%.1f".format(millis / 1000.0)}s"
+            millis < 60000 -> "${millis / 1000}s"
+            else -> "${millis / 60000}m ${(millis / 1000) % 60}s"
+        }
     }
 
     fun complete(logMessage: String, status: String = "Done") {
