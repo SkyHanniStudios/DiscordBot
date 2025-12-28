@@ -32,8 +32,10 @@ object ServerCommands {
         val description: String,
         val aliases: List<String>,
     ) {
+        val allKeys: List<String> get() = (listOf(keyword, name) + aliases).map { it.lowercase() }
+
         fun print(tutorial: Boolean = false): String = buildString {
-            appendLine("**$name**\n")
+            append("**$name**\n\n")
             if (description.isNotEmpty()) {
                 appendLine(description)
             }
@@ -87,8 +89,7 @@ object ServerCommands {
         private fun checkForDuplicates() {
             // Check for self-overlapping keys first
             servers.forEach { server ->
-                val keys = (listOf(server.keyword, server.name) + server.aliases).map { it.lowercase() }
-                val selfDuplicates = keys.groupingBy { it }.eachCount().filter { it.value > 1 }.keys
+                val selfDuplicates = server.allKeys.groupingBy { it }.eachCount().filter { it.value > 1 }.keys
                 if (selfDuplicates.isNotEmpty()) {
                     BOT.logger.warn("Server '${server.name}' has overlapping keys: $selfDuplicates")
                     Utils.sendMessageToBotChannel("Server '${server.name}' has overlapping keys: $selfDuplicates")
@@ -98,9 +99,8 @@ object ServerCommands {
             // Then check for duplicates between different servers
             val keyToServers = mutableMapOf<String, MutableList<Server>>()
             servers.forEach { server ->
-                val keys = listOf(server.keyword, server.name) + server.aliases
-                keys.forEach { key ->
-                    keyToServers.getOrPut(key.lowercase()) { mutableListOf() }.add(server)
+                server.allKeys.forEach { key ->
+                    keyToServers.getOrPut(key) { mutableListOf() }.add(server)
                 }
             }
 
@@ -122,7 +122,7 @@ object ServerCommands {
                 val message = "Found $count duplicate servers:\n${duplicates.joinToString("\n")}"
                 Utils.sendMessageToBotChannel(message)
             } else {
-                BOT.logger.info("no duplicate servers found.")
+                BOT.logger.info("No duplicate servers found.")
             }
         }
 
@@ -232,7 +232,7 @@ object ServerCommands {
         }
     }
 
-    fun loadServers(onFinish: (Int) -> Unit = { _ -> }) {
+    fun loadServers(onFinish: (Int) -> Unit = { }) {
         isLoading = true
         Utils.runAsync("load servers") {
             try {
@@ -295,20 +295,10 @@ object ServerCommands {
         }.toMutableSet()
     }
 
-    internal fun getServer(name: String): Server? {
-        for (server in servers) {
-            if (server.keyword.equals(name, ignoreCase = true)) {
-                return server
-            }
-            if (server.name.equals(name, ignoreCase = true)) {
-                return server
-            }
-            if (name in server.aliases) {
-                return server
-            }
-        }
-
-        return null
+    internal fun getServer(name: String): Server? = servers.find { server ->
+        server.keyword.equals(name, ignoreCase = true) ||
+                server.name.equals(name, ignoreCase = true) ||
+                name in server.aliases
     }
 
     private fun isDiscordInvite(message: String): Boolean = discordServerPattern.matcher(message).find()
