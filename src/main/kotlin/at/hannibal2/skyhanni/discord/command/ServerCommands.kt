@@ -77,6 +77,7 @@ object ServerCommands {
 
         val servers: MutableSet<Server>
         var removed = 0
+        val pendingMessages = mutableListOf<List<String>>()
 
         init {
             val json = github.getFileContent("data/discord_servers.json") ?: error("Error loading discord_servers data")
@@ -113,8 +114,8 @@ object ServerCommands {
             val count = duplicates.size
             if (count > 0) {
                 BOT.logger.warn("$count duplicate servers found!")
-                val message = "Found $count duplicate servers:\n${duplicates.distinct().joinToString("\n")}"
-                Utils.sendMessageToBotChannel(message)
+                val joinToString = duplicates.distinct().joinToString("\n")
+                Utils.sendMessageToBotChannel("Found $count duplicate servers:\n$joinToString")
             } else {
                 BOT.logger.info("No duplicate servers found.")
             }
@@ -139,7 +140,7 @@ object ServerCommands {
         }
 
         private fun expensiveFetchRequests(): ConcurrentHashMap<Server, Result<Invite>> {
-            val results = ConcurrentHashMap<Server, Result<Invite>>()
+            val results = ConcurrentHashMap<Server, Result<Invite>>(servers.size)
             val latch = CountDownLatch(servers.size)
 
             for (server in servers) {
@@ -155,6 +156,10 @@ object ServerCommands {
         }
 
         private fun finish(errorCount: Int) {
+            if (checkIfAllFailed(errorCount)) return
+
+            pendingMessages.forEach { Utils.sendMessageToBotChannel(it) }
+
             if (removed == 0) {
                 BOT.logger.info("Checked for fake server with no results.")
             } else {
@@ -164,7 +169,20 @@ object ServerCommands {
                 Utils.sendMessageToBotChannel(message)
             }
             onFinish(removed, errorCount)
-            this@ServerCommands.servers = servers
+            this@ServerCommands.servers = servers.toSet()
+        }
+
+        private fun checkIfAllFailed(errorCount: Int): Boolean {
+            val totalOriginal = servers.size + removed
+            val allFailed = removed == totalOriginal && errorCount > 0
+
+            if (!allFailed) return false
+
+            BOT.logger.warn("All servers failed validation - likely API outage. Clearing data.")
+            Utils.sendMessageToBotChannel("All servers failed validation - likely API outage. Server list cleared. Please retry manually with `!serverupdate`.")
+
+            this@ServerCommands.servers = emptySet()
+            return true
         }
 
         private fun Server.remove() {
@@ -176,7 +194,7 @@ object ServerCommands {
             val guild = resolvedInvite.guild ?: run {
                 remove()
                 BOT.logger.info("Server not found in discord api '$name'!")
-                Utils.sendMessageToBotChannel(buildList {
+                pendingMessages.add(buildList {
                     add("Server not found in discord api '$name'!")
                     add("but the invite exists? somehow? - ${resolvedInvite.url}")
                     add("Removed the server from the local cache!")
@@ -186,7 +204,7 @@ object ServerCommands {
             if (id != guild.id) {
                 remove()
                 BOT.logger.info("Wrong server id! $name ($id != ${guild.id})")
-                Utils.sendMessageToBotChannel(buildList {
+                pendingMessages.add(buildList {
                     add("Wrong server id found for '$name'!")
                     add("json id: `$id`")
                     add("discord api id: `${guild.id}`")
@@ -202,7 +220,7 @@ object ServerCommands {
             fun handle(reason: String, vararg extraLines: String) {
                 remove()
                 BOT.logger.info("$reason: $name ($id) = $invite")
-                Utils.sendMessageToBotChannel(
+                pendingMessages.add(
                     listOf("$reason for '$name'!") + extraLines.toList() + listOf(
                         "id: `$id`",
                         "invite: <$invite>",
