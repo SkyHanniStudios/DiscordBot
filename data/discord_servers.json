@@ -20,7 +20,8 @@
         "moulberry",
         "moul",
         "notenoughupdates",
-        "not enough updates"
+        "not enough updates",
+        "neu"
       ]
     },
     "sh": {
@@ -507,8 +508,7 @@
       "invite": "https://discord.gg/farming-council-skyblock-guides-more-1020742260683448450",
       "description": "A community centered around farming.",
       "aliases": [
-        "FarmingCouncil",
-        "Council"
+        "FarmingCouncil"
       ]
     },
     "hunter": {
