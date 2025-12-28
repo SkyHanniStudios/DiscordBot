@@ -66,9 +66,8 @@ object ServerCommands {
         private set
     private val discordServerPattern = "(https?://)?(www\\.)?(discord\\.gg|discord\\.com/invite)/[\\w-]+".toPattern()
 
-    var serverLoader: ServerLoader? = null
+    var isLoading = false
         private set
-
 
     class ServerLoader(val onFinish: (Int) -> Unit = { _ -> }) {
 
@@ -84,6 +83,7 @@ object ServerCommands {
             checkForDuplicates()
             latch = CountDownLatch(servers.size)
             removed = AtomicInteger(0)
+            validate()
         }
 
         private fun checkForDuplicates() {
@@ -128,7 +128,7 @@ object ServerCommands {
             }
         }
 
-        fun validate() {
+        private fun validate() {
             val memberCountDiff = mutableMapOf<String, Double>()
             // we need to throw the errors outside of Invite.resolve, sadly
             val errors = mutableListOf<Throwable>()
@@ -161,7 +161,6 @@ object ServerCommands {
             }
             onFinish(removed)
             this@ServerCommands.servers = servers
-            serverLoader = null
         }
 
         private fun Server.remove() {
@@ -233,9 +232,10 @@ object ServerCommands {
     }
 
     fun loadServers(onFinish: (Int) -> Unit = { _ -> }) {
+        isLoading = true
         Utils.runAsync("load servers") {
-            serverLoader = ServerLoader(onFinish)
-            serverLoader?.validate()
+            ServerLoader(onFinish)
+            isLoading = false
         }
     }
 
@@ -364,7 +364,7 @@ class ServerUpdate : BaseCommand() {
     }
 
     override fun MessageReceivedEvent.execute(args: List<String>) {
-        if (ServerCommands.serverLoader != null) {
+        if (ServerCommands.isLoading) {
             reply("Server list is already updating!")
             return
         }
