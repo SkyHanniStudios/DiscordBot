@@ -72,7 +72,7 @@ object ServerCommands {
         private set
 
     // Constructor blocks until all validation completes
-    private class ServerLoader(val onFinish: (Int) -> Unit = { _ -> }) {
+    private class ServerLoader(val onFinish: (Int) -> Unit = { }) {
 
         val servers: MutableSet<Server>
         var removed = 0
@@ -106,20 +106,13 @@ object ServerCommands {
 
             val duplicates = mutableSetOf<String>()
             for ((key, serverList) in keyToServers.filter { it.value.distinct().size > 1 }) {
-                if (serverList.size == 2) {
-                    val nameA = serverList[0].name
-                    val nameB = serverList[1].name
-                    if (nameA == nameB && key == nameA.lowercase()) {
-                        continue // skip if the server name is the same as the key name
-                    }
-                }
                 duplicates.add("'$key' found in ${serverList.map { it.name }}")
                 BOT.logger.info("Duplicate key '$key' found in servers: ${serverList.map { it.name }}")
             }
             val count = duplicates.size
             if (count > 0) {
                 BOT.logger.warn("$count duplicate servers found!")
-                val message = "Found $count duplicate servers:\n${duplicates.joinToString("\n")}"
+                val message = "Found $count duplicate servers:\n${duplicates.distinct().joinToString("\n")}"
                 Utils.sendMessageToBotChannel(message)
             } else {
                 BOT.logger.info("No duplicate servers found.")
