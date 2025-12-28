@@ -70,6 +70,7 @@ object ServerCommands {
 
     var isLoading = false
         private set
+    private val gson = Gson()
 
     // Constructor blocks until all validation completes
     private class ServerLoader(val onFinish: (Int) -> Unit = { }) {
@@ -271,7 +272,7 @@ object ServerCommands {
 
     private fun parseStringToServers(json: String): MutableSet<Server> {
         val type = object : TypeToken<Map<String, Map<String, ServerJson>>>() {}.type
-        val data: Map<String, Map<String, ServerJson>> = Gson().fromJson(json, type)
+        val data: Map<String, Map<String, ServerJson>> = gson.fromJson(json, type)
 
         return data.flatMap { (_, serverCategories) ->
             serverCategories.map { (id, data) ->
@@ -288,10 +289,13 @@ object ServerCommands {
         }.toMutableSet()
     }
 
-    internal fun getServer(name: String): Server? = servers.find { server ->
-        server.keyword.equals(name, ignoreCase = true) ||
-                server.name.equals(name, ignoreCase = true) ||
-                name in server.aliases
+    internal fun getServer(name: String): Server? {
+        val lowercaseName = name.lowercase()
+        return servers.find { server ->
+            server.keyword.equals(lowercaseName, ignoreCase = true) ||
+                    server.name.equals(lowercaseName, ignoreCase = true) ||
+                    lowercaseName in server.aliases
+        }
     }
 
     private fun isDiscordInvite(message: String): Boolean = discordServerPattern.matcher(message).find()
@@ -325,7 +329,7 @@ class ServerCommand : BaseCommand() {
         if (args.size !in 1..2) return wrongUsage("<keyword>")
         val keyword = args.first()
         val debug = args.getOrNull(1) == "-d"
-        val server = ServerCommands.getServer(keyword.lowercase())
+        val server = ServerCommands.getServer(keyword)
         if (server == null) {
             userError("Server with keyword '$keyword' not found.")
             return
