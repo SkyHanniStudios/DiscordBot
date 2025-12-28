@@ -87,6 +87,17 @@ object ServerCommands {
         }
 
         private fun checkForDuplicates() {
+            // Check for self-overlapping keys first
+            servers.forEach { server ->
+                val keys = (listOf(server.keyword, server.name) + server.aliases).map { it.lowercase() }
+                val selfDuplicates = keys.groupingBy { it }.eachCount().filter { it.value > 1 }.keys
+                if (selfDuplicates.isNotEmpty()) {
+                    BOT.logger.warn("Server '${server.name}' has overlapping keys: $selfDuplicates")
+                    Utils.sendMessageToBotChannel("Server '${server.name}' has overlapping keys: $selfDuplicates")
+                }
+            }
+
+            // Then check for duplicates between different servers
             val keyToServers = mutableMapOf<String, MutableList<Server>>()
             servers.forEach { server ->
                 val keys = listOf(server.keyword, server.name) + server.aliases
@@ -222,8 +233,10 @@ object ServerCommands {
     }
 
     fun loadServers(onFinish: (Int) -> Unit = { _ -> }) {
-        serverLoader = ServerLoader(onFinish)
-        serverLoader?.validate()
+        Utils.runAsync("load servers") {
+            serverLoader = ServerLoader(onFinish)
+            serverLoader?.validate()
+        }
     }
 
     private fun Map<String, Double>.memberCountFormat() {
