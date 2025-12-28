@@ -121,13 +121,11 @@ object ServerCommands {
             // we need to throw the errors outside of Invite.resolve, sadly
             val errors = mutableListOf<Throwable>()
 
-            for (server in servers.toList()) {
-                with(server) {
-                    Invite.resolve(BOT.jda, invite.split("/").last(), true).queue(
-                        { validate(it, memberCountDiff) },
-                        { validateError(it, errors) },
-                    )
-                }
+            for (server in servers.toList()) with(server) {
+                Invite.resolve(BOT.jda, invite.split("/").last(), true).queue(
+                    { validate(it, memberCountDiff) },
+                    { error -> validateError(error, errors) },
+                )
             }
 
             latch.await() // wait for all servers to be checked
