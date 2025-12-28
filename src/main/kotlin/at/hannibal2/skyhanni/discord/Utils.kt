@@ -5,6 +5,7 @@ import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
@@ -130,8 +131,11 @@ object Utils {
     }
 
     fun sendMessageToBotChannel(text: String, instantly: Boolean = false) {
-        BOT.jda.getTextChannelById(BOT.config.botCommandChannelId)?.messageSend(text, instantly)
+        getBotChannel().messageSend(text, instantly)
     }
+
+    fun getBotChannel(): TextChannel =
+        BOT.jda.getTextChannelById(BOT.config.botCommandChannelId) ?: error("bot channel is null")
 
     fun sendMessageToBotChannel(text: List<String>, instantly: Boolean = false) {
         sendMessageToBotChannel(text.joinToString("\n"), instantly)
