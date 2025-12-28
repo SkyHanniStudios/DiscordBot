@@ -82,7 +82,7 @@ object ServerCommands {
             checkForDuplicates()
             latch = CountDownLatch(servers.size)
             removed = AtomicInteger(0)
-            checkForFakes()
+            validate()
         }
 
         private fun checkForDuplicates() {
@@ -116,7 +116,7 @@ object ServerCommands {
             }
         }
 
-        private fun checkForFakes() {
+        private fun validate() {
             val memberCountDiff = mutableMapOf<String, Double>()
             // we need to throw the errors outside of Invite.resolve, sadly
             val errors = mutableListOf<Throwable>()
@@ -124,8 +124,8 @@ object ServerCommands {
             for (server in servers.toList()) {
                 with(server) {
                     Invite.resolve(BOT.jda, invite.split("/").last(), true).queue(
-                        { check(it, memberCountDiff) },
-                        { errorOnCheck(it, errors) },
+                        { validate(it, memberCountDiff) },
+                        { validateError(it, errors) },
                     )
                 }
             }
@@ -159,7 +159,7 @@ object ServerCommands {
             latch.countDown()
         }
 
-        private fun Server.check(invite: Invite, memberCountDiff: MutableMap<String, Double>) {
+        private fun Server.validate(invite: Invite, memberCountDiff: MutableMap<String, Double>) {
             val guild = invite.guild ?: run {
                 remove(this)
                 BOT.logger.info("Server not found in discord api '$name'!")
@@ -188,7 +188,7 @@ object ServerCommands {
             latch.countDown()
         }
 
-        private fun Server.errorOnCheck(error: Throwable, errors: MutableList<Throwable>) {
+        private fun Server.validateError(error: Throwable, errors: MutableList<Throwable>) {
             if (error.message == "10006: Unknown Invite") {
                 remove(this)
                 BOT.logger.info("Unknown server invite: $name ($id) = $invite")
