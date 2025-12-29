@@ -435,6 +435,8 @@ class ServerCommand : BaseCommand() {
         if (server == null) {
             if (ServerCommands.outage) {
                 userError("Server list currently unavailable. Please try again later.")
+            } else if (ServerCommands.servers.isEmpty()) {
+                reply("Server list not loaded yet, please try again in a moment.")
             } else {
                 userError("Server with keyword '$keyword' not found.")
             }
@@ -483,7 +485,7 @@ class ServerList : BaseCommand() {
             if (ServerCommands.outage) {
                 reply("Server list currently unavailable.")
             } else {
-                reply("The serverlist is empty.")
+                reply("Server list not loaded yet, please try again in a moment.")
             }
             return
         }
