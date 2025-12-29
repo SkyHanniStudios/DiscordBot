@@ -156,17 +156,21 @@ object ModChecker {
         "Hypixel Mod API" // comes bundled with other mods
     )
 
+    private val nameRemappings = mapOf(
+        "Odin" to "OdinClient",                        // odin/odin client is weird/mixed up in the json file
+        "§cNot §aSo §9Essential" to "Not So Essential" // not so essential is fancy
+    )
+
+    private val versionBugs = mapOf(
+        "Dulkir Mod" to "\${version}",    // dulkir version bug
+        "spark" to "\${pluginVersion}"    // spark version bug
+    )
+
     private fun analyzeMods(activeMods: Map<ModInfo, String>): Map<ModCategory, MutableList<String>> {
         val categories = ModCategory.entries.associateWith { mutableListOf<String>() }
 
         for ((mod, line) in activeMods) {
-            val name = when (mod.name) {
-                // odin/odin client is weird/mixed up in the json file
-                "Odin" -> "OdinClient"
-                // not so essential is fancy
-                "§cNot §aSo §9Essential" -> "Not So Essential"
-                else -> mod.name
-            }
+            val name = nameRemappings[mod.name] ?: mod.name
 
             val fileName = mod.fileName
             val version = mod.version
@@ -192,14 +196,7 @@ object ModChecker {
                 continue
             }
 
-            // dulkir version bug
-            if (name == "Dulkir Mod" && version == "\${version}") {
-                categories[ModCategory.IGNORED]!!.add(line)
-                continue
-            }
-
-            // spark version bug
-            if (name == "spark" && version == "\${pluginVersion}") {
+            if (versionBugs[name] == version) {
                 categories[ModCategory.IGNORED]!!.add(line)
                 continue
             }
