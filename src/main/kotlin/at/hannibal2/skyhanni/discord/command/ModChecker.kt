@@ -343,32 +343,29 @@ object ModChecker {
         }
     }
 
-    private fun read(modData: ModDataJson): List<KnownMod> {
-        val list: MutableList<KnownMod> = ArrayList()
-        for ((modId, modInfo) in modData.mods ?: return ArrayList()) {
-
+    private fun read(modData: ModDataJson): List<KnownMod> = buildList {
+        for ((modId, modInfo) in modData.mods ?: return emptyList()) {
             // id odclient is the real one
             if (modId == "OdinClient") continue
-            val download = modInfo.download
-            var latest: KnownMod? = null
-            var latestBeta: KnownMod? = null
-            val versions = modInfo.versions
-            val betaVersions = modInfo.betaVersions
-            val reasonNotToUse = modInfo.reasonNotToUse
-            for ((version, hash) in versions) {
-                val a = KnownMod(modId, modInfo.name, version, download, hash, false, reasonNotToUse)
-                latest = a
-                list.add(a)
+            with(modInfo) {
+                var latest: KnownMod? = null
+                var latestBeta: KnownMod? = null
+
+                for ((version, hash) in versions) {
+                    val mod = KnownMod(modId, name, version, download, hash, false, reasonNotToUse)
+                    add(mod)
+                    latest = mod
+                }
+                for ((version, hash) in betaVersions) {
+                    val mod = KnownMod(modId, name, version, download, hash, true, reasonNotToUse)
+                    add(mod)
+                    latestBeta = mod
+                }
+
+                latest?.latest = true
+                latestBeta?.latest = true
             }
-            for ((version, hash) in betaVersions) {
-                val a = KnownMod(modId, modInfo.name, version, download, hash, true, reasonNotToUse)
-                latestBeta = a
-                list.add(a)
-            }
-            latest?.latest = true
-            latestBeta?.latest = true
         }
-        return list
     }
 
     private fun findMod(name: String, beta: Boolean): KnownMod? =
