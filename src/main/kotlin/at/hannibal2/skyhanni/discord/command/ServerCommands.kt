@@ -25,7 +25,18 @@ import kotlin.math.absoluteValue
 import kotlin.time.Duration.Companion.seconds
 
 object ServerCommands {
+
     private val github = GitHubClient("SkyHanniStudios", "DiscordBot", BOT.config.githubTokenOwn)
+    private val gson = Gson()
+
+    var servers = setOf<Server>()
+        private set
+    var outage = false
+        private set
+    var isLoading = false
+        private set
+
+    private val discordServerPattern = "(https?://)?(www\\.)?(discord\\.gg|discord\\.com/invite)/[\\w-]+".toPattern()
 
     data class Server(
         val keyword: String,
@@ -68,15 +79,93 @@ object ServerCommands {
         val aliases: List<String?>? = null,
     )
 
-    var servers = setOf<Server>()
-        private set
-    var outage = false
-        private set
-    private val discordServerPattern = "(https?://)?(www\\.)?(discord\\.gg|discord\\.com/invite)/[\\w-]+".toPattern()
+    fun loadServers() {
+        isLoading = true
+        Utils.runAsync("load servers") {
+            try {
+                ServerLoader()
+            } finally {
+                isLoading = false
+            }
+        }
+    }
 
-    var isLoading = false
-        private set
-    private val gson = Gson()
+    fun isKnownServerUrl(event: MessageReceivedEvent, message: String): Boolean {
+        val server = getServerByInviteUrl(message) ?: run {
+            if (isDiscordInvite(message)) {
+                event.logAction("sends unknown discord invite '$message'")
+            }
+            return false
+        }
+
+        event.reply(server.print(tutorial = true))
+        return true
+    }
+
+    internal fun getServer(name: String): Server? {
+        val lowercaseName = name.lowercase()
+        return servers.find { server ->
+            server.keyword.equals(lowercaseName, ignoreCase = true) ||
+                    server.name.equals(lowercaseName, ignoreCase = true) ||
+                    lowercaseName in server.aliases
+        }
+    }
+
+    private fun isDiscordInvite(message: String): Boolean = discordServerPattern.matcher(message).find()
+
+    private fun getServerByInviteUrl(url: String): Server? = servers.firstOrNull { it.invite == url }
+
+    private fun parseStringToServers(json: String): MutableSet<Server> {
+        val type = object : TypeToken<Map<String, Map<String, ServerJson>>>() {}.type
+        val data: Map<String, Map<String, ServerJson>> = gson.fromJson(json, type)
+
+        return data.flatMap { (_, serverCategories) ->
+            serverCategories.map { (id, data) ->
+                Server(
+                    id.lowercase(),
+                    data.id,
+                    data.name,
+                    data.invite,
+                    data.size.toInt(),
+                    data.description,
+                    data.aliases?.map { it?.lowercase() ?: error("aliases contains null for server id ${data.id}") }
+                        ?: emptyList()
+                )
+            }
+        }.toMutableSet()
+    }
+
+    private fun Map<String, Double>.memberCountFormat() {
+        if (isEmpty()) {
+            println("No member count update necessary")
+            return
+        }
+        println(" ")
+        for ((text, _) in entries.sortedByDescending { it.value }) {
+            println(text)
+        }
+        println(" ")
+        println("Member count update necessary: $size")
+        println(" ")
+    }
+
+    private fun MutableMap<String, Double>.calculateMemberCount(guild: Invite.Guild, server: Server) {
+        val accuracy = 0.01
+
+        val realSize = guild.memberCount
+        val storedSize = server.size
+        val diff = realSize - storedSize
+        if (diff.absoluteValue < realSize * accuracy) return
+
+        val diffFormat = " (diff=${diff.addSeparators()})"
+        val percentageChanged = ((diff.absoluteValue / realSize.toDouble()) * 100).roundTo(5)
+        val name = "${formatMemberDiff(server, storedSize, realSize)} $diffFormat ${server.id}"
+        val text = "$name - $percentageChanged% ($realSize)"
+        this[text] = percentageChanged
+    }
+
+    private fun formatMemberDiff(server: Server, storedSize: Int, realSize: Int) =
+        "${server.name}: ${storedSize.addSeparators()} -> ${realSize.addSeparators()}"
 
     private class ServerLoader {
         val servers: MutableSet<Server>
@@ -89,13 +178,8 @@ object ServerCommands {
         val githubLink =
             "GitHub".linkTo("https://github.com/SkyHanniStudios/DiscordBot/blob/master/data/discord_servers.json")
 
-        val viaText = if (useClipboardInServerList) {
-            "dev clipboard"
-        } else githubLink
-        val log = LiveLog(
-            Utils.getBotChannel(),
-            "Server List Update (via $viaText)"
-        )
+        val viaText = if (useClipboardInServerList) "dev clipboard" else githubLink
+        val log = LiveLog(Utils.getBotChannel(), "Server List Update (via $viaText)")
 
         init {
             log.startAutoUpdate()
@@ -180,7 +264,6 @@ object ServerCommands {
             finish(errors)
             memberCountDiff.memberCountFormat()
         }
-
 
         private fun expensiveFetchRequests(): ConcurrentHashMap<Server, Result<Invite>> {
             val results = ConcurrentHashMap<Server, Result<Invite>>(servers.size)
@@ -332,94 +415,6 @@ object ServerCommands {
             }
         }
     }
-
-    fun loadServers() {
-        isLoading = true
-        Utils.runAsync("load servers") {
-            try {
-                ServerLoader()
-            } finally {
-                isLoading = false
-            }
-        }
-    }
-
-    private fun Map<String, Double>.memberCountFormat() {
-        if (isEmpty()) {
-            println("No member count update necessary")
-            return
-        }
-        println(" ")
-        for ((text, _) in entries.sortedByDescending { it.value }) {
-            println(text)
-        }
-        println(" ")
-        println("Member count update necessary: $size")
-        println(" ")
-    }
-
-    private fun MutableMap<String, Double>.calculateMemberCount(guild: Invite.Guild, server: Server) {
-        val accuracy = 0.01
-
-        val realSize = guild.memberCount
-        val storedSize = server.size
-        val diff = realSize - storedSize
-        if (diff.absoluteValue < realSize * accuracy) return
-
-        val diffFormat = " (diff=${diff.addSeparators()})"
-        val percentageChanged = ((diff.absoluteValue / realSize.toDouble()) * 100).roundTo(5)
-        val name = "${formatMemberDiff(server, storedSize, realSize)} $diffFormat ${server.id}"
-        val text = "$name - $percentageChanged% ($realSize)"
-        this[text] = percentageChanged
-    }
-
-    private fun formatMemberDiff(
-        server: Server, storedSize: Int, realSize: Int
-    ) = "${server.name}: ${storedSize.addSeparators()} -> ${realSize.addSeparators()}"
-
-    private fun parseStringToServers(json: String): MutableSet<Server> {
-        val type = object : TypeToken<Map<String, Map<String, ServerJson>>>() {}.type
-        val data: Map<String, Map<String, ServerJson>> = gson.fromJson(json, type)
-
-        return data.flatMap { (_, serverCategories) ->
-            serverCategories.map { (id, data) ->
-                Server(
-                    id.lowercase(),
-                    data.id,
-                    data.name,
-                    data.invite,
-                    data.size.toInt(),
-                    data.description,
-                    data.aliases?.map { it?.lowercase() ?: error("aliases contains null for server id ${data.id}") }
-                        ?: emptyList())
-            }
-        }.toMutableSet()
-    }
-
-    internal fun getServer(name: String): Server? {
-        val lowercaseName = name.lowercase()
-        return servers.find { server ->
-            server.keyword.equals(lowercaseName, ignoreCase = true) ||
-                    server.name.equals(lowercaseName, ignoreCase = true) ||
-                    lowercaseName in server.aliases
-        }
-    }
-
-    private fun isDiscordInvite(message: String): Boolean = discordServerPattern.matcher(message).find()
-
-    private fun getServerByInviteUrl(url: String): Server? = servers.firstOrNull { it.invite == url }
-
-    fun isKnownServerUrl(event: MessageReceivedEvent, message: String): Boolean {
-        val server = getServerByInviteUrl(message) ?: run {
-            if (isDiscordInvite(message)) {
-                event.logAction("sends unknown discord invite '$message'")
-            }
-            return false
-        }
-
-        event.reply(server.print(tutorial = true))
-        return true
-    }
 }
 
 @Suppress("unused")
@@ -448,7 +443,6 @@ class ServerCommand : BaseCommand() {
         if (debug) reply(server.printDebug())
         else reply(server.print())
     }
-
 }
 
 @Suppress("unused")

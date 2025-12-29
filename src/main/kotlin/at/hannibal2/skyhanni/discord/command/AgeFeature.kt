@@ -16,16 +16,17 @@ import java.time.format.DateTimeFormatter
 import kotlin.time.Duration.Companion.seconds
 
 object AgeFeature {
+
     private val github = GitHubClient("SkyHanniStudios", "DiscordBot", BOT.config.githubTokenOwn)
     private val githubLink = "GitHub".linkTo("https://github.com/SkyHanniStudios/DiscordBot/blob/master/data/age.json")
-
-    data class ReleaseInfo(val name: String, val date: String)
-    data class TimeSinceJson(val releases: Map<String, ReleaseInfo>)
 
     var releases = mapOf<String, ReleaseInfo>()
         private set
     var isLoading = false
         private set
+
+    data class ReleaseInfo(val name: String, val date: String)
+    data class TimeSinceJson(val releases: Map<String, ReleaseInfo>)
 
     fun loadFromRepo() {
         isLoading = true

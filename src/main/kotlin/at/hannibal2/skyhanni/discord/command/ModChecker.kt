@@ -13,9 +13,9 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import kotlin.time.Duration.Companion.seconds
 
 object ModChecker {
+
     private val github = GitHubClient("SkyHanniStudios", "DiscordBot", BOT.config.githubTokenOwn)
     private val githubLink = "GitHub".linkTo("https://github.com/SkyHanniStudios/DiscordBot/blob/master/data/mods.json")
-
     private var knownMods = listOf<KnownMod>()
     var isLoading = false
         private set
@@ -23,7 +23,61 @@ object ModChecker {
     // https://regex101.com/r/0W4NCa/1
     private val pattern = "\\[(?<modName>.*)]\\[(?<fileName>.*) \\((?<version>.*)\\)]".toPattern()
 
+    // Mods to ignore during version checking
+    private val ignoredMods = setOf(
+        "Essential",      // has auto update, too many small updates
+        "OneConfig",      // has auto update, too many small updates
+        "Hypixel Mod API" // comes bundled with other mods
+    )
+
+    private val nameRemappings = mapOf(
+        "Odin" to "OdinClient",                        // odin/odin client is weird/mixed up in the json file
+        "§cNot §aSo §9Essential" to "Not So Essential" // not so essential is fancy
+    )
+
+    private val versionBugs = mapOf(
+        "Dulkir Mod" to "\${version}",    // dulkir version bug
+        "spark" to "\${pluginVersion}"    // spark version bug
+    )
+
     class ModInfo(val name: String, val version: String, val fileName: String)
+
+    enum class ModCategory(val label: String, val notifySupport: Boolean = false) {
+        UNKNOWN_MOD("unknown mods", notifySupport = true),
+        UNKNOWN_VERSION("unknown mod versions", notifySupport = true),
+        UP_TO_DATE("up to date mods"),
+        TO_REMOVE("to remove mods"),
+        UPDATE_AVAILABLE("update available"),
+        RESULT("result"),
+        IGNORED("ignored mods")
+    }
+
+    class ModDataJson {
+        val mods: Map<String, ModInfo>? = null
+
+        class ModInfo {
+            var name: String = ""
+            val download: String = ""
+
+            @SerializedName("do_not_use_reason")
+            val reasonNotToUse: String? = null
+            val versions: Map<String, String> = HashMap()
+            val betaVersions: Map<String, String> = HashMap()
+        }
+    }
+
+    @Suppress("LongParameterList")
+    internal class KnownMod(
+        internal val id: String,
+        internal val name: String,
+        internal val version: String,
+        internal val downloadLink: String,
+        internal val hash: String,
+        internal val beta: Boolean,
+        internal val reasonNotToUse: String?,
+    ) {
+        internal var latest = false
+    }
 
     fun loadModDataFromRepo() {
         isLoading = true
@@ -53,51 +107,6 @@ object ModChecker {
             } finally {
                 isLoading = false
             }
-        }
-    }
-
-    @Suppress("unused")
-    class DebugModsCommand : BaseCommand() {
-        override val name = "debugmods"
-        override val description = "Debug infos about the mod list in neu stats format"
-
-        override fun MessageReceivedEvent.execute(args: List<String>) {
-            val referencedMessage = message.referencedMessage
-
-            if (referencedMessage == null) {
-                reply("reply to a message to see debug infos from that message!")
-                return
-            }
-            val text = referencedMessage.contentRaw.trim()
-            val mods = readModsFromMessage(text)
-            if (mods == null) {
-                reply("no mods found in that message!")
-                return
-            }
-            run(mods, debug = true)
-        }
-    }
-
-    @Suppress("unused")
-    class UpdateModListCommand : BaseCommand() {
-        override val name = "modlistupdate"
-        override val description = "Updates the mod list."
-        override val aliases = listOf("updatemodlist", "updatemods")
-
-        init {
-            Utils.runDelayed("init load mods", 1.seconds) {
-                if (!isLoading) {
-                    loadModDataFromRepo()
-                }
-            }
-        }
-
-        override fun MessageReceivedEvent.execute(args: List<String>) {
-            if (isLoading) {
-                reply("Mod list is already updating!")
-                return
-            }
-            loadModDataFromRepo()
         }
     }
 
@@ -139,39 +148,11 @@ object ModChecker {
         return ModInfo(name, version, fileName)
     }
 
-    enum class ModCategory(val label: String, val notifySupport: Boolean = false) {
-        UNKNOWN_MOD("unknown mods", notifySupport = true),
-        UNKNOWN_VERSION("unknown mod versions", notifySupport = true),
-        UP_TO_DATE("up to date mods"),
-        TO_REMOVE("to remove mods"),
-        UPDATE_AVAILABLE("update available"),
-        RESULT("result"),
-        IGNORED("ignored mods")
-    }
-
-    // Mods to ignore during version checking
-    private val ignoredMods = setOf(
-        "Essential",      // has auto update, too many small updates
-        "OneConfig",
-        "Hypixel Mod API" // comes bundled with other mods
-    )
-
-    private val nameRemappings = mapOf(
-        "Odin" to "OdinClient",                        // odin/odin client is weird/mixed up in the json file
-        "§cNot §aSo §9Essential" to "Not So Essential" // not so essential is fancy
-    )
-
-    private val versionBugs = mapOf(
-        "Dulkir Mod" to "\${version}",    // dulkir version bug
-        "spark" to "\${pluginVersion}"    // spark version bug
-    )
-
     private fun analyzeMods(activeMods: Map<ModInfo, String>): Map<ModCategory, MutableList<String>> {
         val categories = ModCategory.entries.associateWith { mutableListOf<String>() }
 
         for ((mod, line) in activeMods) {
             val name = nameRemappings[mod.name] ?: mod.name
-
             val fileName = mod.fileName
             val version = mod.version
 
@@ -230,6 +211,7 @@ object ModChecker {
 
             val latestVersion = if (latestBetaMod.beta) latestBetaMod.version else latestFullMod.version
 
+            // velox wrong version format
             if (name == "Velox Caelo" && version == "1.0.2" && latestVersion == "1.1.0") {
                 categories[ModCategory.IGNORED]!!.add("velox wrong version format: $line")
                 continue
@@ -241,28 +223,6 @@ object ModChecker {
         }
 
         return categories
-    }
-
-    private fun buildDebugOutput(
-        activeMods: Map<ModInfo, String>,
-        categories: Map<ModCategory, MutableList<String>>,
-        errorMods: Int
-    ): String {
-        val lines = mutableListOf<String>()
-        lines.add("found mods in total: ${activeMods.size}")
-
-        if (errorMods != 0) {
-            lines.add("errorMods = $errorMods")
-        }
-
-        ModCategory.entries.filter { it != ModCategory.RESULT }.forEach { category ->
-            val items = categories[category]!!
-            lines.add(" ")
-            lines.add("${items.size} ${category.label}:")
-            lines.addAll(items)
-        }
-
-        return "debug data for ${activeMods.size} mods in that message:\n${lines.joinToString("\n")}"
     }
 
     private fun MessageReceivedEvent.run(activeMods: Map<ModInfo, String>, debug: Boolean) {
@@ -293,21 +253,26 @@ object ModChecker {
         notifySupportChannel(categories)
     }
 
-    private fun MessageReceivedEvent.notifySupportChannel(categories: Map<ModCategory, MutableList<String>>) {
+    private fun buildDebugOutput(
+        activeMods: Map<ModInfo, String>,
+        categories: Map<ModCategory, MutableList<String>>,
+        errorMods: Int
+    ): String {
         val lines = mutableListOf<String>()
-        ModCategory.entries.filter { it.notifySupport }.forEach { category ->
+        lines.add("found mods in total: ${activeMods.size}")
+
+        if (errorMods != 0) {
+            lines.add("errorMods = $errorMods")
+        }
+
+        ModCategory.entries.filter { it != ModCategory.RESULT }.forEach { category ->
             val items = categories[category]!!
-            if (items.isNotEmpty()) {
-                lines.add("${items.size} ${category.label}:")
-                lines.addAll(items)
-                lines.add(" ")
-            }
+            lines.add(" ")
+            lines.add("${items.size} ${category.label}:")
+            lines.addAll(items)
         }
-        if (lines.isNotEmpty()) {
-            val text =
-                "Unknown mod data from ${author.getLinkName()} at ${message.getLink()}\n${lines.joinToString("\n")}"
-            Utils.sendMessageToBotChannel(text)
-        }
+
+        return "debug data for ${activeMods.size} mods in that message:\n${lines.joinToString("\n")}"
     }
 
     private fun buildUserReply(result: List<String>, modToRemove: List<String>): String {
@@ -326,17 +291,20 @@ object ModChecker {
         }
     }
 
-    class ModDataJson {
-        val mods: Map<String, ModInfo>? = null
-
-        class ModInfo {
-            var name: String = ""
-            val download: String = ""
-
-            @SerializedName("do_not_use_reason")
-            val reasonNotToUse: String? = null
-            val versions: Map<String, String> = HashMap()
-            val betaVersions: Map<String, String> = HashMap()
+    private fun MessageReceivedEvent.notifySupportChannel(categories: Map<ModCategory, MutableList<String>>) {
+        val lines = mutableListOf<String>()
+        ModCategory.entries.filter { it.notifySupport }.forEach { category ->
+            val items = categories[category]!!
+            if (items.isNotEmpty()) {
+                lines.add("${items.size} ${category.label}:")
+                lines.addAll(items)
+                lines.add(" ")
+            }
+        }
+        if (lines.isNotEmpty()) {
+            val text =
+                "Unknown mod data from ${author.getLinkName()} at ${message.getLink()}\n${lines.joinToString("\n")}"
+            Utils.sendMessageToBotChannel(text)
         }
     }
 
@@ -368,16 +336,48 @@ object ModChecker {
     private fun findMod(name: String, beta: Boolean): KnownMod? =
         knownMods.find { it.name == name && it.latest && it.beta == beta }
 
-    @Suppress("LongParameterList")
-    internal class KnownMod(
-        internal val id: String,
-        internal val name: String,
-        internal val version: String,
-        internal val downloadLink: String,
-        internal val hash: String,
-        internal val beta: Boolean,
-        internal val reasonNotToUse: String?,
-    ) {
-        internal var latest = false
+    @Suppress("unused")
+    class DebugModsCommand : BaseCommand() {
+        override val name = "debugmods"
+        override val description = "Debug infos about the mod list in neu stats format"
+
+        override fun MessageReceivedEvent.execute(args: List<String>) {
+            val referencedMessage = message.referencedMessage
+
+            if (referencedMessage == null) {
+                reply("reply to a message to see debug infos from that message!")
+                return
+            }
+            val text = referencedMessage.contentRaw.trim()
+            val mods = readModsFromMessage(text)
+            if (mods == null) {
+                reply("no mods found in that message!")
+                return
+            }
+            run(mods, debug = true)
+        }
+    }
+
+    @Suppress("unused")
+    class UpdateModListCommand : BaseCommand() {
+        override val name = "modlistupdate"
+        override val description = "Updates the mod list."
+        override val aliases = listOf("updatemodlist", "updatemods")
+
+        init {
+            Utils.runDelayed("init load mods", 1.seconds) {
+                if (!isLoading) {
+                    loadModDataFromRepo()
+                }
+            }
+        }
+
+        override fun MessageReceivedEvent.execute(args: List<String>) {
+            if (isLoading) {
+                reply("Mod list is already updating!")
+                return
+            }
+            loadModDataFromRepo()
+        }
     }
 }
