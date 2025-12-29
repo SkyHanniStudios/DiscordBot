@@ -250,101 +250,86 @@ object ModChecker {
         return categories
     }
 
-    @Suppress("CyclomaticComplexMethod", "LongMethod")
+    private fun buildDebugOutput(
+        activeMods: Map<ModInfo, String>,
+        categories: Map<ModCategory, MutableList<String>>,
+        errorMods: Int
+    ): String {
+        val lines = mutableListOf<String>()
+        lines.add("found mods in total: ${activeMods.size}")
+
+        if (errorMods != 0) {
+            lines.add("errorMods = $errorMods")
+        }
+
+        ModCategory.entries.filter { it != ModCategory.RESULT }.forEach { category ->
+            val items = categories[category]!!
+            lines.add(" ")
+            lines.add("${items.size} ${category.label}:")
+            lines.addAll(items)
+        }
+
+        return "debug data for ${activeMods.size} mods in that message:\n${lines.joinToString("\n")}"
+    }
+
     private fun MessageReceivedEvent.run(activeMods: Map<ModInfo, String>, debug: Boolean) {
         if (knownMods.isEmpty() && !isLoading) {
             loadModDataFromRepo()
         }
-
         if (knownMods.isEmpty()) {
             reply("Mod list not loaded yet, please try again in a moment.")
             return
         }
 
         val categories = analyzeMods(activeMods)
-        val modToRemove = categories[ModCategory.TO_REMOVE]!!
-        val result = categories[ModCategory.RESULT]!!
-
-        val debugList = mutableListOf<String>()
-        fun debug(text: String) {
-            if (debug) {
-                debugList.add(text)
-            }
-        }
-
-        debug("found mods in total: ${activeMods.size}")
-
         val errorMods = activeMods.size - categories.values.sumOf { it.size }
 
-        if (errorMods != 0) {
-            if (debug) {
-                debug("errorMods = $errorMods")
-            } else {
-                val a = "Wrong mod size from ${author.getLinkName()} at ${message.getLink()}"
-                val b = "reply to the message with `!debugmods` to investigate!"
-                Utils.sendMessageToBotChannel("$a\n$b")
-                return
-            }
-        }
-
-        val forSupportChannel = mutableListOf<String>()
-
-        ModCategory.entries.filter { it.notifySupport }.forEach { category ->
-            val items = categories[category]!!
-            if (items.isNotEmpty()) {
-                forSupportChannel.add("${items.size} ${category.label}:")
-                forSupportChannel.addAll(items)
-                forSupportChannel.add(" ")
-            }
-        }
-
-        fun debugCategory(category: ModCategory) {
-            val items = categories[category]!!
-            debug(" ")
-            debug("${items.size} ${category.label}:")
-            items.forEach { debug(it) }
-        }
-
-        debugCategory(ModCategory.UNKNOWN_VERSION)
-        debugCategory(ModCategory.UNKNOWN_MOD)
-        debugCategory(ModCategory.IGNORED)
-        debugCategory(ModCategory.UP_TO_DATE)
-        debugCategory(ModCategory.TO_REMOVE)
-        debugCategory(ModCategory.UPDATE_AVAILABLE)
-
-        if (debug) {
-            reply("debug data for ${activeMods.size} mods in that message:\n${debugList.joinToString("\n")}")
+        if (errorMods != 0 && !debug) {
+            val a = "Wrong mod size from ${author.getLinkName()} at ${message.getLink()}"
+            val b = "reply to the message with `!debugmods` to investigate!"
+            Utils.sendMessageToBotChannel("$a\n$b")
             return
         }
 
-        val toRemoveText = if (modToRemove.isNotEmpty()) {
-            buildList {
-                val label = if (modToRemove.size == 1) {
-                    "this mod"
-                } else "the following ${modToRemove.size} mods"
-                add("### Please remove $label:")
-                addAll(modToRemove)
-            }.joinToString("\n")
-        } else ""
-        if (result.isEmpty()) {
-            if (toRemoveText.isEmpty()) {
-                reply("No outdated mods found $PARTY_FACE")
-            } else {
-                reply(toRemoveText)
-            }
-        } else {
-            val label = if (result.size == 1) {
-                "Found one outdated mod"
-            } else "Found ${result.size} outdated mods"
-            val resultAsText = result.joinToString("\n")
-            reply("### $label $PLEADING_FACE\n$resultAsText\n$toRemoveText")
+        if (debug) {
+            reply(buildDebugOutput(activeMods, categories, errorMods))
+            return
         }
-        if (forSupportChannel.isNotEmpty()) {
-            val text = buildList {
-                add("Unknown mod data from ${author.getLinkName()} at ${message.getLink()}")
-                addAll(forSupportChannel)
-            }.joinToString("\n")
+
+        reply(buildUserReply(categories[ModCategory.RESULT]!!, categories[ModCategory.TO_REMOVE]!!))
+        notifySupportChannel(categories)
+    }
+
+    private fun MessageReceivedEvent.notifySupportChannel(categories: Map<ModCategory, MutableList<String>>) {
+        val lines = mutableListOf<String>()
+        ModCategory.entries.filter { it.notifySupport }.forEach { category ->
+            val items = categories[category]!!
+            if (items.isNotEmpty()) {
+                lines.add("${items.size} ${category.label}:")
+                lines.addAll(items)
+                lines.add(" ")
+            }
+        }
+        if (lines.isNotEmpty()) {
+            val text =
+                "Unknown mod data from ${author.getLinkName()} at ${message.getLink()}\n${lines.joinToString("\n")}"
             Utils.sendMessageToBotChannel(text)
+        }
+    }
+
+    private fun buildUserReply(result: List<String>, modToRemove: List<String>): String {
+        val toRemoveText = if (modToRemove.isNotEmpty()) {
+            val label = if (modToRemove.size == 1) "this mod" else "the following ${modToRemove.size} mods"
+            "### Please remove $label:\n${modToRemove.joinToString("\n")}"
+        } else ""
+
+        return when {
+            result.isEmpty() && toRemoveText.isEmpty() -> "No outdated mods found $PARTY_FACE"
+            result.isEmpty() -> toRemoveText
+            else -> {
+                val label = if (result.size == 1) "Found one outdated mod" else "Found ${result.size} outdated mods"
+                "### $label $PLEADING_FACE\n${result.joinToString("\n")}\n$toRemoveText"
+            }
         }
     }
 
