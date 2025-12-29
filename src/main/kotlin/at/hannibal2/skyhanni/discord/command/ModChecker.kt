@@ -149,6 +149,13 @@ object ModChecker {
         IGNORED("ignored mods")
     }
 
+    // Mods to ignore during version checking
+    private val ignoredMods = setOf(
+        "Essential",      // has auto update, too many small updates
+        "OneConfig",
+        "Hypixel Mod API" // comes bundled with other mods
+    )
+
     private fun analyzeMods(activeMods: Map<ModInfo, String>): Map<ModCategory, MutableList<String>> {
         val categories = ModCategory.entries.associateWith { mutableListOf<String>() }
 
@@ -176,22 +183,11 @@ object ModChecker {
             }
 
             if (name == "Forge Mod Loader") {
-                categories[ModCategory.UNKNOWN_MOD]!!.add("unkown forge version: '$fileName'")
+                categories[ModCategory.UNKNOWN_MOD]!!.add("unknown forge version: '$fileName'")
                 continue
             }
 
-            // has auto update, and too many small updates all the time, so no one cares
-            if (name == "Essential") {
-                categories[ModCategory.IGNORED]!!.add(line)
-                continue
-            }
-            if (name == "OneConfig") {
-                categories[ModCategory.IGNORED]!!.add(line)
-                continue
-            }
-
-            // comes bundled with other mods
-            if (name == "Hypixel Mod API") {
+            if (name in ignoredMods) {
                 categories[ModCategory.IGNORED]!!.add(line)
                 continue
             }
@@ -208,8 +204,8 @@ object ModChecker {
                 continue
             }
 
-            val latestFullMod = findModFromName(name)
-            val latestBetaMod = findBetaFromName(name)
+            val latestFullMod = findMod(name, beta = false)
+            val latestBetaMod = findMod(name, beta = true)
 
             if (latestFullMod == null || latestBetaMod == null) {
                 categories[ModCategory.UNKNOWN_MOD]!!.add(line)
@@ -375,23 +371,8 @@ object ModChecker {
         return list
     }
 
-    private fun findModFromName(name: String): KnownMod? {
-        for (mod in knownMods) {
-            if (mod.name == name && mod.latest && !mod.beta) {
-                return mod
-            }
-        }
-        return null
-    }
-
-    private fun findBetaFromName(name: String): KnownMod? {
-        for (mod in knownMods) {
-            if (mod.name == name && mod.latest && mod.beta) {
-                return mod
-            }
-        }
-        return null
-    }
+    private fun findMod(name: String, beta: Boolean): KnownMod? =
+        knownMods.find { it.name == name && it.latest && it.beta == beta }
 
     @Suppress("LongParameterList")
     internal class KnownMod(
