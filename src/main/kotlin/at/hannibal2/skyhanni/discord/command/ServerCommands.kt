@@ -8,21 +8,35 @@ import at.hannibal2.skyhanni.discord.Utils.linkTo
 import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.pluralize
 import at.hannibal2.skyhanni.discord.Utils.reply
+import at.hannibal2.skyhanni.discord.Utils.replyLong
 import at.hannibal2.skyhanni.discord.Utils.roundTo
-import at.hannibal2.skyhanni.discord.Utils.sendMessageToBotChannel
 import at.hannibal2.skyhanni.discord.Utils.userError
-import at.hannibal2.skyhanni.discord.command.ServerCommands.loadServers
 import at.hannibal2.skyhanni.discord.github.GitHubClient
+import at.hannibal2.skyhanni.discord.useClipboardInServerList
+import at.hannibal2.skyhanni.discord.utils.LiveLog
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import net.dv8tion.jda.api.entities.Invite
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.absoluteValue
 import kotlin.time.Duration.Companion.seconds
 
 object ServerCommands {
+
     private val github = GitHubClient("SkyHanniStudios", "DiscordBot", BOT.config.githubTokenOwn)
+    private val gson = Gson()
+
+    var servers = setOf<Server>()
+        private set
+    var outage = false
+        private set
+    var isLoading = false
+        private set
+
+    private val discordServerPattern = "(https?://)?(www\\.)?(discord\\.gg|discord\\.com/invite)/[\\w-]+".toPattern()
 
     data class Server(
         val keyword: String,
@@ -33,8 +47,10 @@ object ServerCommands {
         val description: String,
         val aliases: List<String>,
     ) {
+        val allKeys: Set<String> get() = (listOf(keyword, name) + aliases).map { it.lowercase() }.toSet()
+
         fun print(tutorial: Boolean = false): String = buildString {
-            appendLine("**$name**\n")
+            append("**$name**\n\n")
             if (description.isNotEmpty()) {
                 appendLine(description)
             }
@@ -63,183 +79,16 @@ object ServerCommands {
         val aliases: List<String?>? = null,
     )
 
-    var servers = setOf<Server>()
-        private set
-    private val discordServerPattern = "(https?://)?(www\\.)?(discord\\.gg|discord\\.com/invite)/[\\w-]+".toPattern()
-
-    fun loadServers(onFinish: (Int) -> Unit = { _ -> }) {
-        val json = github.getFileContent("data/discord_servers.json") ?: error("Error loading discord_servers data")
-//        val json = Utils.readStringFromClipboard() ?: error("error loading discord_servers json from clipboard")
-
-        val servers = parseStringToServers(json)
-        checkForDuplicates(servers)
-        checkForFakes(servers) { removed ->
-            if (removed == 0) {
-                BOT.logger.info("Checked for fake server with no results.")
-            } else {
-                val amount = "server".pluralize(removed, withNumber = true)
-                val message = "Removed $amount from local cache because of fakes or not found!"
-                BOT.logger.info(message)
-                sendMessageToBotChannel(message)
-            }
-            onFinish(removed)
-            this.servers = servers
-        }
-    }
-
-    private fun checkForFakes(servers: MutableSet<Server>, onFinish: (Int) -> Unit) {
-        var removed = 0
-        val latch = CountDownLatch(servers.size)
-
-        val memberCountDiff = mutableMapOf<String, Double>()
-        for (server in servers.toList()) {
-            Invite.resolve(BOT.jda, server.invite.split("/").last(), true).queue({ invite ->
-                val guild = invite.guild ?: run {
-                    BOT.logger.info("Server not found in discord api '${server.name}'!")
-                    sendMessageToBotChannel(buildString {
-                        append("Server not found in discord api '${server.name}'!\n")
-                        append("but the invite exists? somehow? - ${server.invite}\n")
-                        append("Removed the server from the local cache!")
-                    })
-                    servers.remove(server)
-                    latch.countDown()
-                    return@queue
-                }
-                if (server.id != guild.id) {
-                    removed++
-                    BOT.logger.info("Wrong server id! ${server.name} (${server.id} != ${guild.id})")
-                    sendMessageToBotChannel(buildList {
-                        add("Wrong server id found for '${server.name}'!")
-                        add("json id: `${server.id}`")
-                        add("discord api id: `${guild.id}`")
-                        add("invite: " + "link".linkTo(server.invite))
-                        add("Removed the server from the local cache!")
-                    }.joinToString("\n"))
-                    servers.remove(server)
-                }
-                memberCountDiff.calcualteMemberCount(guild, server)
-                latch.countDown()
-            }, { error ->
-                if (error.message == "10006: Unknown Invite") {
-                    sendMessageToBotChannel(buildString {
-                        append("Invite not found in discord api for '${server.name}'!\n")
-                        append("Old invite: <${server.invite}>\n")
-                        append("Removed the server from the local cache!")
-                    })
-                    servers.remove(server)
-                    latch.countDown()
-                } else {
-                    throw error
-                }
-            })
-        }
-
-        latch.await() // wait for all servers to be checked
-        onFinish(removed)
-
-        memberCountDiff.memberCountFormat()
-    }
-
-    private fun Map<String, Double>.memberCountFormat() {
-        if (!isNotEmpty()) {
-            println("no member count update necessary")
-            return
-        }
-        println(" ")
-        for ((text, diff) in entries.sortedBy { it.value }.reversed()) {
-            println(text)
-        }
-        println(" ")
-        println("member count update necessary: $size")
-        println(" ")
-    }
-
-    private fun MutableMap<String, Double>.calcualteMemberCount(guild: Invite.Guild, server: Server) {
-        val accuracy = 0.01
-
-        val realSize = guild.memberCount
-        val storedSize = server.size
-        val diff = realSize - storedSize
-        if (diff.absoluteValue < realSize * accuracy) return
-
-        val diffFormat = " (diff=${diff.addSeparators()})"
-        val percentageChanged = ((diff.absoluteValue / realSize.toDouble()) * 100).roundTo(5)
-        val name = "${s(server, storedSize, realSize)} $diffFormat ${server.id}"
-        val text = "$name - $percentageChanged% ($realSize)"
-        this[text] = percentageChanged
-    }
-
-    private fun s(
-        server: Server, storedSize: Int, realSize: Int
-    ) = "${server.name}: ${storedSize.addSeparators()} -> ${realSize.addSeparators()}"
-
-    private fun parseStringToServers(json: String): MutableSet<Server> {
-        val type = object : TypeToken<Map<String, Map<String, ServerJson>>>() {}.type
-        val data: Map<String, Map<String, ServerJson>> = Gson().fromJson(json, type)
-
-        return data.flatMap { (_, serverCategories) ->
-            serverCategories.map { (id, data) ->
-                Server(id.lowercase(),
-                    data.id,
-                    data.name,
-                    data.invite,
-                    data.size.toInt(),
-                    data.description,
-                    data.aliases?.map { it?.lowercase() ?: error("aliases contains null for server id ${data.id}") } ?: emptyList())
-            }
-        }.toMutableSet()
-    }
-
-    private fun checkForDuplicates(servers: MutableSet<Server>) {
-        val keyToServers = mutableMapOf<String, MutableList<Server>>()
-        servers.forEach { server ->
-            val keys = listOf(server.keyword, server.name) + server.aliases
-            keys.forEach { key ->
-                keyToServers.getOrPut(key.lowercase()) { mutableListOf() }.add(server)
+    fun loadServers() {
+        isLoading = true
+        Utils.runAsync("load servers") {
+            try {
+                ServerLoader()
+            } finally {
+                isLoading = false
             }
         }
-
-        val duplicates = mutableSetOf<String>()
-        for ((key, serverList) in keyToServers.filter { it.value.size > 1 }) {
-            if (serverList.size == 2) {
-                val nameA = serverList[0].name
-                val nameB = serverList[1].name
-                if (nameA == nameB && key == nameA.lowercase()) {
-                    continue // skip if the server name is the same as the key name
-                }
-            }
-            duplicates.add("'$key' found in ${serverList.map { it.name }}")
-            BOT.logger.info("Duplicate key '$key' found in servers: ${serverList.map { it.name }}")
-        }
-        val count = duplicates.size
-        if (count > 0) {
-            BOT.logger.warn("$count duplicate servers found!")
-            val message = "Found $count duplicate servers:\n${duplicates.joinToString("\n")}"
-            sendMessageToBotChannel(message)
-        } else {
-            BOT.logger.info("no duplicate servers found.")
-        }
     }
-
-    internal fun getServer(name: String): Server? {
-        for (server in servers) {
-            if (server.keyword.equals(name, ignoreCase = true)) {
-                return server
-            }
-            if (server.name.equals(name, ignoreCase = true)) {
-                return server
-            }
-            if (name in server.aliases) {
-                return server
-            }
-        }
-
-        return null
-    }
-
-    private fun isDiscordInvite(message: String): Boolean = discordServerPattern.matcher(message).find()
-
-    private fun getServerByInviteUrl(url: String): Server? = servers.firstOrNull { it.invite == url }
 
     fun isKnownServerUrl(event: MessageReceivedEvent, message: String): Boolean {
         val server = getServerByInviteUrl(message) ?: run {
@@ -251,6 +100,320 @@ object ServerCommands {
 
         event.reply(server.print(tutorial = true))
         return true
+    }
+
+    internal fun getServer(name: String): Server? {
+        val lowercaseName = name.lowercase()
+        return servers.find { server ->
+            server.keyword.equals(lowercaseName, ignoreCase = true) ||
+                    server.name.equals(lowercaseName, ignoreCase = true) ||
+                    lowercaseName in server.aliases
+        }
+    }
+
+    private fun isDiscordInvite(message: String): Boolean = discordServerPattern.matcher(message).find()
+
+    private fun getServerByInviteUrl(url: String): Server? = servers.firstOrNull { it.invite == url }
+
+    private fun parseStringToServers(json: String): MutableSet<Server> {
+        val type = object : TypeToken<Map<String, Map<String, ServerJson>>>() {}.type
+        val data: Map<String, Map<String, ServerJson>> = gson.fromJson(json, type)
+
+        return data.flatMap { (_, serverCategories) ->
+            serverCategories.map { (id, data) ->
+                Server(
+                    id.lowercase(),
+                    data.id,
+                    data.name,
+                    data.invite,
+                    data.size.toInt(),
+                    data.description,
+                    data.aliases?.map { it?.lowercase() ?: error("aliases contains null for server id ${data.id}") }
+                        ?: emptyList()
+                )
+            }
+        }.toMutableSet()
+    }
+
+    private fun Map<String, Double>.memberCountFormat() {
+        if (isEmpty()) {
+            println("No member count update necessary")
+            return
+        }
+        println(" ")
+        for ((text, _) in entries.sortedByDescending { it.value }) {
+            println(text)
+        }
+        println(" ")
+        println("Member count update necessary: $size")
+        println(" ")
+    }
+
+    private fun MutableMap<String, Double>.calculateMemberCount(guild: Invite.Guild, server: Server) {
+        val accuracy = 0.01
+
+        val realSize = guild.memberCount
+        val storedSize = server.size
+        val diff = realSize - storedSize
+        if (diff.absoluteValue < realSize * accuracy) return
+
+        val diffFormat = " (diff=${diff.addSeparators()})"
+        val percentageChanged = ((diff.absoluteValue / realSize.toDouble()) * 100).roundTo(5)
+        val name = "${formatMemberDiff(server, storedSize, realSize)} $diffFormat ${server.id}"
+        val text = "$name - $percentageChanged% ($realSize)"
+        this[text] = percentageChanged
+    }
+
+    private fun formatMemberDiff(server: Server, storedSize: Int, realSize: Int) =
+        "${server.name}: ${storedSize.addSeparators()} -> ${realSize.addSeparators()}"
+
+    private class ServerLoader {
+        val servers: MutableSet<Server>
+        var removedInvalidInvite = 0
+        var removedWrongId = 0
+        var removedOther = 0
+        val removed get() = removedInvalidInvite + removedWrongId + removedOther
+
+        val pendingMessages = mutableListOf<List<String>>()
+        val githubLink =
+            "GitHub".linkTo("https://github.com/SkyHanniStudios/DiscordBot/blob/master/data/discord_servers.json")
+
+        val viaText = if (useClipboardInServerList) "dev clipboard" else githubLink
+        val log = LiveLog(Utils.getBotChannel(), "Server List Update (via $viaText)")
+
+        init {
+            log.startAutoUpdate()
+            try {
+                log.status("Loading from GitHub...")
+                val json = if (useClipboardInServerList) {
+                    Utils.readStringFromClipboard() ?: error("error loading discord_servers json from clipboard")
+                } else {
+                    github.getFileContent("data/discord_servers.json") ?: error("Error loading discord_servers data")
+                }
+
+                log.log("Parsing JSON...")
+                servers = parseStringToServers(json)
+                log.log("Found ${servers.size} servers")
+
+                log.status("Checking duplicates...")
+                checkForDuplicates()
+
+                log.status("Validating invites...")
+                validate()
+            } catch (e: Exception) {
+                log.complete("Error: ${e.message}", status = "Failed")
+                throw e
+            }
+        }
+
+        private fun checkForDuplicates() {
+            // Check for self-overlapping keys first
+            servers.forEach { server ->
+                val keywordLower = server.keyword.lowercase()
+                val nameLower = server.name.lowercase()
+
+                val problemAliases = server.aliases
+                    .map { it.lowercase() }
+                    .filter { alias ->
+                        alias == keywordLower ||
+                                alias == nameLower ||
+                                server.aliases.count { it.lowercase() == alias } > 1
+                    }
+                    .distinct()
+
+                if (problemAliases.isNotEmpty()) {
+                    BOT.logger.warn("Server '${server.name}' has overlapping aliases: $problemAliases")
+                    Utils.sendMessageToBotChannel("Server '${server.name}' has overlapping aliases: $problemAliases")
+                }
+            }
+
+            // Then check for duplicates between different servers
+            val keyToServers = mutableMapOf<String, MutableList<Server>>()
+            servers.forEach { server ->
+                server.allKeys.forEach { key ->
+                    keyToServers.getOrPut(key) { mutableListOf() }.add(server)
+                }
+            }
+
+            val duplicates = mutableSetOf<String>()
+            for ((key, serverList) in keyToServers.filter { it.value.distinct().size > 1 }) {
+                duplicates.add("'$key' found in ${serverList.map { it.name }}")
+                BOT.logger.info("Duplicate key '$key' found in servers: ${serverList.map { it.name }}")
+            }
+            val count = duplicates.size
+            if (count > 0) {
+                BOT.logger.warn("$count duplicate servers found!")
+                val joinToString = duplicates.distinct().joinToString("\n")
+                Utils.sendMessageToBotChannel("Found $count duplicate servers:\n$joinToString")
+            } else {
+                BOT.logger.info("No duplicate servers found.")
+            }
+        }
+
+        private fun validate() {
+            val results = expensiveFetchRequests()
+
+            val memberCountDiff = mutableMapOf<String, Double>()
+            val errors = mutableListOf<Throwable>()
+
+            for ((server, result) in results) with(server) {
+                result.onSuccess { validate(it, memberCountDiff) }
+                result.onFailure { validateError(it, errors) }
+            }
+
+            finish(errors)
+            memberCountDiff.memberCountFormat()
+        }
+
+        private fun expensiveFetchRequests(): ConcurrentHashMap<Server, Result<Invite>> {
+            val results = ConcurrentHashMap<Server, Result<Invite>>(servers.size)
+            val latch = CountDownLatch(servers.size)
+            val completed = AtomicInteger(0)
+            val total = servers.size
+
+            for (server in servers) {
+                val code = server.invite.split("/").last()
+                Invite.resolve(BOT.jda, code, true).queue(
+                    {
+                        results[server] = Result.success(it)
+                        log.progress(completed.incrementAndGet(), total)
+                        latch.countDown()
+                    },
+                    {
+                        results[server] = Result.failure(it)
+                        log.progress(completed.incrementAndGet(), total)
+                        latch.countDown()
+                    },
+                )
+            }
+
+            latch.await()
+            return results
+        }
+
+        private fun finish(errors: List<Throwable>) {
+            if (checkIfAllFailed()) {
+                // Only show first 3 messages during outage for context
+                val onlyFirst = 3
+                pendingMessages.take(onlyFirst).forEach { Utils.sendMessageToBotChannel(it) }
+                if (pendingMessages.size > onlyFirst) {
+                    Utils.sendMessageToBotChannel("... and ${pendingMessages.size - onlyFirst} more errors (outage detected)")
+                }
+                return
+            }
+
+            pendingMessages.forEach { Utils.sendMessageToBotChannel(it) }
+
+            this@ServerCommands.outage = false
+
+            if (removed == 0) {
+                BOT.logger.info("Checked for fake server with no results.")
+            } else {
+                val amount = "server".pluralize(removed, withNumber = true)
+                BOT.logger.info("Removed $amount from local cache because of fakes/not found/expired!")
+            }
+
+            val found = servers.size + removed
+            val active = servers.size
+
+            val breakdown = buildList {
+                if (removedInvalidInvite > 0) add("$removedInvalidInvite bad invite")
+                if (removedWrongId > 0) add("$removedWrongId wrong ID")
+                if (removedOther > 0) add("$removedOther other")
+            }.joinToString(", ")
+
+            val removedInfo = if (removed > 0) ", $removed removed ($breakdown)" else ""
+
+            val errorInfo = if (errors.isNotEmpty()) {
+                errors.forEach { BOT.logger.error("Unexpected validation error", it) }
+                ", ${errors.size} unexpected errors"
+            } else ""
+
+            val status = if (errors.isNotEmpty()) "Done (with errors)" else "Done"
+            log.complete("$found found, $active active$removedInfo$errorInfo", status = status)
+
+            this@ServerCommands.servers = servers.toSet()
+        }
+
+        private fun checkIfAllFailed(): Boolean {
+            val allFailed = servers.isEmpty() && removed > 0
+
+            if (!allFailed) return false
+            this@ServerCommands.outage = true
+
+            BOT.logger.warn("All servers failed validation. Clearing data.")
+            log.complete("All servers failed. Retry with `!serverupdate`.", status = "Failed")
+
+            this@ServerCommands.servers = emptySet()
+            return true
+        }
+
+        private fun Server.validate(resolvedInvite: Invite, memberCountDiff: MutableMap<String, Double>) {
+            val guild = resolvedInvite.guild ?: run {
+                removedOther++
+                log.issue("Server not found in discord api '$name'!")
+                servers.remove(this)
+                BOT.logger.info("Server not found in discord api '$name'!")
+                pendingMessages.add(buildList {
+                    add("Server not found in discord api '$name'!")
+                    add("but the invite exists? somehow? - ${resolvedInvite.url}")
+                    add("Removed the server from the local cache!")
+                })
+                return
+            }
+            if (id != guild.id) {
+                removedWrongId++
+                log.issue("Wrong server id for '$name'! (scam?)")
+                servers.remove(this)
+                BOT.logger.info("Wrong server id! $name ($id != ${guild.id})")
+                pendingMessages.add(buildList {
+                    add("Wrong server id found for '$name'!")
+                    add("json id: `$id`")
+                    add("discord api id: `${guild.id}`")
+                    add("invite: (probably a scam server!?) `$invite`")
+                    add("Removed the server from the local cache!")
+                })
+                return
+            }
+            memberCountDiff.calculateMemberCount(guild, this)
+        }
+
+        private fun Server.validateError(error: Throwable, errors: MutableList<Throwable>) {
+            fun handle(reason: String, vararg extraLines: String) {
+                log.issue("$reason for '$name'!")
+                servers.remove(this)
+                BOT.logger.info("$reason: $name ($id) = $invite")
+                pendingMessages.add(
+                    listOf("$reason for '$name'!") + extraLines.toList() + listOf(
+                        "id: `$id`",
+                        "invite: `$invite`",
+                        "Removed the server from the local cache!",
+                    )
+                )
+            }
+
+            when (error.message) {
+                "10006: Unknown Invite" -> {
+                    removedInvalidInvite++
+                    handle("Invite not found in discord api")
+                }
+
+                "50270: Invite is expired." -> {
+                    removedInvalidInvite++
+                    handle("Invite expired")
+                }
+
+                else -> {
+                    removedOther++
+                    handle(
+                        "Error while parsing discord api",
+                        "error name: ${error.javaClass.name}",
+                        "error message: ${error.message}",
+                    )
+                    errors.add(error)
+                }
+            }
+        }
     }
 }
 
@@ -268,15 +431,20 @@ class ServerCommand : BaseCommand() {
         if (args.size !in 1..2) return wrongUsage("<keyword>")
         val keyword = args.first()
         val debug = args.getOrNull(1) == "-d"
-        val server = ServerCommands.getServer(keyword.lowercase())
+        val server = ServerCommands.getServer(keyword)
         if (server == null) {
-            userError("Server with keyword '$keyword' not found.")
+            if (ServerCommands.outage) {
+                userError("Server list currently unavailable. Please try again later.")
+            } else if (ServerCommands.servers.isEmpty()) {
+                reply("Server list not loaded yet, please try again in a moment.")
+            } else {
+                userError("Server with keyword '$keyword' not found.")
+            }
             return
         }
         if (debug) reply(server.printDebug())
         else reply(server.print())
     }
-
 }
 
 @Suppress("unused")
@@ -288,24 +456,22 @@ class ServerUpdate : BaseCommand() {
     )
 
     init {
-        Utils.runDelayed(1.seconds) {
-            loadServers()
+        Utils.runDelayed("init load servers", 1.seconds) {
+            if (!ServerCommands.isLoading) {
+                ServerCommands.loadServers()
+            }
         }
     }
 
     override fun MessageReceivedEvent.execute(args: List<String>) {
-        reply("updating server list ...")
-        loadServers { removed ->
-            val removedSuffix = if (removed > 0) {
-                " (removed $removed servers)"
-            } else ""
-            val source =
-                "GitHub".linkTo("https://github.com/SkyHanniStudios/DiscordBot/blob/master/data/discord_servers.json")
-            reply("Updated server list from $source.$removedSuffix")
-            logAction("updated server list from github")
+        if (ServerCommands.isLoading) {
+            reply("Server list is already updating!")
+            return
         }
-    }
 
+        logAction("Started server list update")
+        ServerCommands.loadServers()
+    }
 }
 
 @Suppress("unused")
@@ -316,7 +482,11 @@ class ServerList : BaseCommand() {
 
     override fun MessageReceivedEvent.execute(args: List<String>) {
         if (ServerCommands.servers.isEmpty()) {
-            reply("No servers found.")
+            if (ServerCommands.outage) {
+                reply("Server list currently unavailable.")
+            } else {
+                reply("Server list not loaded yet, please try again in a moment.")
+            }
             return
         }
         val list = ServerCommands.servers.joinToString("\n") { server ->
@@ -324,6 +494,6 @@ class ServerList : BaseCommand() {
             if (aliases.isNotEmpty()) "${server.keyword} [${aliases.joinToString(", ")}]"
             else server.keyword
         }
-        reply("Server list:\n$list")
+        replyLong("Server list:\n$list")
     }
 }

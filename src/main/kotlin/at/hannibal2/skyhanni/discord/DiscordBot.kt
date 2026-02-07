@@ -8,7 +8,7 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.requests.GatewayIntent
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.Scanner
+import java.util.*
 
 lateinit var BOT: DiscordBot
     private set
@@ -36,12 +36,19 @@ const val BIG_X = "❌"
 const val CHECK_MARK = "✅"
 const val PING_HANNIBAL = "<@239858538959077376>"
 
+
+val useClipboardFor = ""
+
+val useClipboardInServerList get() = useClipboardFor == "serverlist"
+val useClipboardInAge get() = useClipboardFor == "age"
+val useClipboardInModChecker get() = useClipboardFor == "modchecker"
+
 fun main() {
     val bot = startBot()
 
     sendMessageToBotChannel("I'm awake \uD83D\uDE42")
 
-    Thread {
+    Utils.runAsync("local command listener") {
         val scanner = Scanner(System.`in`)
         while (scanner.hasNextLine()) {
             when (scanner.nextLine().trim().lowercase()) {
@@ -51,7 +58,7 @@ fun main() {
                 }
             }
         }
-    }.start()
+    }
 
     Runtime.getRuntime().addShutdownHook(Thread {
         if (!bot.manualShutdown) {
