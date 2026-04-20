@@ -301,6 +301,13 @@
       "size": "8146",
       "invite": "https://discord.gg/cNgADv2kEQ",
       "description": "A profile viewer website. <https://sky.shiiyu.moe>"
+    },
+    "wiki": {
+      "name": "Hypixel SkyBlock Wiki",
+      "id": "651912910972649492",
+      "size": "885",
+      "invite": "https://discord.gg/wvvNCBva4C",
+      "description": "The independent SkyBlock Wiki. <https://hypixelskyblock.minecraft.wiki/>"
     }
   },
   "resource_packs": {
