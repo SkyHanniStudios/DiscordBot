@@ -8,6 +8,7 @@ data class Tag(val keyword: String, var response: String, var uses: Int)
 object Database {
     private val connection: Connection = DriverManager.getConnection("jdbc:sqlite:bot.db")
     private val tags = mutableMapOf<String, Tag>()
+    private val linkedForumPosts = mutableMapOf<String, Int>() // key = channel id, value = pr number
 
     init {
         val statement = connection.createStatement()
@@ -19,7 +20,16 @@ object Database {
             append("response TEXT, ")
             append("count INTEGER DEFAULT 0)")
         })
+
+        statement.execute(buildString {
+            append("CREATE TABLE IF NOT EXISTS linked_posts (")
+            append("id INTEGER PRIMARY KEY AUTOINCREMENT, ")
+            append("channel_id STRING UNIQUE, ")
+            append("pull_request_id INTEGER UNIQUE)")
+        })
+
         loadTagCache()
+        loadLinkCache()
     }
 
     private fun loadTagCache() {
@@ -30,6 +40,17 @@ object Database {
             val response = resultSet.getString("response")
             val count = resultSet.getInt("count")
             tags[key] = Tag(key, response, count)
+        }
+        resultSet.close()
+    }
+
+    private fun loadLinkCache() {
+        val statement = connection.prepareStatement("SELECT channel_id, pull_request_id FROM linked_posts")
+        val resultSet = statement.executeQuery()
+        while (resultSet.next()) {
+            val channelId = resultSet.getString("channel_id")
+            val pr = resultSet.getInt("pull_request_id")
+            linkedForumPosts[channelId] = pr
         }
         resultSet.close()
     }
@@ -66,6 +87,19 @@ object Database {
         return updated
     }
 
+    fun addLink(channelId: String, pr: Int): Boolean {
+        val statement = connection.prepareStatement(
+            "INSERT OR REPLACE INTO linked_posts (channel_id, pull_request_id) VALUES (?, ?)"
+        )
+        statement.setString(1, channelId)
+        statement.setInt(2, pr)
+        val updated = statement.executeUpdate() > 0
+        if (updated) {
+            linkedForumPosts[channelId] = pr
+        }
+        return updated
+    }
+
     fun getResponse(keyword: String, increment: Boolean = false): String? {
         val key = keyword.lowercase()
         val kObj = tags[key] ?: return null
@@ -81,6 +115,10 @@ object Database {
         return kObj.response
     }
 
+    fun getChannelId(prNumber: Int): String? = linkedForumPosts.entries.find { it.value == prNumber }?.key
+
+    fun getPullrequest(channelId: String): Int? = linkedForumPosts[channelId]
+
     fun deleteTag(keyword: String): Boolean {
         val key = keyword.lowercase()
         val statement = connection.prepareStatement("DELETE FROM keywords WHERE keyword = ?")
@@ -90,7 +128,17 @@ object Database {
         return updated
     }
 
+    fun deleteLink(channelId: String): Boolean {
+        val statement = connection.prepareStatement("DELETE FROM linked_posts WHERE channel_id = ?")
+        statement.setString(1, channelId)
+        val updated = statement.executeUpdate() > 0
+        if (updated) linkedForumPosts.remove(channelId)
+        return updated
+    }
+
     fun listTags(): List<Tag> = tags.values.toList()
+
+    fun listLinks(): Map<String, Int> = linkedForumPosts
 
     fun getTagCount(keyword: String): Int? {
         return tags[keyword.lowercase()]?.uses
