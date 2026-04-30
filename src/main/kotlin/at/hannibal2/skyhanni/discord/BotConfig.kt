@@ -7,6 +7,7 @@ import kotlin.system.exitProcess
 data class BotConfig(
     val token: String,
     val botCommandChannelId: String,
+	val scamDetectorChannelId: String,
     val allowedServerId: String,
     val githubTokenOwn: String,
     val githubTokenPullRequests: String,
@@ -19,6 +20,7 @@ object ConfigLoader {
     private val exampleConfig = BotConfig(
 		"TODO: discord token",
 		"TODO: staff channel id",
+		"TODO: scam detector channel id",
 		"TODO: allowed server id",
 		"TODO: github token with sh bot repo access",
 		"TODO: github token with sh mod repo access",
