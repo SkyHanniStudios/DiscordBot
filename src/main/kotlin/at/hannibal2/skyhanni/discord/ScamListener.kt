@@ -42,8 +42,9 @@ object ScamListener {
             .build()
 
         purgatory.sendMessageEmbeds(embed).queue()
-        message.forwardTo(purgatory).queue()
-        deleteRecentMessages(guild, member)
+        message.forwardTo(purgatory).queue {
+            deleteRecentMessages(guild, member)
+        }
         purgatory.upsertPermissionOverride(member)
             .grant(Permission.MESSAGE_SEND, Permission.VIEW_CHANNEL).queue()
 
