@@ -83,6 +83,7 @@ private fun startBot(): DiscordBot {
     val messageListener = object : ListenerAdapter() {
         override fun onMessageReceived(event: MessageReceivedEvent) {
             CommandListener.onMessage(bot, event)
+            ScamListener.onMessage(bot, event)
         }
     }
     jda.addEventListener(messageListener)
