@@ -8,6 +8,7 @@ import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.exceptions.ErrorResponseException
 import java.awt.Color
+import kotlin.time.Duration.Companion.seconds
 
 
 object ScamListener {
@@ -42,9 +43,10 @@ object ScamListener {
             .build()
 
         purgatory.sendMessageEmbeds(embed).queue()
-        message.forwardTo(purgatory).queue {
-            deleteRecentMessages(guild, member)
+        if (message.contentRaw.isNotEmpty()) message.forwardTo(purgatory).queue {
+            Utils.runDelayed("Delete member messages", 1.seconds, { deleteRecentMessages(guild, member) })
         }
+
         purgatory.upsertPermissionOverride(member)
             .grant(Permission.MESSAGE_SEND, Permission.VIEW_CHANNEL).queue()
 
