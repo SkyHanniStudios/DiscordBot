@@ -5,13 +5,15 @@ import java.io.File
 import kotlin.system.exitProcess
 
 data class BotConfig(
-    val token: String,
-    val botCommandChannelId: String,
+	val token: String,
+	val botCommandChannelId: String,
 	val scamDetectorChannelId: String,
-    val allowedServerId: String,
-    val githubTokenOwn: String,
-    val githubTokenPullRequests: String,
-    val editPermissionRoleIds: Map<String, String>,
+	val scamPurgatoryChannelId: String,
+	val allowedServerId: String,
+	val githubTokenOwn: String,
+	val githubTokenPullRequests: String,
+	val memberRoleId: String,
+	val editPermissionRoleIds: Map<String, String>,
 )
 
 object ConfigLoader {
@@ -21,9 +23,11 @@ object ConfigLoader {
 		"TODO: discord token",
 		"TODO: staff channel id",
 		"TODO: scam detector channel id",
+		"TODO: scam purgatory channel id",
 		"TODO: allowed server id",
 		"TODO: github token with sh bot repo access",
 		"TODO: github token with sh mod repo access",
+		"TODO: member role id",
 		mapOf(
 			"user friendly (non important) name" to "TODO: role id"
 		)
