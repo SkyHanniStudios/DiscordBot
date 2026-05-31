@@ -2,6 +2,7 @@ package at.hannibal2.skyhanni.discord
 
 import at.hannibal2.skyhanni.discord.utils.ErrorManager.handleError
 import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.entities.User
@@ -12,11 +13,13 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.utils.FileUpload
 import java.awt.Color
 import java.awt.Toolkit.getDefaultToolkit
+import java.awt.datatransfer.DataFlavor
 import java.io.File
 import java.text.NumberFormat
 import java.util.*
 import java.util.zip.ZipFile
 import kotlin.math.pow
+import kotlin.math.round
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.nanoseconds
 
@@ -161,8 +164,18 @@ object Utils {
 
     fun MessageReceivedEvent.hasAdminPermissions(): Boolean {
         val member = member ?: return false
-        val allowedRoleIds = BOT.config.editPermissionRoleIds.values
-        return !member.roles.none { it.id in allowedRoleIds }
+        return member.hasStaffRole("moderator")
+    }
+
+    fun Member.hasStaffRole(name: String): Boolean {
+        val staffRoles: Map<String, String> = BOT.config.editPermissionRoleIds
+        val requiredIndex = staffRoles.keys.indexOf(name.lowercase())
+        if (requiredIndex == -1) return false
+
+        val memberRoleIds = roles.map { it.id }.toSet()
+        return staffRoles.values
+            .take(requiredIndex + 1)
+            .any { it in memberRoleIds }
     }
 
     fun MessageReceivedEvent.inBotCommandChannel() = channel.id == BOT.config.botCommandChannelId
@@ -297,7 +310,7 @@ object Utils {
     }
 
     fun readStringFromClipboard(): String? = runCatching {
-        getDefaultToolkit().systemClipboard.getData(java.awt.datatransfer.DataFlavor.stringFlavor) as String
+        getDefaultToolkit().systemClipboard.getData(DataFlavor.stringFlavor) as String
     }.getOrNull()
 
     fun User.getLinkName(): String = "<@$id>"
@@ -328,7 +341,7 @@ object Utils {
      */
     fun Double.roundTo(precision: Int): Double {
         val scale = 10.0.pow(precision)
-        return kotlin.math.round(this * scale) / scale
+        return round(this * scale) / scale
     }
 
     fun runAsync(taskName: String, executor: () -> Unit) {

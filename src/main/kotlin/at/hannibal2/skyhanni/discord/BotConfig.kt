@@ -10,7 +10,10 @@ data class BotConfig(
     val allowedServerId: String,
     val githubTokenOwn: String,
     val githubTokenPullRequests: String,
-    val editPermissionRoleIds: Map<String, String>,
+    val jailedRoleId: String,
+    val memberRoleId: String,
+    val jailedLogChannelId: String,
+    val editPermissionRoleIds: LinkedHashMap<String, String>,
 )
 
 object ConfigLoader {
@@ -22,7 +25,10 @@ object ConfigLoader {
 		"TODO: allowed server id",
 		"TODO: github token with sh bot repo access",
 		"TODO: github token with sh mod repo access",
-		mapOf(
+		"TODO: role id for the jailed group",
+		"TODO: role id for the member group",
+		"TODO: channel id for the jailed log channel",
+		linkedMapOf(
 			"user friendly (non important) name" to "TODO: role id"
 		)
 	)
