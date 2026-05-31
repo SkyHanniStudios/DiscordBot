@@ -84,7 +84,7 @@ class TagList : BaseCommand() {
     override val name = "taglist"
     override val description = "Lists all available tags."
     override val aliases = listOf("tags")
-    override val userCommand: Boolean = true
+    override val permission = Permission.USER
 
     override fun MessageReceivedEvent.execute(args: List<String>) {
         val list = Database.listTags()
@@ -108,6 +108,8 @@ class TagList : BaseCommand() {
 class TagEdit : BaseCommand() {
     override val name = "tagedit"
     override val description = "Edits a tag in the database."
+    override val permission = Permission.MODERATOR
+    override val onlyInStaffCommandChannel = true
     override val options: List<Option> = listOf(
         Option("tag", "The tag you want to edit."), Option("response", "Response you want the tag to have.")
     )
@@ -142,6 +144,8 @@ class TagEdit : BaseCommand() {
 class TagEditLast : BaseCommand() {
     override val name = "tageditlast"
     override val description = "Show info on how to edit the last tag used."
+    override val permission = Permission.MODERATOR
+    override val onlyInStaffCommandChannel = true
 
     override fun MessageReceivedEvent.execute(args: List<String>) {
         val id = author.id
@@ -159,6 +163,8 @@ class TagEditLast : BaseCommand() {
 class TagAdd : BaseCommand() {
     override val name = "tagadd"
     override val description = "Adds a tag to the database."
+    override val permission = Permission.MODERATOR
+    override val onlyInStaffCommandChannel = true
     override val options: List<Option> = listOf(
         Option("keyword", "Keyword you want the tag to have."), Option("response", "Response you want the tag to have.")
     )
@@ -196,6 +202,8 @@ class TagAdd : BaseCommand() {
 class TagDelete : BaseCommand() {
     override val name: String = "tagdelete"
     override val description: String = "Deletes a tag from the database."
+    override val permission = Permission.MODERATOR
+    override val onlyInStaffCommandChannel = true
     override val options: List<Option> = listOf(
         Option("keyword", "Keyword of the tag you want to delete.")
     )
@@ -222,7 +230,7 @@ class TagDelete : BaseCommand() {
 object TagUndo : BaseCommand() {
     override val name: String = "tagundo"
     override val description: String = "Undoes something not quite sure."
-    override val userCommand: Boolean = true
+    override val permission = Permission.USER
     override val aliases: List<String> = listOf("undo")
 
     override fun MessageReceivedEvent.execute(args: List<String>) {

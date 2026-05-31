@@ -1,5 +1,7 @@
 package at.hannibal2.skyhanni.discord
 
+import at.hannibal2.skyhanni.discord.command.BaseCommand
+import at.hannibal2.skyhanni.discord.command.StaffRole
 import at.hannibal2.skyhanni.discord.utils.ErrorManager.handleError
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.Member
@@ -57,6 +59,8 @@ object Utils {
         BotMessageHandler.log(text, consumer)
         reply(text)
     }
+
+    val MessageReceivedEvent.messageAuthor: Member get() = member ?: error("member is null")
 
     fun Message.messageDelete() {
         delete().queue()
@@ -162,14 +166,19 @@ object Utils {
         logger.info("$id/$name$nickString $action$channelSuffix")
     }
 
-    fun MessageReceivedEvent.hasAdminPermissions(): Boolean {
-        val member = member ?: return false
-        return member.hasStaffRole("moderator")
+    fun MessageReceivedEvent.checkCommandPermissions(command: BaseCommand): Boolean {
+        val requiredRole = command.permission.staffRole ?: return true
+        if (hasStaffRole(requiredRole)) return true
+
+        reply("No permissions for command `!${command.name}` $PLEADING_FACE")
+        return false
     }
 
-    fun Member.hasStaffRole(name: String): Boolean {
+    fun MessageReceivedEvent.hasStaffRole(role: StaffRole): Boolean = messageAuthor.hasStaffRole(role)
+
+    fun Member.hasStaffRole(role: StaffRole): Boolean {
         val staffRoles: Map<String, String> = BOT.config.editPermissionRoleIds
-        val requiredIndex = staffRoles.keys.indexOf(name.lowercase())
+        val requiredIndex = staffRoles.keys.indexOf(role.roleName.lowercase())
         if (requiredIndex == -1) return false
 
         val memberRoleIds = roles.map { it.id }.toSet()
@@ -178,7 +187,7 @@ object Utils {
             .any { it in memberRoleIds }
     }
 
-    fun MessageReceivedEvent.inBotCommandChannel() = channel.id == BOT.config.botCommandChannelId
+    fun MessageReceivedEvent.isStaffCommandChannel() = channel.id == BOT.config.botCommandChannelId
 
     fun runDelayed(taskName: String, duration: Duration, consumer: () -> Unit) {
         runAsync("$taskName (delayed by $duration)") {

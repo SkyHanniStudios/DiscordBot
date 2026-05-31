@@ -340,6 +340,8 @@ object ModChecker {
     class DebugModsCommand : BaseCommand() {
         override val name = "debugmods"
         override val description = "Debug infos about the mod list in neu stats format"
+        override val permission = Permission.COMMUNITY_HELPER
+        override val onlyInStaffCommandChannel = true
 
         override fun MessageReceivedEvent.execute(args: List<String>) {
             val referencedMessage = message.referencedMessage
@@ -362,6 +364,8 @@ object ModChecker {
     class UpdateModListCommand : BaseCommand() {
         override val name = "modlistupdate"
         override val description = "Updates the mod list."
+        override val permission = Permission.MODERATOR
+        override val onlyInStaffCommandChannel = true
         override val aliases = listOf("updatemodlist", "updatemods")
 
         init {

@@ -6,7 +6,7 @@ import kotlin.system.exitProcess
 
 data class BotConfig(
     val token: String,
-    val botCommandChannelId: String,
+    val botCommandChannelId: String, // TODO rename to staffCommandChannelId
     val allowedServerId: String,
     val githubTokenOwn: String,
     val githubTokenPullRequests: String,

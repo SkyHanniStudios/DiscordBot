@@ -10,9 +10,13 @@ abstract class BaseCommand {
 
     abstract val description: String
 
-    open val options: List<Option> = emptyList()
+    // controls who may run the command
+    abstract val permission: Permission
 
-    open val userCommand: Boolean = false
+    // controls whether the command is restricted to the staff channel
+    open val onlyInStaffCommandChannel = false
+
+    open val options: List<Option> = emptyList()
 
     protected open val aliases: List<String> = emptyList()
 
@@ -24,3 +28,4 @@ abstract class BaseCommand {
 
     fun getAllNames(): List<String> = aliases + name
 }
+

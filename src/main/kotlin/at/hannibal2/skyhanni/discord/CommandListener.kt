@@ -1,8 +1,8 @@
 package at.hannibal2.skyhanni.discord
 
+import at.hannibal2.skyhanni.discord.Utils.checkCommandPermissions
 import at.hannibal2.skyhanni.discord.Utils.getLink
-import at.hannibal2.skyhanni.discord.Utils.hasAdminPermissions
-import at.hannibal2.skyhanni.discord.Utils.inBotCommandChannel
+import at.hannibal2.skyhanni.discord.Utils.isStaffCommandChannel
 import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.command.*
@@ -67,13 +67,10 @@ object CommandListener {
             return
         }
 
-        if (!command.userCommand) {
-            if (!hasAdminPermissions()) {
-                reply("No permissions $PLEADING_FACE")
-                return
-            }
+        if (!checkCommandPermissions(command)) return
 
-            if (!inBotCommandChannel()) {
+        if (command.onlyInStaffCommandChannel) {
+            if (!isStaffCommandChannel()) {
                 reply("Wrong channel $PLEADING_FACE")
                 return
             }
