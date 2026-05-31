@@ -1,9 +1,7 @@
 package at.hannibal2.skyhanni.discord.command
 
-import at.hannibal2.skyhanni.discord.BOT
-import at.hannibal2.skyhanni.discord.Option
-import at.hannibal2.skyhanni.discord.PLEADING_FACE
-import at.hannibal2.skyhanni.discord.Utils
+import at.hannibal2.skyhanni.discord.*
+import at.hannibal2.skyhanni.discord.Utils.hasStaffRole
 import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.Utils.userError
@@ -15,14 +13,9 @@ import java.awt.Color
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
-// TODO: Either move to config.json and BotConfig.kt + Utils.kt or just change the IDs to real server's.
-// Placeholder IDs for the test server
-private const val COMMUNITY_HELPER_ROLE_ID = "1510199336007631002"
-private const val JAILED_ROLE_ID           = "1510199262925819965"
-private const val JAIL_LOG_CHANNEL_ID      = "1346269715697242115"
-
-private fun MessageReceivedEvent.hasJailPermissions(): Boolean =
-    member?.roles?.any { it.id == COMMUNITY_HELPER_ROLE_ID } ?: false
+private val JAILED_ROLE_ID get() = BOT.config.jailedRoleId
+private val MEMBER_ROLE_ID get() = BOT.config.memberRoleId
+private val JAIL_LOG_CHANNEL_ID get() = BOT.config.jailedLogChannelId
 
 /**
  * Resolves a member from mentions and user Id.
@@ -41,8 +34,14 @@ private fun MessageReceivedEvent.resolveTarget(query: String): Member? {
     return null
 }
 
+private fun Member.hasJailPermissions() = hasStaffRole("community helper")
+
 private fun MessageReceivedEvent.executeJail(args: List<String>, commandName: String, purge: Boolean) {
-    if (!hasJailPermissions()) {
+    val executor = member ?: run {
+        userError("you are null")
+        return
+    }
+    if (!executor.hasJailPermissions()) {
         reply("No permissions $PLEADING_FACE")
         return
     }
@@ -59,8 +58,7 @@ private fun MessageReceivedEvent.executeJail(args: List<String>, commandName: St
         return
     }
 
-    val staffRoleIds = BOT.config.editPermissionRoleIds.values
-    if (targetMember.roles.any { it.id in staffRoleIds }) {
+    if (targetMember.hasJailPermissions()) {
         userError("You cannot jail a staff member.")
         return
     }
@@ -75,11 +73,20 @@ private fun MessageReceivedEvent.executeJail(args: List<String>, commandName: St
         return
     }
 
-    val executor = member!!
+    val memberRole = guild.getRoleById(MEMBER_ROLE_ID) ?: run {
+        userError("Member role not found in this server.")
+        return
+    }
+
     logAction("used $commandName on ${targetMember.user.name} (${targetMember.id}) — reason: $reason")
 
     guild.addRoleToMember(targetMember, jailedRole).queue(
-        {},
+        {
+            guild.removeRoleFromMember(targetMember, memberRole).queue(
+                {},
+                { error -> userError("Failed to remove Member role: ${error.message}") }
+            )
+        },
         { error -> userError("Failed to add Jailed role: ${error.message}") }
     )
 
