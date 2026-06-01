@@ -4,16 +4,17 @@ import at.hannibal2.skyhanni.discord.PING_HANNIBAL
 import at.hannibal2.skyhanni.discord.PLEADING_FACE
 import at.hannibal2.skyhanni.discord.Utils
 import at.hannibal2.skyhanni.discord.command.BaseCommand
+import at.hannibal2.skyhanni.discord.command.Permission
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
 object ErrorManager {
 
     @Suppress("unused")
-    class AgeCommand3 : BaseCommand() {
+    class TestErrorCommand : BaseCommand() {
         override val name: String = "testerror"
         override val description: String = "this is a test error"
-
-        override val userCommand: Boolean = false
+        override val permission = Permission.COMMUNITY_HELPER
+        override val onlyInStaffCommandChannel = true
 
         override fun MessageReceivedEvent.execute(args: List<String>) {
             error("test error")

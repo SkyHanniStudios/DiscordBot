@@ -36,7 +36,7 @@ object PullRequestCommand : BaseCommand() {
         Option("number", "Number of the pull request you want to display.")
     )
 
-    override val userCommand: Boolean = true
+    override val permission = Permission.USER
 
     private const val USER = "hannibal002"
     private const val REPO = "SkyHanni"

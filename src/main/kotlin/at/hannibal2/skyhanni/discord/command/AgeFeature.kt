@@ -71,7 +71,7 @@ object AgeFeature {
     class AgeCommand : BaseCommand() {
         override val name = "age"
         override val description = "Show the age of something."
-        override val userCommand = true
+        override val permission = Permission.USER
 
         override fun MessageReceivedEvent.execute(args: List<String>) {
             val tip = "\nTry one of those: ${releases.keys}"
@@ -91,6 +91,8 @@ object AgeFeature {
     class UpdateAgeListCommand : BaseCommand() {
         override val name = "updateagelist"
         override val description = "Updates the age list."
+        override val permission = Permission.MODERATOR
+        override val onlyInStaffCommandChannel = true
         override val aliases = listOf("ageupdate", "updateage")
 
         init {

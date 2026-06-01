@@ -1,9 +1,11 @@
 package at.hannibal2.skyhanni.discord.command
 
-import at.hannibal2.skyhanni.discord.*
+import at.hannibal2.skyhanni.discord.BOT
+import at.hannibal2.skyhanni.discord.Option
+import at.hannibal2.skyhanni.discord.Utils
 import at.hannibal2.skyhanni.discord.Utils.hasStaffRole
 import at.hannibal2.skyhanni.discord.Utils.logAction
-import at.hannibal2.skyhanni.discord.Utils.reply
+import at.hannibal2.skyhanni.discord.Utils.messageAuthor
 import at.hannibal2.skyhanni.discord.Utils.userError
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.Member
@@ -34,17 +36,8 @@ private fun MessageReceivedEvent.resolveTarget(query: String): Member? {
     return null
 }
 
-private fun Member.hasJailPermissions() = hasStaffRole("community helper")
-
 private fun MessageReceivedEvent.executeJail(args: List<String>, commandName: String, purge: Boolean) {
-    val executor = member ?: run {
-        userError("you are null")
-        return
-    }
-    if (!executor.hasJailPermissions()) {
-        reply("No permissions $PLEADING_FACE")
-        return
-    }
+    val executor = messageAuthor
 
     if (args.size < 2) return userError("<user> <reason>")
 
@@ -58,7 +51,7 @@ private fun MessageReceivedEvent.executeJail(args: List<String>, commandName: St
         return
     }
 
-    if (targetMember.hasJailPermissions()) {
+    if (targetMember.hasStaffRole(StaffRole.COMMUNITY_HELPER)) {
         userError("You cannot jail a staff member.")
         return
     }
@@ -158,11 +151,11 @@ private fun MessageReceivedEvent.executeJail(args: List<String>, commandName: St
 class JailCommand : BaseCommand() {
     override val name: String = "jail"
     override val description: String = "Jails a user: assigns the Jailed role and logs the action."
+    override val permission = Permission.COMMUNITY_HELPER
     override val options: List<Option> = listOf(
         Option("user", "User mention or exact userID."),
         Option("reason", "Reason for jailing.")
     )
-    override val userCommand: Boolean = true
 
     override fun MessageReceivedEvent.execute(args: List<String>) = executeJail(args, "!jail", purge = false)
 }
@@ -171,11 +164,11 @@ class JailCommand : BaseCommand() {
 class DJailCommand : BaseCommand() {
     override val name: String = "djail"
     override val description: String = "Jails a user and purges up to 30 of their recent messages from this channel."
+    override val permission = Permission.COMMUNITY_HELPER
     override val options: List<Option> = listOf(
         Option("user", "User mention or exact userID."),
         Option("reason", "Reason for jailing.")
     )
-    override val userCommand: Boolean = true
 
     override fun MessageReceivedEvent.execute(args: List<String>) = executeJail(args, "!djail", purge = true)
 }

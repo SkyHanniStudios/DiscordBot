@@ -425,7 +425,7 @@ class ServerCommand : BaseCommand() {
         Option("keyword", "Keyword of the server you want to display."),
         Option("debug", "Display even more useful information (-d to use).", required = false)
     )
-    override val userCommand: Boolean = true
+    override val permission = Permission.USER
 
     override fun MessageReceivedEvent.execute(args: List<String>) {
         if (args.size !in 1..2) return wrongUsage("<keyword>")
@@ -451,6 +451,8 @@ class ServerCommand : BaseCommand() {
 class ServerUpdate : BaseCommand() {
     override val name: String = "serverupdate"
     override val description: String = "Updates the server list."
+    override val permission = Permission.MODERATOR
+    override val onlyInStaffCommandChannel = true
     override val aliases: List<String> = listOf(
         "updateservers", "updateserverlist", "serverlistupdate", "listupdateserver", "updateserver"
     )
@@ -478,6 +480,8 @@ class ServerUpdate : BaseCommand() {
 class ServerList : BaseCommand() {
     override val name: String = "serverlist"
     override val description: String = "Displays all servers in the database."
+    override val permission = Permission.COMMUNITY_HELPER
+    override val onlyInStaffCommandChannel = true
     override val aliases: List<String> = listOf("servers")
 
     override fun MessageReceivedEvent.execute(args: List<String>) {
