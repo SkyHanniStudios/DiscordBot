@@ -4,6 +4,7 @@ import at.hannibal2.skyhanni.discord.BOT
 import at.hannibal2.skyhanni.discord.Option
 import at.hannibal2.skyhanni.discord.Utils
 import at.hannibal2.skyhanni.discord.Utils.addSeparators
+import at.hannibal2.skyhanni.discord.Utils.getLinkName
 import at.hannibal2.skyhanni.discord.Utils.linkTo
 import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.pluralize
@@ -93,7 +94,8 @@ object ServerCommands {
     fun isKnownServerUrl(event: MessageReceivedEvent, message: String): Boolean {
         val server = getServerByInviteUrl(message) ?: run {
             if (isDiscordInvite(message)) {
-                event.logAction("sends unknown discord invite '$message'")
+                val name = event.author.getLinkName()
+                Utils.sendMessageToBotChannel("$name sends an unknown discord invite '$message'")
             }
             return false
         }

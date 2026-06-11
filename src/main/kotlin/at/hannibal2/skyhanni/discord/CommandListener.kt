@@ -3,7 +3,6 @@ package at.hannibal2.skyhanni.discord
 import at.hannibal2.skyhanni.discord.Utils.getLink
 import at.hannibal2.skyhanni.discord.Utils.hasAdminPermissions
 import at.hannibal2.skyhanni.discord.Utils.inBotCommandChannel
-import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.command.*
 import at.hannibal2.skyhanni.discord.utils.ErrorManager.handleError
@@ -27,11 +26,8 @@ object CommandListener {
     }
 
     private fun MessageReceivedEvent.onMessage(bot: DiscordBot) {
-        val message = message.contentRaw.trim()
-        if (!isFromGuild) {
-            logAction("private dm: '$message'")
-            return
-        }
+        // blocking a private dm
+        if (!isFromGuild) return
         if (guild.id != bot.config.allowedServerId) return
 
         if (this.author.isBot) {
@@ -41,6 +37,7 @@ object CommandListener {
             return
         }
 
+        val message = message.contentRaw.trim()
         if (TagUndo.getAllNames().none { "!$it" == message }) {
             TagCommands.lastMessages.remove(this.author.id)
         }
