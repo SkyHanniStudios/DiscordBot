@@ -45,7 +45,7 @@ object CommandListener {
         if (ServerCommands.isKnownServerUrl(this, message)) return
         if (PullRequestCommand.isPullRequest(this, message)) return
         if (ModChecker.isModList(this, message)) return
-        AutoScamDetect.checkAndBan(this)
+        AutoScamDetect.checkAndBan(this, bot.config)
         PleadReactor.doPleadReact(this, message)
 
         var commandMessage = message

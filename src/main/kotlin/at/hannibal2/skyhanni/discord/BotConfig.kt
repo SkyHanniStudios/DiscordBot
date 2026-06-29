@@ -14,6 +14,7 @@ data class BotConfig(
     val memberRoleId: String,
     val jailedLogChannelId: String,
     val editPermissionRoleIds: LinkedHashMap<String, String>,
+	val scamKeywordConfig: List<ConfigLoader.ScamKeywordConfig>
 )
 
 object ConfigLoader {
@@ -30,6 +31,22 @@ object ConfigLoader {
 		"TODO: channel id for the jailed log channel",
 		linkedMapOf(
 			"user friendly (non important) name" to "TODO: role id"
+		),
+		listOf(
+			ScamKeywordConfig(
+				setOf(
+					"mrbeast",
+					"beast",
+					"$",
+					"crypto",
+					"casino",
+					"promo",
+					"reward",
+					"withdraw",
+					"claim",
+					"celebrate",
+				) , 6
+			)
 		)
 	)
 	fun load(filePath: String): BotConfig {
@@ -41,4 +58,9 @@ object ConfigLoader {
 		    exitProcess(1)
 		}
     }
+
+	data class ScamKeywordConfig(
+		val keyWords: Set<String>,
+		val requiredFindings: Int = 10 //if forgotten we want to avoid detecting everyone!
+	)
 }
