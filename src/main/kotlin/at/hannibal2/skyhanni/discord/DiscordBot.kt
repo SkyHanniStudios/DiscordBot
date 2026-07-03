@@ -18,6 +18,7 @@ class DiscordBot(val jda: JDA, val config: BotConfig) {
 
     init {
         BOT = this
+        CommandListener.init()
     }
 
     var manualShutdown = false

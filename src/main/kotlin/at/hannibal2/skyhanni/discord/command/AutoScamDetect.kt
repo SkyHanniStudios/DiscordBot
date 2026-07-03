@@ -1,6 +1,7 @@
 package at.hannibal2.skyhanni.discord.command
 
 import at.hannibal2.skyhanni.discord.BotConfig
+import at.hannibal2.skyhanni.discord.ConfigLoader
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.sourceforge.tess4j.Tesseract
@@ -16,25 +17,16 @@ object AutoScamDetect {
 
     fun checkAndBan(event: MessageReceivedEvent, config: BotConfig) {
         val toCheck = event.message.attachments.filter { it.isImage }
-        var foundScamWords: String? = null
-        val anyScam = toCheck.any {
+        val detectedScamWordOrNull = toCheck.firstNotNullOfOrNull { imageAttachments ->
             val file = File.createTempFile("ocr_temp", ".png").apply {
-                it.proxy.downloadToFile(this)
+                imageAttachments.proxy.downloadToFile(this)
             }
             val extractedText = ocrImageText(file)
-            return@any config.scamKeywordConfig.any {
-                val containedKeyWords = it.keyWords.filter { extractedText.contains(it, ignoreCase = true) }.toList()
-                return@any if ((containedKeyWords.size >= it.requiredFindings)) {
-                    foundScamWords = containedKeyWords.joinToString(", ")
-                    true
-                } else {
-                    false
-                }
-            }
-        }
-        if (!anyScam) return
+            file.delete()
+            return@firstNotNullOfOrNull config.scamKeywordConfig.firstNotNullOfOrNull { it.textTriggersKeywords(extractedText) }
+        } ?: return
         try {
-            event.message.delete().reason("Detected Scam. $foundScamWords").complete()
+            event.message.delete().reason("Detected Scam. $detectedScamWordOrNull").complete()
             val embedBuilder = EmbedBuilder()
             embedBuilder.setColor(Color.RED)
             embedBuilder.setTitle("SkyHanni Server Kick")
@@ -47,10 +39,20 @@ object AutoScamDetect {
         }
 
         try {
-            event.guild.kick(event.author).reason("Scam image detected: $foundScamWords").queue()
+            event.guild.kick(event.author).reason("Scam image detected: $detectedScamWordOrNull").queue()
         }catch (_: Throwable){
             //User might has been kicked already
         }
         event.channel.sendMessage("User ${event.author.asMention} has been automatically banned for sending a scam image.").queue()
+    }
+
+
+    fun ConfigLoader.ScamKeywordConfig.textTriggersKeywords(text: String): String? {
+        val containedKeyWords = keyWords.filter { word -> text.contains(word, ignoreCase = true) }.toList()
+        if ((containedKeyWords.size >= requiredFindings)) {
+            return containedKeyWords.joinToString(", ")
+        } else {
+            return null
+        }
     }
 }

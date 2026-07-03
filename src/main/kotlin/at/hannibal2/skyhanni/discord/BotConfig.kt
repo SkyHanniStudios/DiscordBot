@@ -32,9 +32,9 @@ object ConfigLoader {
 		linkedMapOf(
 			"user friendly (non important) name" to "TODO: role id"
 		),
-		listOf(
+		scamKeywordConfig = listOf(
 			ScamKeywordConfig(
-				setOf(
+				keyWords = setOf(
 					"mrbeast",
 					"beast",
 					"$",
@@ -45,14 +45,19 @@ object ConfigLoader {
 					"withdraw",
 					"claim",
 					"celebrate",
-				) , 6
+				) ,
+				requiredFindings = 6
 			)
 		)
 	)
 	fun load(filePath: String): BotConfig {
 	    try {
 		    val json = File(filePath).readText()
-		    return gson.fromJson(json, BotConfig::class.java)
+		    val config= gson.fromJson(json, BotConfig::class.java)
+            if (config.scamKeywordConfig.any { it.requiredFindings==0 }) {
+                error("requiredFindings must be greater than 0 in scamKeywordConfig.")
+            }
+			return config
 	    } catch (ex: Exception) {
 			logger.error("Could not load config. Below is an example config:\n```json\n${gson.toJson(exampleConfig)}\n```", ex)
 		    exitProcess(1)
@@ -61,6 +66,10 @@ object ConfigLoader {
 
 	data class ScamKeywordConfig(
 		val keyWords: Set<String>,
-		val requiredFindings: Int = 10 //if forgotten we want to avoid detecting everyone!
-	)
+		val requiredFindings: Int
+	){
+		init {
+			error("requiredFindings must be greater than 0 in scamKeywordConfig.")
+		}
+	}
 }
