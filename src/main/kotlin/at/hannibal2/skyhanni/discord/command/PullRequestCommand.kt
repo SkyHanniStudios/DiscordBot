@@ -47,7 +47,7 @@ object PullRequestCommand : BaseCommand() {
         Regex("https://github\\.com/[\\w.]+/[\\w.]+/actions/runs/(?<RunId>\\d+)/job/(?<JobId>\\d+)")
     private val pullRequestPattern = "$BASE/pull/(?<pr>\\d+)".toPattern()
     private val cleanPullRequestPattern = "#(?<pr>\\d+),?".toPattern()
-    private val whitespace = Regex("\\s+")
+    private val whitespace = "\\s+".toPattern()
     
     override fun MessageReceivedEvent.execute(args: List<String>) {
         if (args.size != 1) return wrongUsage("<number>")
