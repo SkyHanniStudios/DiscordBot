@@ -47,7 +47,8 @@ object PullRequestCommand : BaseCommand() {
         Regex("https://github\\.com/[\\w.]+/[\\w.]+/actions/runs/(?<RunId>\\d+)/job/(?<JobId>\\d+)")
     private val pullRequestPattern = "$BASE/pull/(?<pr>\\d+)".toPattern()
     private val cleanPullRequestPattern = "#(?<pr>\\d+),?".toPattern()
-
+    private val whitespace = Regex("\\s+")
+    
     override fun MessageReceivedEvent.execute(args: List<String>) {
         if (args.size != 1) return wrongUsage("<number>")
         val first = args.first().removePrefix("#")
@@ -342,7 +343,7 @@ object PullRequestCommand : BaseCommand() {
         }
 
         val foundPrs = mutableListOf<Int>()
-        for (line in message.split(" ")) {
+        for (line in message.split(whitespace)) {
             val matcher = cleanPullRequestPattern.matcher(line)
             if (matcher.matches()) {
                 val pr = matcher.group("pr").toIntOrNull() ?: continue
