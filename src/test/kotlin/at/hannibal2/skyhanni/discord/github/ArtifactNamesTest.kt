@@ -8,10 +8,10 @@ import kotlin.test.assertTrue
 class ArtifactNamesTest {
     @Test
     fun `matches versioned jar artifact names`() {
-        assertTrue(ArtifactNames.isSkyHanniJarArtifact("SkyHanni-7.24.0-mc1.21.11.jar"))
-        assertTrue(ArtifactNames.isSkyHanniJarArtifact("SkyHanni-7.24.0-mc26.1.jar"))
-        assertFalse(ArtifactNames.isSkyHanniJarArtifact("SkyHanni-7.24.0-1.21.11.jar"))
-        assertFalse(ArtifactNames.isSkyHanniJarArtifact("Test Results (1.21.11)"))
+        assertTrue(ArtifactNames.isSkyHanniJar("SkyHanni-7.24.0-mc1.21.11.jar"))
+        assertTrue(ArtifactNames.isSkyHanniJar("SkyHanni-7.24.0-mc26.1.jar"))
+        assertFalse(ArtifactNames.isSkyHanniJar("SkyHanni-7.24.0-1.21.11.jar"))
+        assertFalse(ArtifactNames.isSkyHanniJar("Test Results (1.21.11)"))
     }
 
     @Test

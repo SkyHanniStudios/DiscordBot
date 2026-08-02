@@ -1,10 +1,10 @@
 package at.hannibal2.skyhanni.discord.github
 
 object ArtifactNames {
-    private val skyHanniJarArtifactPattern = Regex("""^SkyHanni-.+-mc(\d+(?:\.\d+)+)\.jar$""")
+    private val skyHanniJarPattern = Regex("""SkyHanni-.+-mc(?<version>\d+(?:\.\d+)+)\.jar""")
 
-    fun isSkyHanniJarArtifact(name: String): Boolean = skyHanniJarArtifactPattern.matches(name)
+    fun isSkyHanniJar(name: String): Boolean = skyHanniJarPattern.matches(name)
 
     fun minecraftVersion(name: String): String? =
-        skyHanniJarArtifactPattern.matchEntire(name)?.groupValues?.get(1)
+        skyHanniJarPattern.matchEntire(name)?.groups?.get("version")?.value
 }

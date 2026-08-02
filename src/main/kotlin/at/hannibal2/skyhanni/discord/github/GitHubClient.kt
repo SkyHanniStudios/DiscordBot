@@ -1,24 +1,15 @@
 package at.hannibal2.skyhanni.discord.github
 
-import at.hannibal2.skyhanni.discord.json.discord.Artifact
-import at.hannibal2.skyhanni.discord.json.discord.ArtifactResponse
-import at.hannibal2.skyhanni.discord.json.discord.CheckRun
-import at.hannibal2.skyhanni.discord.json.discord.CheckRunsResponse
-import at.hannibal2.skyhanni.discord.json.discord.Conclusion
-import at.hannibal2.skyhanni.discord.json.discord.Job
-import at.hannibal2.skyhanni.discord.json.discord.JobsResponse
-import at.hannibal2.skyhanni.discord.json.discord.PullRequestJson
-import at.hannibal2.skyhanni.discord.json.discord.Release
-import at.hannibal2.skyhanni.discord.json.discord.RunStatus
-import at.hannibal2.skyhanni.discord.json.discord.WorkflowRun
-import at.hannibal2.skyhanni.discord.json.discord.WorkflowRunsResponse
+import at.hannibal2.skyhanni.discord.json.discord.*
 import com.google.gson.Gson
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody
 import java.io.File
-import java.util.Base64
+import java.util.*
+
+private const val PAGE_SIZE = 100
 
 class GitHubClient(user: String, repo: String, private val token: String) {
     private val client = OkHttpClient()
@@ -26,36 +17,25 @@ class GitHubClient(user: String, repo: String, private val token: String) {
     private val base = "https://api.github.com/repos/$user/$repo"
     private val actionsRunUrlPattern = Regex("""/actions/runs/(?<runId>\d+)""")
 
+    /**
+     * Returns an arbitrary Minecraft version, since a multi version build uploads one jar per version.
+     */
     fun findArtifact(lastCommit: String): Artifact? {
         return findArtifactsForCommit(lastCommit).firstOrNull()
     }
 
-    fun findArtifactsForRun(runId: String): List<Artifact> {
-        return findArtifacts("$base/actions/runs/$runId/artifacts?per_page=100&page=") { true }
-    }
+    fun findArtifactsForRun(runId: String): List<Artifact> = readAllPages<ArtifactResponse, Artifact>(
+        "$base/actions/runs/$runId/artifacts",
+        totalCount = { it.totalCount },
+        items = { it.artifacts },
+    )
 
-    private fun findArtifactsForCommit(lastCommit: String): List<Artifact> {
-        return findArtifacts("$base/actions/artifacts?per_page=100&page=") { artifact ->
-            artifact.workflowRun?.headSha == lastCommit
-        }
-    }
-
-    private fun findArtifacts(urlPrefix: String, artifactPredicate: (Artifact) -> Boolean): List<Artifact> {
-        val artifacts = mutableListOf<Artifact>()
-        var page = 1
-
-        do {
-            val response = readJson<ArtifactResponse, ArtifactResponse>("$urlPrefix$page") { it } ?: break
-
-            artifacts += response.artifacts.filter { artifact ->
-                artifactPredicate(artifact) && ArtifactNames.isSkyHanniJarArtifact(artifact.name)
-            }
-
-            page++
-        } while (response.artifacts.isNotEmpty() && response.totalCount > (page - 1) * 100)
-
-        return artifacts
-    }
+    private fun findArtifactsForCommit(lastCommit: String): List<Artifact> =
+        readAllPages<ArtifactResponse, Artifact>(
+            "$base/actions/artifacts",
+            totalCount = { it.totalCount },
+            items = { it.artifacts },
+        ).filter { it.workflowRun?.headSha == lastCommit && ArtifactNames.isSkyHanniJar(it.name) }
 
     fun downloadArtifact(artifactId: Long, outputFile: File) {
         readBody("$base/actions/artifacts/$artifactId/zip") { body ->
@@ -79,37 +59,21 @@ class GitHubClient(user: String, repo: String, private val token: String) {
     }
 
     fun getRun(commitSha: String, checkName: String): CheckRun? {
-        val checkRuns = mutableListOf<CheckRun>()
-        var page = 1
-
-        do {
-            val response = readJson<CheckRunsResponse, CheckRunsResponse>(
-                "$base/commits/$commitSha/check-runs?per_page=100&page=$page",
-            ) { it } ?: break
-
-            checkRuns += response.checkRuns
-            page++
-        } while (response.checkRuns.isNotEmpty() && response.totalCount > checkRuns.size)
-
+        val checkRuns = readAllPages<CheckRunsResponse, CheckRun>(
+            "$base/commits/$commitSha/check-runs",
+            totalCount = { it.totalCount },
+            items = { it.checkRuns },
+        )
         return selectCheckRun(checkRuns, checkName)
     }
 
     fun isWorkflowApprovalRequired(commitSha: String): Boolean {
-        val workflowRuns = mutableListOf<WorkflowRun>()
-        var page = 1
-
-        do {
-            val response = readJson<WorkflowRunsResponse, WorkflowRunsResponse>(
-                "$base/actions/runs?head_sha=$commitSha&per_page=100&page=$page",
-            ) { it } ?: break
-
-            workflowRuns += response.workflowRuns
-            if (hasWorkflowRunNeedingApproval(response.workflowRuns)) return true
-
-            page++
-        } while (response.workflowRuns.isNotEmpty() && response.totalCount > workflowRuns.size)
-
-        return false
+        val workflowRuns = readAllPages<WorkflowRunsResponse, WorkflowRun>(
+            "$base/actions/runs?head_sha=$commitSha",
+            totalCount = { it.totalCount },
+            items = { it.workflowRuns },
+        )
+        return hasWorkflowRunNeedingApproval(workflowRuns)
     }
 
     // might come handy later
@@ -160,6 +124,30 @@ class GitHubClient(user: String, repo: String, private val token: String) {
         RunStatus.WAITING -> 2
         RunStatus.PENDING -> 1
         RunStatus.COMPLETED -> 0
+    }
+
+    /**
+     * Reads every page of a paginated GitHub list endpoint. [url] may or may not already contain a query
+     * string, the pagination parameters are appended with the matching separator.
+     */
+    private inline fun <reified T : Any, E> readAllPages(
+        url: String,
+        totalCount: (T) -> Long,
+        items: (T) -> List<E>,
+    ): List<E> {
+        val separator = if ('?' in url) '&' else '?'
+        val result = mutableListOf<E>()
+        var page = 1
+
+        while (true) {
+            val response = readJson<T, T>("$url${separator}per_page=$PAGE_SIZE&page=$page") { it } ?: break
+            val pageItems = items(response)
+            result += pageItems
+            if (pageItems.isEmpty() || totalCount(response) <= page * PAGE_SIZE) break
+            page++
+        }
+
+        return result
     }
 
     private inline fun <reified T : Any, R> readJson(url: String, crossinline block: (T) -> R): R? =
