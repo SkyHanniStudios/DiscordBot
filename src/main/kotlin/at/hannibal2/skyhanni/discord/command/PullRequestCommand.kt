@@ -14,7 +14,9 @@ import at.hannibal2.skyhanni.discord.Utils.runDelayed
 import at.hannibal2.skyhanni.discord.Utils.timeExecution
 import at.hannibal2.skyhanni.discord.Utils.uploadFile
 import at.hannibal2.skyhanni.discord.Utils.userError
+import at.hannibal2.skyhanni.discord.github.ArtifactNames
 import at.hannibal2.skyhanni.discord.github.GitHubClient
+import at.hannibal2.skyhanni.discord.json.discord.Artifact
 import at.hannibal2.skyhanni.discord.json.discord.Conclusion
 import at.hannibal2.skyhanni.discord.json.discord.PullRequestJson
 import at.hannibal2.skyhanni.discord.json.discord.RunStatus
@@ -47,6 +49,11 @@ object PullRequestCommand : BaseCommand() {
         Regex("https://github\\.com/[\\w.]+/[\\w.]+/actions/runs/(?<RunId>\\d+)/job/(?<JobId>\\d+)")
     private val pullRequestPattern = "$BASE/pull/(?<pr>\\d+)".toPattern()
     private val cleanPullRequestPattern = "#(?<pr>\\d+),?".toPattern()
+
+    private data class VersionedArtifact(
+        val minecraftVersion: String,
+        val artifactId: Long,
+    )
 
     override fun CommandEvent.execute(args: List<String>) {
         if (args.size != 1) return wrongUsage("<number>")
@@ -156,12 +163,18 @@ object PullRequestCommand : BaseCommand() {
         val lastCommit = head.sha
 
         val job = github.getRun(lastCommit, "Build and test") ?: run {
+            val buildUnavailableMessage = if (github.isWorkflowApprovalRequired(lastCommit)) {
+                "Build needs approval"
+            } else {
+                "No build available"
+            }
+
             result(buildString {
                 append(title)
                 append(time)
                 if (!inBeta) {
                     append("\n")
-                    append("Build needs approval $PLEADING_FACE")
+                    append("$buildUnavailableMessage $PLEADING_FACE")
                 }
             })
             return
@@ -201,21 +214,24 @@ object PullRequestCommand : BaseCommand() {
         val match = job.htmlUrl?.let { runIdRegex.matchEntire(it) }
         val runId = match?.groups?.get("RunId")?.value
 
-        val artifactLink = "$BASE/actions/runs/$runId?pr=$prNumber"
-        fun nightlyLink(build: String) = "https://nightly.link/$USER/$REPO/actions/runs/$runId/$build%20Build.zip"
+        val artifactLink = "$BASE/actions/runs/$runId?pr=$prNumber#artifacts"
+        fun meowddingLink(artifactId: Long) = "https://mods.meowdd.ing/$USER/$REPO/$artifactId"
         val artifactLine = "GitHub".linkTo(artifactLink)
-        val nightlyLine = "Nightly (1.21.10)".linkTo(nightlyLink("Development"))
-        val latestNightlyLine = "Nightly (all versions)".linkTo(nightlyLink("Multi-version%20Development"))
+        val versionedArtifacts = runId?.let { github.findArtifactsForRun(it) }.orEmpty()
+            .mapNotNull { it.toVersionedArtifact() }
+            .distinctBy { it.minecraftVersion }
+            .sortedWith { first, second ->
+                compareMinecraftVersions(first.minecraftVersion, second.minecraftVersion)
+            }
 
         val artifactDisplay = buildString {
             append(" \n")
-            append("Download the latest development build of this pr!")
-            append("\n")
-            append("> From $artifactLine (requires a GitHub Account)")
-            append("\n")
-            append("> From $nightlyLine (unofficial)")
-            append("\n")
-            append("> From $latestNightlyLine (unofficial)")
+            append("Download the latest development build of this PR!\n")
+            append("> From $artifactLine (requires a GitHub account)\n")
+            append("> From Meowdding: ")
+            append(
+                versionedArtifacts.map { it.minecraftVersion.linkTo(meowddingLink(it.artifactId)) }.joinToString(" · ")
+            )
             append("\n")
             append("> (updated ${passedSince(job.completedAt ?: "")})")
         }
@@ -253,6 +269,23 @@ object PullRequestCommand : BaseCommand() {
         pr.draft -> Color(101, 108, 118)
         pr.merged -> Color(130, 86, 208)
         else -> Color(52, 125, 57)
+    }
+
+    private fun Artifact.toVersionedArtifact(): VersionedArtifact? {
+        val minecraftVersion = ArtifactNames.minecraftVersion(name) ?: return null
+        return VersionedArtifact(minecraftVersion, id)
+    }
+
+    private fun compareMinecraftVersions(first: String, second: String): Int {
+        val firstParts = first.split(".").map { it.toIntOrNull() ?: 0 }
+        val secondParts = second.split(".").map { it.toIntOrNull() ?: 0 }
+
+        for (index in 0 until maxOf(firstParts.size, secondParts.size)) {
+            val comparison = firstParts.getOrElse(index) { 0 }.compareTo(secondParts.getOrElse(index) { 0 })
+            if (comparison != 0) return comparison
+        }
+
+        return first.compareTo(second)
     }
 
     private fun parseToUnixTime(isoTimestamp: String): Long =
