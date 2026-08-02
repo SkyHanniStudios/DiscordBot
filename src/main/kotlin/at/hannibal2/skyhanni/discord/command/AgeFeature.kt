@@ -68,9 +68,15 @@ object AgeFeature {
         override val name = "age"
         override val description = "Show the age of something."
         override val options: List<Option> = listOf(
-            Option("term", "The thing you want to know the age of."),
+            Option("term", "The thing you want to know the age of.", autoComplete = true),
         )
         override val userCommand = true
+
+        override fun autoCompleteChoices(optionName: String, input: String): List<String> =
+            releases.entries
+                .filter { it.key.contains(input, ignoreCase = true) }
+                .sortedByDescending { it.value.date }
+                .map { it.key }
 
         override fun CommandEvent.execute(args: List<String>) {
             val tip = "\nTry one of those: ${releases.keys}"

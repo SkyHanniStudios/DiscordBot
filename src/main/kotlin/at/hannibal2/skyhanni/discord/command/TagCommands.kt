@@ -27,6 +27,12 @@ object TagCommands {
         lastMessages.getOrPut(author) { mutableListOf() }.add(message)
     }
 
+    internal fun tagChoices(input: String): List<String> =
+        Database.listTags()
+            .filter { it.keyword.contains(input, ignoreCase = true) }
+            .sortedByDescending { it.uses }
+            .map { it.keyword }
+
     fun handleTag(event: MessageReceivedEvent): Boolean {
         val message = event.message
         var keyword = message.contentRaw.substring(1).trimStart()
@@ -105,11 +111,7 @@ class TagShow : BaseCommand() {
         }
     }
 
-    override fun autoCompleteChoices(optionName: String, input: String): List<String> =
-        Database.listTags()
-            .filter { it.keyword.contains(input, ignoreCase = true) }
-            .sortedByDescending { it.uses }
-            .map { it.keyword }
+    override fun autoCompleteChoices(optionName: String, input: String): List<String> = TagCommands.tagChoices(input)
 }
 
 @Suppress("unused")
@@ -145,9 +147,12 @@ class TagEdit : BaseCommand() {
     override val name = "tagedit"
     override val description = "Edits a tag in the database."
     override val options: List<Option> = listOf(
-        Option("tag", "The tag you want to edit."), Option("response", "Response you want the tag to have.")
+        Option("tag", "The tag you want to edit.", autoComplete = true),
+        Option("response", "Response you want the tag to have."),
     )
     override val aliases = listOf("tagchange")
+
+    override fun autoCompleteChoices(optionName: String, input: String): List<String> = TagCommands.tagChoices(input)
 
     override fun CommandEvent.execute(args: List<String>) {
         if (args.size < 2) return wrongUsage("<tag> <response>")
@@ -196,7 +201,8 @@ class TagAdd : BaseCommand() {
     override val name = "tagadd"
     override val description = "Adds a tag to the database."
     override val options: List<Option> = listOf(
-        Option("keyword", "Keyword you want the tag to have."), Option("response", "Response you want the tag to have.")
+        Option("keyword", "Keyword you want the tag to have."),
+        Option("response", "Response you want the tag to have.")
     )
     override val aliases = listOf("tagcreate")
 
@@ -233,9 +239,11 @@ class TagDelete : BaseCommand() {
     override val name: String = "tagdelete"
     override val description: String = "Deletes a tag from the database."
     override val options: List<Option> = listOf(
-        Option("keyword", "Keyword of the tag you want to delete.")
+        Option("keyword", "Keyword of the tag you want to delete.", autoComplete = true),
     )
     override val aliases: List<String> = listOf("tagremove")
+
+    override fun autoCompleteChoices(optionName: String, input: String): List<String> = TagCommands.tagChoices(input)
 
     override fun CommandEvent.execute(args: List<String>) {
         if (args.size != 1) return wrongUsage("<keyword>")

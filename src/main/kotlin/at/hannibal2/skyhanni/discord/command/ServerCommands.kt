@@ -421,10 +421,16 @@ class ServerCommand : BaseCommand() {
     override val name: String = "server"
     override val description: String = "Displays information about a server from our 'useful server list'."
     override val options: List<Option> = listOf(
-        Option("keyword", "Keyword of the server you want to display."),
-        Option("debug", "Display even more useful information (-d to use).", required = false)
+        Option("keyword", "Keyword of the server you want to display.", autoComplete = true),
+        Option("debug", "Display even more useful information (-d to use).", required = false),
     )
     override val userCommand: Boolean = true
+
+    override fun autoCompleteChoices(optionName: String, input: String): List<String> =
+        ServerCommands.servers
+            .filter { server -> server.allKeys.any { it.contains(input, ignoreCase = true) } }
+            .sortedByDescending { it.size }
+            .map { it.keyword }
 
     override fun CommandEvent.execute(args: List<String>) {
         if (args.size !in 1..2) return wrongUsage("<keyword>")
