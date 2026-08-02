@@ -28,33 +28,42 @@ object Utils {
 
     private inline val logger get() = BOT.logger
 
+    // still used by the passive message scanners, which have no command context
     fun MessageReceivedEvent.reply(text: String) {
         message.messageReply(text)
     }
 
+    fun MessageReceivedEvent.replyWithConsumer(text: String, consumer: (Message) -> Unit) {
+        message.replyWithConsumer(text, consumer)
+    }
+
+    fun CommandEvent.reply(text: String) {
+        sendReply(text)
+    }
+
+    fun CommandEvent.reply(embed: MessageEmbed) {
+        sendReply(embed)
+    }
+
     // splitting one long message into multiple smaller ones
-    fun MessageReceivedEvent.replyLong(text: String) {
+    fun CommandEvent.replyLong(text: String) {
         require(text.isNotEmpty()) { "Cannot reply with empty message" }
         val parts = splitMessage(text)
         reply(parts.first())
         parts.drop(1).forEach { channel.messageSend(it) }
     }
 
-    fun MessageReceivedEvent.userError(text: String) {
-        message.messageReply("❌ $text")
+    fun CommandEvent.userError(text: String) {
+        sendReply("❌ $text")
     }
 
-    fun MessageReceivedEvent.sendError(text: String) {
-        message.messageReply("❌ An error occurred: $text")
+    fun CommandEvent.sendError(text: String) {
+        sendReply("❌ An error occurred: $text")
         logAction("Error: $text")
     }
 
-    fun MessageReceivedEvent.reply(embed: MessageEmbed) {
-        message.messageReply(embed)
-    }
-
-    fun MessageReceivedEvent.replyWithConsumer(text: String, consumer: (Message) -> Unit) {
-        message.replyWithConsumer(text, consumer)
+    fun CommandEvent.replyWithConsumer(text: String, consumer: (Message) -> Unit) {
+        sendReplyWithConsumer(text, consumer)
     }
 
     fun Message.messageDelete() {
@@ -142,6 +151,10 @@ object Utils {
     }
 
     fun MessageReceivedEvent.logAction(action: String, raw: Boolean = false) {
+        MessageCommandEvent(this).logAction(action, raw)
+    }
+
+    fun CommandEvent.logAction(action: String, raw: Boolean = false) {
         if (raw) {
             logger.info(action)
             return
@@ -152,14 +165,10 @@ object Utils {
         val nick = member?.nickname?.takeIf { it != "null" }
         val nickString = nick?.let { " (`$nick`)" } ?: ""
 
-        val channelSuffix = if (isFromGuild) {
-            val channelName = channel.name
-            " in channel '$channelName'"
-        } else ""
-        logger.info("$id/$name$nickString $action$channelSuffix")
+        logger.info("$id/$name$nickString $action in channel '${channel.name}'")
     }
 
-    fun MessageReceivedEvent.hasAdminPermissions(): Boolean {
+    fun CommandEvent.hasAdminPermissions(): Boolean {
         val member = member ?: return false
         return member.hasStaffRole("moderator")
     }
@@ -175,7 +184,7 @@ object Utils {
             .any { it in memberRoleIds }
     }
 
-    fun MessageReceivedEvent.inBotCommandChannel() = channel.id == BOT.config.botCommandChannelId
+    fun CommandEvent.inBotCommandChannel() = channel.id == BOT.config.botCommandChannelId
 
     fun runDelayed(taskName: String, duration: Duration, consumer: () -> Unit) {
         runAsync("$taskName (delayed by $duration)") {

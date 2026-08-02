@@ -6,11 +6,20 @@ import at.hannibal2.skyhanni.discord.Utils.inBotCommandChannel
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.command.*
 import at.hannibal2.skyhanni.discord.utils.ErrorManager.handleError
+import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.interactions.commands.OptionType
+import net.dv8tion.jda.api.interactions.commands.build.Commands
+import net.dv8tion.jda.api.interactions.commands.build.OptionData
 import org.reflections.Reflections
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.lang.reflect.Modifier
 
 object CommandListener {
+    private val logger: Logger = LoggerFactory.getLogger(this::class.java)
+
     var commands = listOf<BaseCommand>()
         private set
     private var commandsMap = mapOf<String, BaseCommand>()
@@ -31,6 +40,9 @@ object CommandListener {
         if (this.author.isBot) return
 
         val message = message.contentRaw.trim()
+        // empty without the message content intent, and an empty message is never a command
+        if (message.isEmpty()) return
+
         if (TagUndo.getAllNames().none { "!$it" == message }) {
             TagCommands.lastMessages.remove(this.author.id)
         }
@@ -57,35 +69,84 @@ object CommandListener {
             return
         }
 
+        runCommand(command, MessageCommandEvent(this), literal, args)
+    }
+
+    fun onSlashCommand(event: SlashCommandInteractionEvent) {
+        val guild = event.guild ?: return
+        if (guild.id != BOT.config.allowedServerId) return
+
+        val command = getCommand(event.name) ?: run {
+            event.reply("Unknown command $PLEADING_FACE").setEphemeral(true).queue()
+            return
+        }
+
+        // acknowledges the interaction, we have 3 seconds for this and 15 minutes for the real answer
+        event.deferReply().queue()
+
+        val args = command.options.mapNotNull { event.getOption(it.name)?.asString }
+        runCommand(command, SlashCommandEvent(event), event.name, args)
+    }
+
+    private fun runCommand(command: BaseCommand, event: CommandEvent, literal: String, args: List<String>) {
         if (!command.userCommand) {
-            if (!hasAdminPermissions()) {
-                reply("No permissions $PLEADING_FACE")
+            if (!event.hasAdminPermissions()) {
+                event.reply("No permissions $PLEADING_FACE")
                 return
             }
 
-            if (!inBotCommandChannel()) {
-                reply("Wrong channel $PLEADING_FACE")
+            if (!event.inBotCommandChannel()) {
+                event.reply("Wrong channel $PLEADING_FACE")
                 return
             }
         }
 
-        // allows to use `!<command> -help` instaed of `!help -<command>`
+        // allows to use `!<command> -help` instead of `!help -<command>`
         if (args.size == 1 && args.first() == "-help") {
             with(HelpCommand) {
-                sendUsageReply(literal)
+                event.sendUsageReply(literal)
             }
             return
         }
         try {
             with(command) {
-                execute(args)
+                event.execute(args)
             }
         } catch (e: Exception) {
-            reply("Error: ${e.message}")
+            event.reply("Error: ${e.message}")
             e.handleError(
                 "Discord command: `${command.name}`",
-                "Started at: ${getMessage().getLink()}",
+                "Started at: ${event.message?.getLink() ?: "slash command"}",
             )
+        }
+    }
+
+    fun registerSlashCommands(jda: JDA) {
+        val guild = jda.getGuildById(BOT.config.allowedServerId) ?: run {
+            logger.error("Could not register slash commands, guild ${BOT.config.allowedServerId} not found")
+            return
+        }
+
+        val data = commands.filter { it.supportsSlash }.flatMap { command ->
+            command.getAllNames().map { name ->
+                Commands.slash(name, command.description).addOptions(
+                    command.options.map { option ->
+                        OptionData(OptionType.STRING, option.name, option.description, option.required)
+                    },
+                )
+            }
+        }
+
+        guild.updateCommands().addCommands(data).queue {
+            logger.info("Registered ${data.size} slash commands")
+        }
+
+        // commands registered globally in the past would show up as duplicates, but global updates
+        // have a much stricter rate limit than guild ones, so only clear when there is something to clear
+        jda.retrieveCommands().queue { globalCommands ->
+            if (globalCommands.isEmpty()) return@queue
+            logger.info("Clearing ${globalCommands.size} stale global slash commands")
+            jda.updateCommands().queue()
         }
     }
 
@@ -124,7 +185,7 @@ object CommandListener {
         this.commandsMap = commandsMap
 
         val aliasCount = commandsMap.size - commands.size
-        println(
+        logger.info(
             "Loaded ${commands.size} commands and $aliasCount aliases, " +
                     "${commandsMap.size} slash command slots needed (limit is 100)",
         )

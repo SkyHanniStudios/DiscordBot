@@ -112,7 +112,7 @@ object ModChecker {
 
     fun isModList(event: MessageReceivedEvent, message: String): Boolean {
         val mods = readModsFromMessage(message) ?: return false
-        event.run(mods, debug = false)
+        MessageCommandEvent(event).run(mods, debug = false)
         return true
     }
 
@@ -225,7 +225,7 @@ object ModChecker {
         return categories
     }
 
-    private fun MessageReceivedEvent.run(activeMods: Map<ModInfo, String>, debug: Boolean) {
+    private fun CommandEvent.run(activeMods: Map<ModInfo, String>, debug: Boolean) {
         if (knownMods.isEmpty() && !isLoading) {
             loadModDataFromRepo()
         }
@@ -238,7 +238,7 @@ object ModChecker {
         val errorMods = activeMods.size - categories.values.sumOf { it.size }
 
         if (errorMods != 0 && !debug) {
-            val a = "Wrong mod size from ${author.getLinkName()} at ${message.getLink()}"
+            val a = "Wrong mod size from ${author.getLinkName()} at ${message?.getLink() ?: channel.asMention}"
             val b = "reply to the message with `!debugmods` to investigate!"
             Utils.sendMessageToBotChannel("$a\n$b")
             return
@@ -291,7 +291,7 @@ object ModChecker {
         }
     }
 
-    private fun MessageReceivedEvent.notifySupportChannel(categories: Map<ModCategory, MutableList<String>>) {
+    private fun CommandEvent.notifySupportChannel(categories: Map<ModCategory, MutableList<String>>) {
         val lines = mutableListOf<String>()
         ModCategory.entries.filter { it.notifySupport }.forEach { category ->
             val items = categories[category]!!
@@ -302,8 +302,8 @@ object ModChecker {
             }
         }
         if (lines.isNotEmpty()) {
-            val text =
-                "Unknown mod data from ${author.getLinkName()} at ${message.getLink()}\n${lines.joinToString("\n")}"
+            val link = message?.getLink() ?: channel.asMention
+            val text = "Unknown mod data from ${author.getLinkName()} at $link\n${lines.joinToString("\n")}"
             Utils.sendMessageToBotChannel(text)
         }
     }
@@ -341,14 +341,15 @@ object ModChecker {
         override val name = "debugmods"
         override val description = "Debug infos about the mod list in neu stats format"
 
-        override fun MessageReceivedEvent.execute(args: List<String>) {
-            val referencedMessage = message.referencedMessage
+        // needs a replied to message, which slash commands can not provide
+        override val supportsSlash: Boolean = false
 
-            if (referencedMessage == null) {
+        override fun CommandEvent.execute(args: List<String>) {
+            val replyTarget = referencedMessage ?: run {
                 reply("reply to a message to see debug infos from that message!")
                 return
             }
-            val text = referencedMessage.contentRaw.trim()
+            val text = replyTarget.contentRaw.trim()
             val mods = readModsFromMessage(text)
             if (mods == null) {
                 reply("no mods found in that message!")
@@ -372,12 +373,13 @@ object ModChecker {
             }
         }
 
-        override fun MessageReceivedEvent.execute(args: List<String>) {
+        override fun CommandEvent.execute(args: List<String>) {
             if (isLoading) {
                 reply("Mod list is already updating!")
                 return
             }
             loadModDataFromRepo()
+            reply("Started mod list update.")
         }
     }
 }

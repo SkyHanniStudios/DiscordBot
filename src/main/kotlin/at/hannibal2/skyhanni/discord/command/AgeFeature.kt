@@ -1,15 +1,11 @@
 package at.hannibal2.skyhanni.discord.command
 
-import at.hannibal2.skyhanni.discord.BOT
-import at.hannibal2.skyhanni.discord.PLEADING_FACE
-import at.hannibal2.skyhanni.discord.Utils
+import at.hannibal2.skyhanni.discord.*
 import at.hannibal2.skyhanni.discord.Utils.linkTo
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.github.GitHubClient
-import at.hannibal2.skyhanni.discord.useClipboardInAge
 import at.hannibal2.skyhanni.discord.utils.LiveLog
 import com.google.gson.Gson
-import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -71,12 +67,15 @@ object AgeFeature {
     class AgeCommand : BaseCommand() {
         override val name = "age"
         override val description = "Show the age of something."
+        override val options: List<Option> = listOf(
+            Option("term", "The thing you want to know the age of."),
+        )
         override val userCommand = true
 
-        override fun MessageReceivedEvent.execute(args: List<String>) {
+        override fun CommandEvent.execute(args: List<String>) {
             val tip = "\nTry one of those: ${releases.keys}"
             if (args.isEmpty()) {
-                return reply("Usage: /age <term>$tip")
+                return reply("Usage: ${prefix}age <term>$tip")
             }
 
             val term = args.joinToString(" ").lowercase()
@@ -101,13 +100,14 @@ object AgeFeature {
             }
         }
 
-        override fun MessageReceivedEvent.execute(args: List<String>) {
+        override fun CommandEvent.execute(args: List<String>) {
             if (isLoading) {
                 reply("Age list is already updating!")
                 return
             }
 
             loadFromRepo()
+            reply("Started age list update.")
         }
     }
 }

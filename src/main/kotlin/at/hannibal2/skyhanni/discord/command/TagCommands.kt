@@ -83,10 +83,13 @@ object TagCommands {
 class TagList : BaseCommand() {
     override val name = "taglist"
     override val description = "Lists all available tags."
+    override val options: List<Option> = listOf(
+        Option("info", "Include and sort by uses (-i to use).", required = false),
+    )
     override val aliases = listOf("tags")
     override val userCommand: Boolean = true
 
-    override fun MessageReceivedEvent.execute(args: List<String>) {
+    override fun CommandEvent.execute(args: List<String>) {
         val list = Database.listTags()
         if (list.isEmpty()) {
             reply("No tags set.")
@@ -113,7 +116,7 @@ class TagEdit : BaseCommand() {
     )
     override val aliases = listOf("tagchange")
 
-    override fun MessageReceivedEvent.execute(args: List<String>) {
+    override fun CommandEvent.execute(args: List<String>) {
         if (args.size < 2) return wrongUsage("<tag> <response>")
         val keyword = args.first()
         val response = args.drop(1).joinToString(" ")
@@ -124,7 +127,7 @@ class TagEdit : BaseCommand() {
             return
         }
         if (Database.addTag(keyword, response, count)) {
-            message.messageDeleteAndThen {
+            deleteInvocation {
                 reply("✅ Tag '$keyword' edited by ${author.getLinkName()}:")
                 reply(response)
                 logAction("edited tags '$keyword'")
@@ -143,7 +146,7 @@ class TagEditLast : BaseCommand() {
     override val name = "tageditlast"
     override val description = "Show info on how to edit the last tag used."
 
-    override fun MessageReceivedEvent.execute(args: List<String>) {
+    override fun CommandEvent.execute(args: List<String>) {
         val id = author.id
         val lastTag = lastTouchedTag[id] ?: run {
             return userError("No last tag found $PLEADING_FACE")
@@ -164,7 +167,7 @@ class TagAdd : BaseCommand() {
     )
     override val aliases = listOf("tagcreate")
 
-    override fun MessageReceivedEvent.execute(args: List<String>) {
+    override fun CommandEvent.execute(args: List<String>) {
         if (args.size < 2) return wrongUsage("<keyword> <response>")
 
         val keyword = args.first()
@@ -179,7 +182,7 @@ class TagAdd : BaseCommand() {
             return
         }
         if (Database.addTag(keyword, response)) {
-            message.messageDeleteAndThen {
+            deleteInvocation {
                 reply("✅ Tag '$keyword' added by ${author.getLinkName()}:")
                 reply(response)
                 logAction("added tag '$keyword'")
@@ -201,7 +204,7 @@ class TagDelete : BaseCommand() {
     )
     override val aliases: List<String> = listOf("tagremove")
 
-    override fun MessageReceivedEvent.execute(args: List<String>) {
+    override fun CommandEvent.execute(args: List<String>) {
         if (args.size != 1) return wrongUsage("<keyword>")
 
         val keyword = args.first()
@@ -225,16 +228,16 @@ object TagUndo : BaseCommand() {
     override val userCommand: Boolean = true
     override val aliases: List<String> = listOf("undo")
 
-    override fun MessageReceivedEvent.execute(args: List<String>) {
+    override fun CommandEvent.execute(args: List<String>) {
         val author = author.id
-        val message = message
         if (undo(author)) {
             logAction("undid last send tag.")
             lastTouchedTag.remove(author)
-            message.messageDelete()
+            val invocation = message
+            if (invocation != null) invocation.messageDelete() else reply("Undid the last tag $CHECK_MARK")
         } else {
-            addLastMessage(author, message)
-            message.replyWithConsumer("No last tag to undo found!") { sentMessage ->
+            message?.let { addLastMessage(author, it) }
+            replyWithConsumer("No last tag to undo found!") { sentMessage ->
                 addLastMessage(author, sentMessage)
             }
             Utils.runDelayed("undo last tag", 2.seconds) {
