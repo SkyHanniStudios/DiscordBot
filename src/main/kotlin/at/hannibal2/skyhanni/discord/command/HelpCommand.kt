@@ -41,9 +41,9 @@ object HelpCommand : BaseCommand() {
             if (hasAdminPermissions() && !inBotCommandChannel()) {
                 val id = BOT.config.botCommandChannelId
                 val botCommandChannel = "https://discord.com/channels/$id/$id"
-                replyWithConsumer("You wanna see the cool admin only commands? visit $botCommandChannel") { consumer ->
+                replyWithConsumer("You wanna see the cool admin only commands? visit $botCommandChannel") { sentMessage ->
                     runDelayed("admin only command tip deletion", 3.seconds) {
-                        consumer.message.messageDelete()
+                        sentMessage.messageDelete()
                     }
                 }
             }

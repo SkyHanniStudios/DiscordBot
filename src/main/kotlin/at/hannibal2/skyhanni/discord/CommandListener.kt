@@ -11,8 +11,6 @@ import org.reflections.Reflections
 import java.lang.reflect.Modifier
 
 object CommandListener {
-    private const val BOT_ID = "1343351725381128193"
-
     var commands = listOf<BaseCommand>()
         private set
     private var commandsMap = mapOf<String, BaseCommand>()
@@ -30,12 +28,7 @@ object CommandListener {
         if (!isFromGuild) return
         if (guild.id != bot.config.allowedServerId) return
 
-        if (this.author.isBot) {
-            if (this.author.id == BOT_ID) {
-                BotMessageHandler.handle(this)
-            }
-            return
-        }
+        if (this.author.isBot) return
 
         val message = message.contentRaw.trim()
         if (TagUndo.getAllNames().none { "!$it" == message }) {

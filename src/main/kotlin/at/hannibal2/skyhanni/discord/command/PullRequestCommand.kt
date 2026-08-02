@@ -332,9 +332,9 @@ object PullRequestCommand : BaseCommand() {
         val linkedMatcher = pullRequestPattern.matcher(message)
         if (linkedMatcher.matches()) {
             val pr = linkedMatcher.group("pr")?.toIntOrNull() ?: return false
-            event.replyWithConsumer("Next time just type `!pr $pr` $PLEADING_FACE") { consumer ->
+            event.replyWithConsumer("Next time just type `!pr $pr` $PLEADING_FACE") { sentMessage ->
                 runDelayed("pr tip deletion", 10.seconds) {
-                    consumer.message.messageDelete()
+                    sentMessage.messageDelete()
                 }
             }
             event.loadPrInfos(pr)

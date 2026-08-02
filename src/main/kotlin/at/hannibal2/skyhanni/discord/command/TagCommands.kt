@@ -56,22 +56,22 @@ object TagCommands {
         message.referencedMessage?.let {
             event.logAction("used tag '$keyword' (with reply)")
             message.messageDelete()
-            it.replyWithConsumer(response) { consumer ->
-                addLastMessage(author, consumer.message)
+            it.replyWithConsumer(response) { sentMessage ->
+                addLastMessage(author, sentMessage)
             }
         } ?: run {
             if (deleting) {
                 event.logAction("used tag '$keyword' (with delete)")
                 message.messageDeleteAndThen {
-                    event.channel.sendMessageWithConsumer(response) { consumer ->
-                        addLastMessage(author, consumer.message)
+                    event.channel.sendMessageWithConsumer(response) { sentMessage ->
+                        addLastMessage(author, sentMessage)
                     }
                 }
             } else {
                 event.logAction("used tag '$keyword'")
                 addLastMessage(author, message)
-                message.replyWithConsumer(response) { consumer ->
-                    addLastMessage(author, consumer.message)
+                message.replyWithConsumer(response) { sentMessage ->
+                    addLastMessage(author, sentMessage)
                 }
             }
         }
@@ -234,8 +234,8 @@ object TagUndo : BaseCommand() {
             message.messageDelete()
         } else {
             addLastMessage(author, message)
-            message.replyWithConsumer("No last tag to undo found!") { consumer ->
-                addLastMessage(author, consumer.message)
+            message.replyWithConsumer("No last tag to undo found!") { sentMessage ->
+                addLastMessage(author, sentMessage)
             }
             Utils.runDelayed("undo last tag", 2.seconds) {
                 undo(author)

@@ -53,9 +53,8 @@ object Utils {
         message.messageReply(embed)
     }
 
-    fun MessageReceivedEvent.replyWithConsumer(text: String, consumer: (MessageReceivedEvent) -> Unit) {
-        BotMessageHandler.log(text, consumer)
-        reply(text)
+    fun MessageReceivedEvent.replyWithConsumer(text: String, consumer: (Message) -> Unit) {
+        message.replyWithConsumer(text, consumer)
     }
 
     fun Message.messageDelete() {
@@ -84,14 +83,12 @@ object Utils {
         }
     }
 
-    fun Message.replyWithConsumer(text: String, consumer: (MessageReceivedEvent) -> Unit) {
-        BotMessageHandler.log(text, consumer)
-        messageReply(text)
+    fun Message.replyWithConsumer(text: String, consumer: (Message) -> Unit) {
+        reply(text).queue { consumer(it) }
     }
 
-    fun MessageChannel.sendMessageWithConsumer(text: String, consumer: (MessageReceivedEvent) -> Unit) {
-        BotMessageHandler.log(text, consumer)
-        messageSend(text)
+    fun MessageChannel.sendMessageWithConsumer(text: String, consumer: (Message) -> Unit) {
+        sendMessage(text).queue { consumer(it) }
     }
 
     fun splitMessage(message: String, maxLength: Int = 1900): List<String> {
