@@ -42,11 +42,16 @@ Displays the usage, description, and parameters of a command.
 
 Used to display a longer text in response to a short command.
 
-`!<tag>`  
-Displays the response associated with the tag.  
-Supports replying to another message, which deletes the original message and posts the response as a reply.  
-Supports the `-d` parameter to delete the user’s message.  
+`!<tag>`
+Displays the response associated with the tag.
+Supports replying to another message, which deletes the original message and posts the response as a reply.
+Supports the `-d` parameter to delete the user’s message.
 Supports the `-i` parameter to view the tag uses count.
+
+`/tag <tag> [user]`
+Displays the response associated with the tag.
+The optional `user` parameter pings that user in front of the response, for cases where replying to a message is not possible.
+
 
 `!tagadd <tag> <response>`  
 Creates a tag.

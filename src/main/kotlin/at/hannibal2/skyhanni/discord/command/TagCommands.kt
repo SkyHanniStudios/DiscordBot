@@ -1,6 +1,7 @@
 package at.hannibal2.skyhanni.discord.command
 
 import at.hannibal2.skyhanni.discord.*
+import at.hannibal2.skyhanni.discord.Utils.asUserMention
 import at.hannibal2.skyhanni.discord.Utils.getLinkName
 import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.messageDelete
@@ -15,6 +16,7 @@ import at.hannibal2.skyhanni.discord.command.TagCommands.lastMessages
 import at.hannibal2.skyhanni.discord.command.TagCommands.lastTouchedTag
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.interactions.commands.OptionType
 import kotlin.time.Duration.Companion.seconds
 
 object TagCommands {
@@ -91,22 +93,24 @@ class TagShow : BaseCommand() {
     override val description: String = "Displays the response of a tag."
     override val options: List<Option> = listOf(
         Option("tag", "The tag you want to display.", autoComplete = true),
+        Option("user", "The user to ping with the tag.", required = false, type = OptionType.USER),
     )
     override val userCommand: Boolean = true
 
     override fun CommandEvent.execute(args: List<String>) {
-        if (args.size != 1) return wrongUsage("<tag>")
+        if (args.size !in 1..2) return wrongUsage("<tag> [user]")
         val keyword = args.first()
         val response = Database.getResponse(keyword, increment = true) ?: run {
             userError("Unknown tag `$keyword` $PLEADING_FACE")
             return
         }
+        val text = args.getOrNull(1)?.let { "${it.asUserMention()} $response" } ?: response
 
         val authorId = author.id
         lastTouchedTag[authorId] = keyword
         logAction("used tag '$keyword'")
         message?.let { addLastMessage(authorId, it) }
-        replyWithConsumer(response) { sentMessage ->
+        replyWithConsumer(text) { sentMessage ->
             addLastMessage(authorId, sentMessage)
         }
     }

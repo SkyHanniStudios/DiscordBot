@@ -140,7 +140,7 @@ object CommandListener {
             command.getAllNames().map { name ->
                 Commands.slash(name, command.description).addOptions(
                     command.options.map { option ->
-                        OptionData(OptionType.STRING, option.name, option.description, option.required)
+                        OptionData(option.type, option.name, option.description, option.required)
                             .setAutoComplete(option.autoComplete)
                     },
                 )
@@ -207,4 +207,5 @@ data class Option(
     val description: String,
     val required: Boolean = true,
     val autoComplete: Boolean = false,
+    val type: OptionType = OptionType.STRING,
 )

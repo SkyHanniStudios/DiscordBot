@@ -10,6 +10,7 @@ import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.utils.FileUpload
 import java.awt.Color
 import java.awt.Toolkit.getDefaultToolkit
@@ -320,6 +321,12 @@ object Utils {
     }.getOrNull()
 
     fun User.getLinkName(): String = "<@$id>"
+
+    /**
+     * Builds a user mention from a raw user id, as delivered by an [OptionType.USER] slash command
+     * option, or from an already formatted mention as it appears in message content.
+     */
+    fun String.asUserMention(): String = "<@${trim().removeSurrounding("<@", ">").removePrefix("!")}>"
 
     fun Message.getLink(): String {
         val messageId = id
