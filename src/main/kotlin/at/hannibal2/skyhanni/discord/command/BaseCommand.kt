@@ -21,6 +21,15 @@ abstract class BaseCommand {
 
     abstract fun CommandEvent.execute(args: List<String>)
 
+    /**
+     * Choices offered while the user types into an option that has [Option.autoComplete] set.
+     * Discord displays at most 25 of them.
+     *
+     * Commands with more than one autocompleting option have to branch on [optionName], otherwise
+     * all of them receive the same choices.
+     */
+    open fun autoCompleteChoices(optionName: String, input: String): List<String> = emptyList()
+
     protected fun CommandEvent.wrongUsage(args: String) {
         userError("Usage: `$prefix$name $args`")
     }

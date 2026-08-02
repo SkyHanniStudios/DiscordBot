@@ -80,6 +80,39 @@ object TagCommands {
 }
 
 @Suppress("unused")
+class TagShow : BaseCommand() {
+    override val name: String = "tag"
+    override val description: String = "Displays the response of a tag."
+    override val options: List<Option> = listOf(
+        Option("tag", "The tag you want to display.", autoComplete = true),
+    )
+    override val userCommand: Boolean = true
+
+    override fun CommandEvent.execute(args: List<String>) {
+        if (args.size != 1) return wrongUsage("<tag>")
+        val keyword = args.first()
+        val response = Database.getResponse(keyword, increment = true) ?: run {
+            userError("Unknown tag `$keyword` $PLEADING_FACE")
+            return
+        }
+
+        val authorId = author.id
+        lastTouchedTag[authorId] = keyword
+        logAction("used tag '$keyword'")
+        message?.let { addLastMessage(authorId, it) }
+        replyWithConsumer(response) { sentMessage ->
+            addLastMessage(authorId, sentMessage)
+        }
+    }
+
+    override fun autoCompleteChoices(optionName: String, input: String): List<String> =
+        Database.listTags()
+            .filter { it.keyword.contains(input, ignoreCase = true) }
+            .sortedByDescending { it.uses }
+            .map { it.keyword }
+}
+
+@Suppress("unused")
 class TagList : BaseCommand() {
     override val name = "taglist"
     override val description = "Lists all available tags."

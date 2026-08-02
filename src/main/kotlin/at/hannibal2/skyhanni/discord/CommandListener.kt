@@ -7,6 +7,7 @@ import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.command.*
 import at.hannibal2.skyhanni.discord.utils.ErrorManager.handleError
 import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.interactions.commands.OptionType
@@ -88,6 +89,14 @@ object CommandListener {
         runCommand(command, SlashCommandEvent(event), event.name, args)
     }
 
+    fun onAutoComplete(event: CommandAutoCompleteInteractionEvent) {
+        val command = getCommand(event.name) ?: return
+        val focused = event.focusedOption
+        // discord rejects the reply when it holds more than 25 choices
+        val choices = command.autoCompleteChoices(focused.name, focused.value).take(25)
+        event.replyChoiceStrings(choices).queue()
+    }
+
     private fun runCommand(command: BaseCommand, event: CommandEvent, literal: String, args: List<String>) {
         if (!command.userCommand) {
             if (!event.hasAdminPermissions()) {
@@ -132,6 +141,7 @@ object CommandListener {
                 Commands.slash(name, command.description).addOptions(
                     command.options.map { option ->
                         OptionData(OptionType.STRING, option.name, option.description, option.required)
+                            .setAutoComplete(option.autoComplete)
                     },
                 )
             }
@@ -192,4 +202,9 @@ object CommandListener {
     }
 }
 
-data class Option(val name: String, val description: String, val required: Boolean = true)
+data class Option(
+    val name: String,
+    val description: String,
+    val required: Boolean = true,
+    val autoComplete: Boolean = false,
+)
