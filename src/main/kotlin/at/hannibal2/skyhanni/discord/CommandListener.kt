@@ -129,6 +129,12 @@ object CommandListener {
         }
         this.commands = commands
         this.commandsMap = commandsMap
+
+        val aliasCount = commandsMap.size - commands.size
+        println(
+            "Loaded ${commands.size} commands and $aliasCount aliases, " +
+                    "${commandsMap.size} slash command slots needed (limit is 100)",
+        )
     }
 }
 
