@@ -55,7 +55,7 @@ object PullRequestCommand : BaseCommand() {
         val artifactId: Long,
     )
 
-    override fun MessageReceivedEvent.execute(args: List<String>) {
+    override fun CommandEvent.execute(args: List<String>) {
         if (args.size != 1) return wrongUsage("<number>")
         val first = args.first().removePrefix("#")
         val prNumber = first.toIntOrNull() ?: run {
@@ -69,7 +69,7 @@ object PullRequestCommand : BaseCommand() {
         loadPrInfos(prNumber)
     }
 
-    private fun MessageReceivedEvent.loadPrInfos(prNumber: Int, showError: Boolean = true) {
+    private fun CommandEvent.loadPrInfos(prNumber: Int, showError: Boolean = true) {
         logAction("loads pr infos for #$prNumber")
 
         val prLink = "$BASE/pull/$prNumber"
@@ -85,7 +85,7 @@ object PullRequestCommand : BaseCommand() {
             if (e.message?.contains(" code:404 ") == true) {
                 val issueUrl = "$BASE/issues/$prNumber"
                 val issue = "issue".linkTo(issueUrl)
-                val text = "This pull request does not yet exist or is an $issue"
+                val text = "#$prNumber does not yet exist or is an $issue"
                 if (showError) {
                     reply(embed("Not found $PLEADING_FACE", text, Color.red))
                 }
@@ -365,12 +365,12 @@ object PullRequestCommand : BaseCommand() {
         val linkedMatcher = pullRequestPattern.matcher(message)
         if (linkedMatcher.matches()) {
             val pr = linkedMatcher.group("pr")?.toIntOrNull() ?: return false
-            event.replyWithConsumer("Next time just type `!pr $pr` $PLEADING_FACE") { consumer ->
+            event.replyWithConsumer("Next time just type `!pr $pr` $PLEADING_FACE") { sentMessage ->
                 runDelayed("pr tip deletion", 10.seconds) {
-                    consumer.message.messageDelete()
+                    sentMessage.messageDelete()
                 }
             }
-            event.loadPrInfos(pr)
+            MessageCommandEvent(event).loadPrInfos(pr)
             return true
         }
 
@@ -384,8 +384,9 @@ object PullRequestCommand : BaseCommand() {
                 foundPrs.add(pr)
             }
         }
+        val commandEvent = MessageCommandEvent(event)
         for (pr in foundPrs.take(3)) {
-            event.loadPrInfos(pr, showError = false)
+            commandEvent.loadPrInfos(pr, showError = false)
         }
 
         return false

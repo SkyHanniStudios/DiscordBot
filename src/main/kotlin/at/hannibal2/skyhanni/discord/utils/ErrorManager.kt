@@ -1,10 +1,10 @@
 package at.hannibal2.skyhanni.discord.utils
 
+import at.hannibal2.skyhanni.discord.CommandEvent
 import at.hannibal2.skyhanni.discord.PING_HANNIBAL
 import at.hannibal2.skyhanni.discord.PLEADING_FACE
 import at.hannibal2.skyhanni.discord.Utils
 import at.hannibal2.skyhanni.discord.command.BaseCommand
-import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
 object ErrorManager {
 
@@ -15,7 +15,7 @@ object ErrorManager {
 
         override val userCommand: Boolean = false
 
-        override fun MessageReceivedEvent.execute(args: List<String>) {
+        override fun CommandEvent.execute(args: List<String>) {
             error("test error")
         }
     }

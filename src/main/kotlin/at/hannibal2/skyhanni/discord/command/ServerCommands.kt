@@ -1,8 +1,6 @@
 package at.hannibal2.skyhanni.discord.command
 
-import at.hannibal2.skyhanni.discord.BOT
-import at.hannibal2.skyhanni.discord.Option
-import at.hannibal2.skyhanni.discord.Utils
+import at.hannibal2.skyhanni.discord.*
 import at.hannibal2.skyhanni.discord.Utils.addSeparators
 import at.hannibal2.skyhanni.discord.Utils.getLinkName
 import at.hannibal2.skyhanni.discord.Utils.linkTo
@@ -13,7 +11,6 @@ import at.hannibal2.skyhanni.discord.Utils.replyLong
 import at.hannibal2.skyhanni.discord.Utils.roundTo
 import at.hannibal2.skyhanni.discord.Utils.userError
 import at.hannibal2.skyhanni.discord.github.GitHubClient
-import at.hannibal2.skyhanni.discord.useClipboardInServerList
 import at.hannibal2.skyhanni.discord.utils.LiveLog
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -424,12 +421,18 @@ class ServerCommand : BaseCommand() {
     override val name: String = "server"
     override val description: String = "Displays information about a server from our 'useful server list'."
     override val options: List<Option> = listOf(
-        Option("keyword", "Keyword of the server you want to display."),
-        Option("debug", "Display even more useful information (-d to use).", required = false)
+        Option("keyword", "Keyword of the server you want to display.", autoComplete = true),
+        Option("debug", "Display even more useful information (-d to use).", required = false),
     )
     override val userCommand: Boolean = true
 
-    override fun MessageReceivedEvent.execute(args: List<String>) {
+    override fun autoCompleteChoices(optionName: String, input: String): List<String> =
+        ServerCommands.servers
+            .filter { server -> server.allKeys.any { it.contains(input, ignoreCase = true) } }
+            .sortedByDescending { it.size }
+            .map { it.keyword }
+
+    override fun CommandEvent.execute(args: List<String>) {
         if (args.size !in 1..2) return wrongUsage("<keyword>")
         val keyword = args.first()
         val debug = args.getOrNull(1) == "-d"
@@ -465,7 +468,7 @@ class ServerUpdate : BaseCommand() {
         }
     }
 
-    override fun MessageReceivedEvent.execute(args: List<String>) {
+    override fun CommandEvent.execute(args: List<String>) {
         if (ServerCommands.isLoading) {
             reply("Server list is already updating!")
             return
@@ -473,6 +476,7 @@ class ServerUpdate : BaseCommand() {
 
         logAction("Started server list update")
         ServerCommands.loadServers()
+        reply("Started server list update.")
     }
 }
 
@@ -482,7 +486,7 @@ class ServerList : BaseCommand() {
     override val description: String = "Displays all servers in the database."
     override val aliases: List<String> = listOf("servers")
 
-    override fun MessageReceivedEvent.execute(args: List<String>) {
+    override fun CommandEvent.execute(args: List<String>) {
         if (ServerCommands.servers.isEmpty()) {
             if (ServerCommands.outage) {
                 reply("Server list currently unavailable.")

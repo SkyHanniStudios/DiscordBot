@@ -8,7 +8,6 @@ import at.hannibal2.skyhanni.discord.Utils.userError
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.Message
-import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import java.awt.Color
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -21,7 +20,7 @@ private val JAIL_LOG_CHANNEL_ID get() = BOT.config.jailedLogChannelId
  * Resolves a member from mentions and user Id.
  * Returns null and replies with an error if not uniquely identified.
  */
-private fun MessageReceivedEvent.resolveTarget(query: String): Member? {
+private fun CommandEvent.resolveTarget(query: String): Member? {
     val cleanId = query.replace(Regex("[<@!>]"), "")
     if (cleanId.isEmpty() || !cleanId.all { it.isDigit() }) {
         userError("Invalid user - provide a mention or userID.")
@@ -36,7 +35,7 @@ private fun MessageReceivedEvent.resolveTarget(query: String): Member? {
 
 private fun Member.hasJailPermissions() = hasStaffRole("community helper")
 
-private fun MessageReceivedEvent.executeJail(args: List<String>, commandName: String, purge: Boolean) {
+private fun CommandEvent.executeJail(args: List<String>, commandName: String, purge: Boolean) {
     val executor = member ?: run {
         userError("you are null")
         return
@@ -90,10 +89,11 @@ private fun MessageReceivedEvent.executeJail(args: List<String>, commandName: St
         { error -> userError("Failed to add Jailed role: ${error.message}") }
     )
 
-    val eventMessage = message
     val targetId = targetMember.id
     val oneHourAgo = Instant.now().minus(1, ChronoUnit.HOURS)
     val textChannel = channel.asTextChannel()
+    // slash commands have no invocation message, there we start from the newest message instead
+    val startId = message?.id
 
     Utils.runAsync("jail-$targetId") {
         val purgedCount: Int
@@ -101,11 +101,12 @@ private fun MessageReceivedEvent.executeJail(args: List<String>, commandName: St
         if (purge) {
             // Purge up to 30 of the target's messages from the last hour in this channel
             val toDelete = mutableListOf<Message>()
-            var lastId = eventMessage.id
+            var lastId = startId
             var keepFetching = true
 
             while (keepFetching) {
-                val batch = textChannel.getHistoryBefore(lastId, 100).complete().retrievedHistory
+                val batch = lastId?.let { textChannel.getHistoryBefore(it, 100).complete().retrievedHistory }
+                    ?: textChannel.history.retrievePast(100).complete()
                 if (batch.isEmpty()) break
 
                 for (msg in batch) {
@@ -136,7 +137,7 @@ private fun MessageReceivedEvent.executeJail(args: List<String>, commandName: St
         }
 
         val purgeMessage = if (purgedCount > 0) " · $purgedCount message(s) purged" else ""
-        eventMessage.reply("🔒 Jailed ${targetMember.asMention}$purgeMessage. Reason: *$reason*").queue()
+        reply("🔒 Jailed ${targetMember.asMention}$purgeMessage. Reason: *$reason*")
 
         // Log to admin channel
         BOT.jda.getTextChannelById(JAIL_LOG_CHANNEL_ID)?.sendMessageEmbeds(
@@ -164,7 +165,7 @@ class JailCommand : BaseCommand() {
     )
     override val userCommand: Boolean = true
 
-    override fun MessageReceivedEvent.execute(args: List<String>) = executeJail(args, "!jail", purge = false)
+    override fun CommandEvent.execute(args: List<String>) = executeJail(args, "${prefix}djail", purge = true)
 }
 
 @Suppress("unused")
@@ -177,5 +178,5 @@ class DJailCommand : BaseCommand() {
     )
     override val userCommand: Boolean = true
 
-    override fun MessageReceivedEvent.execute(args: List<String>) = executeJail(args, "!djail", purge = true)
+    override fun CommandEvent.execute(args: List<String>) = executeJail(args, "!djail", purge = true)
 }

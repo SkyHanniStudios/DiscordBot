@@ -3,6 +3,8 @@ package at.hannibal2.skyhanni.discord
 import at.hannibal2.skyhanni.discord.Utils.sendMessageToBotChannel
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.JDABuilder
+import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.requests.GatewayIntent
@@ -73,18 +75,35 @@ private fun startBot(): DiscordBot {
     val config = ConfigLoader.load("config.json")
     val token = config.token
 
+    // TODO band aid: the message content intent is currently disabled in the discord developer portal.
+    //  Requesting it makes the gateway close the connection with code 4014 and the bot never starts.
+    //  Set this back to true once the intent is enabled again.
+    val messageContentIntent = false
+
     val jda = JDABuilder.createDefault(token).also { builder ->
-        builder.enableIntents(GatewayIntent.MESSAGE_CONTENT)
+        if (messageContentIntent) {
+            builder.enableIntents(GatewayIntent.MESSAGE_CONTENT)
+        }
         builder.setEnableShutdownHook(false)
     }.build()
 
     val bot = DiscordBot(jda, config)
     jda.awaitReady()
-    val messageListener = object : ListenerAdapter() {
+
+    jda.addEventListener(object : ListenerAdapter() {
         override fun onMessageReceived(event: MessageReceivedEvent) {
             CommandListener.onMessage(bot, event)
         }
-    }
-    jda.addEventListener(messageListener)
+
+        override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) {
+            CommandListener.onSlashCommand(event)
+        }
+
+        override fun onCommandAutoCompleteInteraction(event: CommandAutoCompleteInteractionEvent) {
+            CommandListener.onAutoComplete(event)
+        }
+    })
+
+    CommandListener.registerSlashCommands(jda)
     return bot
 }

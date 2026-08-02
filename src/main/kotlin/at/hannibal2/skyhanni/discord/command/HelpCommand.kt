@@ -1,9 +1,6 @@
 package at.hannibal2.skyhanni.discord.command
 
-import at.hannibal2.skyhanni.discord.BOT
-import at.hannibal2.skyhanni.discord.CommandListener
-import at.hannibal2.skyhanni.discord.Option
-import at.hannibal2.skyhanni.discord.PLEADING_FACE
+import at.hannibal2.skyhanni.discord.*
 import at.hannibal2.skyhanni.discord.Utils.hasAdminPermissions
 import at.hannibal2.skyhanni.discord.Utils.inBotCommandChannel
 import at.hannibal2.skyhanni.discord.Utils.messageDelete
@@ -12,7 +9,6 @@ import at.hannibal2.skyhanni.discord.Utils.replyWithConsumer
 import at.hannibal2.skyhanni.discord.Utils.runDelayed
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.MessageEmbed
-import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import java.awt.Color
 import kotlin.time.Duration.Companion.seconds
 
@@ -24,8 +20,8 @@ object HelpCommand : BaseCommand() {
 
     override val userCommand: Boolean = true
 
-    override fun MessageReceivedEvent.execute(args: List<String>) {
-        if (args.size > 1) return reply("Usage: !help <command>")
+    override fun CommandEvent.execute(args: List<String>) {
+        if (args.size > 1) return reply("Usage: ${prefix}help <command>")
 
         if (args.size == 1) {
             sendUsageReply(args.first().lowercase())
@@ -35,30 +31,29 @@ object HelpCommand : BaseCommand() {
             } else {
                 CommandListener.commands.filter { it.userCommand }
             }
-            val list = commands.joinToString(", !", prefix = "!") { it.name }
-            reply("Supported commands: $list")
+            val list = commands.joinToString(", $prefix") { it.name }
+            reply("Supported commands: $prefix$list")
 
             if (hasAdminPermissions() && !inBotCommandChannel()) {
                 val id = BOT.config.botCommandChannelId
                 val botCommandChannel = "https://discord.com/channels/$id/$id"
-                replyWithConsumer("You wanna see the cool admin only commands? visit $botCommandChannel") { consumer ->
+                replyWithConsumer("You wanna see the cool admin only commands? visit $botCommandChannel") { sentMessage ->
                     runDelayed("admin only command tip deletion", 3.seconds) {
-                        consumer.message.messageDelete()
+                        sentMessage.messageDelete()
                     }
                 }
             }
         }
     }
 
-
-    fun MessageReceivedEvent.sendUsageReply(commandName: String) {
+    fun CommandEvent.sendUsageReply(commandName: String) {
         val command = CommandListener.getCommand(commandName) ?: run {
-            reply("Unknown command `!$commandName` $PLEADING_FACE")
+            reply("Unknown command `$prefix$commandName` $PLEADING_FACE")
             return
         }
 
         if (!command.userCommand && !hasAdminPermissions()) {
-            reply("No permissions for command `!$commandName` $PLEADING_FACE")
+            reply("No permissions for command `$prefix$commandName` $PLEADING_FACE")
             return
         }
 

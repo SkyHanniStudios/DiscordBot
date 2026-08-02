@@ -9,7 +9,23 @@ We use [Gson](https://github.com/google/gson) to parse JSON responses from the A
 by [Discord](https://discord.com/developers/docs/intro) and [GitHub](https://docs.github.com/en/rest).  
 We use [SQLite](https://www.sqlite.org/index.html) to store tag information locally.
 
-## Features
+## Message Content Intent
+
+The message content intent is currently disabled for this bot in the Discord developer portal. Requesting it made the
+gateway reject the connection, so the request is commented out in `DiscordBot.kt`.
+
+While it is disabled, the bot cannot read the content of regular messages. Everything that reacts to what people write,
+rather than to an explicit command, is inactive:
+
+- Automatic pull request detection (`#1234` and pull request links)
+- The reminder to use `!server <keyword>` when a known server link is posted
+- Mod list detection
+- The pleading face reaction
+- Handling of the bot's own messages
+
+All of that code is still in place and unchanged. Once the intent is enabled again in the developer portal and the
+`enableIntents` call in `DiscordBot.kt` is uncommented, these features work again without any further changes.
+
 
 ### Help
 
