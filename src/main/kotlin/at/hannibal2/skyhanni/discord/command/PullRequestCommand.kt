@@ -2,6 +2,7 @@ package at.hannibal2.skyhanni.discord.command
 
 import at.hannibal2.skyhanni.discord.*
 import at.hannibal2.skyhanni.discord.SimpleTimeMark.Companion.asTimeMark
+import at.hannibal2.skyhanni.discord.Utils.asUserMention
 import at.hannibal2.skyhanni.discord.Utils.createParentDirIfNotExist
 import at.hannibal2.skyhanni.discord.Utils.embed
 import at.hannibal2.skyhanni.discord.Utils.format
@@ -22,6 +23,7 @@ import at.hannibal2.skyhanni.discord.json.discord.PullRequestJson
 import at.hannibal2.skyhanni.discord.json.discord.RunStatus
 import at.hannibal2.skyhanni.discord.utils.ErrorManager.handleError
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.interactions.commands.OptionType
 import java.awt.Color
 import java.io.File
 import java.time.Instant
@@ -35,7 +37,8 @@ object PullRequestCommand : BaseCommand() {
 
     override val description: String = "Displays useful information about a pull request on Github."
     override val options: List<Option> = listOf(
-        Option("number", "Number of the pull request you want to display.")
+        Option("number", "Number of the pull request you want to display."),
+        Option("user", "The user to ping with the pull request.", required = false, type = OptionType.USER),
     )
 
     override val userCommand: Boolean = true
@@ -56,7 +59,7 @@ object PullRequestCommand : BaseCommand() {
     )
 
     override fun CommandEvent.execute(args: List<String>) {
-        if (args.size != 1) return wrongUsage("<number>")
+        if (args.size !in 1..2) return wrongUsage("<number> [user]")
         val first = args.first().removePrefix("#")
         val prNumber = first.toIntOrNull() ?: run {
             userError("Unknown number $PLEADING_FACE ($first})")
@@ -66,10 +69,10 @@ object PullRequestCommand : BaseCommand() {
             userError("PR number needs to be positive $PLEADING_FACE")
             return
         }
-        loadPrInfos(prNumber)
+        loadPrInfos(prNumber, mention = args.getOrNull(1)?.asUserMention())
     }
 
-    private fun CommandEvent.loadPrInfos(prNumber: Int, showError: Boolean = true) {
+    private fun CommandEvent.loadPrInfos(prNumber: Int, showError: Boolean = true, mention: String? = null) {
         logAction("loads pr infos for #$prNumber")
 
         val prLink = "$BASE/pull/$prNumber"
@@ -152,7 +155,7 @@ object PullRequestCommand : BaseCommand() {
         }
 
         fun result(text: String, color: Color = readColor(pr)) {
-            reply(embed(embedTitle, text, color, prLink))
+            reply(embed(embedTitle, text, color, prLink), mention)
         }
 
         if (toTimeMark(pr.updatedAt).passedSince() > 400.days && !inBeta) {

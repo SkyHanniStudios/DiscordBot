@@ -29,7 +29,8 @@ sealed class CommandEvent {
 
     abstract fun sendReply(text: String)
 
-    abstract fun sendReply(embed: MessageEmbed)
+    /** [content] is sent as plain text above the embed. Mentions inside an embed never notify anyone. */
+    abstract fun sendReply(embed: MessageEmbed, content: String? = null)
 
     abstract fun sendReplyWithConsumer(text: String, consumer: (Message) -> Unit)
 
@@ -54,8 +55,8 @@ class MessageCommandEvent(val event: MessageReceivedEvent) : CommandEvent() {
         event.message.reply(text).queue()
     }
 
-    override fun sendReply(embed: MessageEmbed) {
-        event.message.replyEmbeds(embed).queue()
+    override fun sendReply(embed: MessageEmbed, content: String?) {
+        event.message.replyEmbeds(embed).setContent(content).queue()
     }
 
     override fun sendReplyWithConsumer(text: String, consumer: (Message) -> Unit) {
@@ -89,11 +90,11 @@ class SlashCommandEvent(val event: SlashCommandInteractionEvent) : CommandEvent(
         }
     }
 
-    override fun sendReply(embed: MessageEmbed) {
+    override fun sendReply(embed: MessageEmbed, content: String?) {
         if (answered.compareAndSet(false, true)) {
-            event.hook.editOriginalEmbeds(embed).queue()
+            event.hook.editOriginalEmbeds(embed).setContent(content).queue()
         } else {
-            event.hook.sendMessageEmbeds(embed).queue()
+            event.hook.sendMessageEmbeds(embed).setContent(content).queue()
         }
     }
 

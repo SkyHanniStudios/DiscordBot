@@ -42,8 +42,8 @@ object Utils {
         sendReply(text)
     }
 
-    fun CommandEvent.reply(embed: MessageEmbed) {
-        sendReply(embed)
+    fun CommandEvent.reply(embed: MessageEmbed, content: String? = null) {
+        sendReply(embed, content)
     }
 
     // splitting one long message into multiple smaller ones
