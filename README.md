@@ -1,4 +1,4 @@
-This is the source code for a Discord bot used by the [SkyHanni](https://github.com/hannibal002/SkyHanni) staff on
+This is the source code for a Discord bot used by the [SkyHanni](https://github.com/SkyHanniStudios/SkyHanni) staff on
 the [SkyHanni Support Server](https://discord.gg/skyhanni-997079228510117908).
 
 ## Technical Info
