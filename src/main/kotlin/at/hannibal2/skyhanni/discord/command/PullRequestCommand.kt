@@ -43,7 +43,7 @@ object PullRequestCommand : BaseCommand() {
 
     override val userCommand: Boolean = true
 
-    private const val USER = "hannibal002"
+    private const val USER = "SkyHanniStudios"
     private const val REPO = "SkyHanni"
     private val github = GitHubClient(USER, REPO, BOT.config.githubTokenPullRequests)
     private const val BASE = "https://github.com/$USER/$REPO"
