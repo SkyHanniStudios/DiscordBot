@@ -533,7 +533,9 @@ class PullRequestApprovalsCommand : BaseCommand() {
                 reply("No open pull requests found with at least $minApprovals approvals.")
                 return
             }
-            val resultText = prs.joinToString("\n") { "${it.url} (${it.approvals} approvals)" }
+            val resultText = prs.joinToString("\n") {
+                "${it.title} — [${it.number}](${it.url}) (${it.approvals} approvals)"
+            }
             replyLong(resultText)
         } catch (e: Exception) {
             BOT.logger.error("Error fetching pull request approvals", e)

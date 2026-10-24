@@ -178,6 +178,7 @@ class GitHubClient(user: String, repo: String, private val token: String) {
 
     data class PullRequestApprovalInfo(
         val number: Int,
+        val title: String,
         val url: String,
         val approvals: Int
     )
@@ -192,6 +193,7 @@ class GitHubClient(user: String, repo: String, private val token: String) {
         return pulls.mapNotNull { pr ->
             val number = pr.number
             val url = pr.htmlUrl
+            val title = pr.title
 
             val reviewsUrl = "$base/pulls/$number/reviews"
             val reviews = readJson<List<Map<String, Any>>, List<Map<String, Any>>?>(reviewsUrl) { it } ?: emptyList()
@@ -199,7 +201,12 @@ class GitHubClient(user: String, repo: String, private val token: String) {
             val approvalsCount = calculateApprovals(reviews)
 
             if (approvalsCount == 0) return@mapNotNull null
-            PullRequestApprovalInfo(number.toInt(), url, approvalsCount)
+            PullRequestApprovalInfo(
+                number = number.toInt(),
+                url = url,
+                title = title,
+                approvals = approvalsCount
+            )
         }.sortedWith(
             compareByDescending<PullRequestApprovalInfo> { it.approvals }
                 .thenByDescending { it.number }
