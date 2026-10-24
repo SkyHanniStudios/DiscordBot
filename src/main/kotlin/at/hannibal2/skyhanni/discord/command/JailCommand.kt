@@ -1,7 +1,8 @@
 package at.hannibal2.skyhanni.discord.command
 
 import at.hannibal2.skyhanni.discord.*
-import at.hannibal2.skyhanni.discord.Utils.hasStaffRole
+import at.hannibal2.skyhanni.discord.Utils.hasAdminPermissions
+import at.hannibal2.skyhanni.discord.Utils.hasCommunityHelperPermissions
 import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.Utils.userError
@@ -33,14 +34,12 @@ private fun CommandEvent.resolveTarget(query: String): Member? {
     return null
 }
 
-private fun Member.hasJailPermissions() = hasStaffRole("community helper")
-
 private fun CommandEvent.executeJail(args: List<String>, commandName: String, purge: Boolean) {
     val executor = member ?: run {
         userError("you are null")
         return
     }
-    if (!executor.hasJailPermissions()) {
+    if (!executor.hasCommunityHelperPermissions()) {
         reply("No permissions $PLEADING_FACE")
         return
     }
@@ -57,7 +56,7 @@ private fun CommandEvent.executeJail(args: List<String>, commandName: String, pu
         return
     }
 
-    if (targetMember.hasJailPermissions()) {
+    if (targetMember.hasAdminPermissions()) {
         userError("You cannot jail a staff member.")
         return
     }

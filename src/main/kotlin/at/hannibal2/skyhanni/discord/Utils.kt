@@ -169,12 +169,28 @@ object Utils {
         logger.info("$id/$name$nickString $action in channel '${channel.name}'")
     }
 
-    fun CommandEvent.hasAdminPermissions(): Boolean {
+    fun CommandEvent.hasContributorPermissions(): Boolean {
         val member = member ?: return false
-        return member.hasStaffRole("moderator")
+        return member.hasContributorPermissions()
     }
 
-    fun Member.hasStaffRole(name: String): Boolean {
+    fun CommandEvent.hasAdminPermissions(): Boolean {
+        val member = member ?: return false
+        return member.hasAdminPermissions()
+    }
+
+    fun CommandEvent.hasCommunityHelperPermissions(): Boolean {
+        val member = member ?: return false
+        return member.hasCommunityHelperPermissions()
+    }
+
+    fun Member.hasContributorPermissions(): Boolean = hasRole("contributor")
+
+    fun Member.hasAdminPermissions(): Boolean = hasRole("moderator")
+
+    fun Member.hasCommunityHelperPermissions(): Boolean = hasRole("community helper")
+
+    private fun Member.hasRole(name: String): Boolean {
         val staffRoles: Map<String, String> = BOT.config.editPermissionRoleIds
         val requiredIndex = staffRoles.keys.indexOf(name.lowercase())
         if (requiredIndex == -1) return false

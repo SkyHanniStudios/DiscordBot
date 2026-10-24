@@ -3,6 +3,7 @@ package at.hannibal2.skyhanni.discord.command
 import at.hannibal2.skyhanni.discord.*
 import at.hannibal2.skyhanni.discord.Utils.addSeparators
 import at.hannibal2.skyhanni.discord.Utils.getLinkName
+import at.hannibal2.skyhanni.discord.Utils.hasContributorPermissions
 import at.hannibal2.skyhanni.discord.Utils.linkTo
 import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.pluralize
@@ -501,5 +502,36 @@ class ServerList : BaseCommand() {
             else server.keyword
         }
         replyLong("Server list:\n$list")
+    }
+}
+
+@Suppress("unused")
+class PullRequestApprovalsCommand : BaseCommand() {
+    override val name: String = "approvals"
+    override val description: String = "Displays open SkyHanni pull requests with minimum approvals."
+    override val aliases: List<String> = listOf("prapprovals", "prlist")
+
+    private val github = GitHubClient("SkyHanniStudios", "SkyHanni", BOT.config.githubTokenOwn)
+
+    override fun CommandEvent.execute(args: List<String>) {
+        if (!hasContributorPermissions()) {
+            userError("No permissions $PLEADING_FACE")
+            return
+        }
+        val minApprovals = args.firstOrNull()?.toIntOrNull() ?: 2
+        try {
+            val prs = github.getPullRequestsWithApprovals().filter {
+                it.approvals >= minApprovals
+            }
+            if (prs.isEmpty()) {
+                reply("No open pull requests found with at least $minApprovals approvals.")
+                return
+            }
+            val resultText = prs.joinToString("\n") { "${it.url} (${it.approvals} approvals)" }
+            replyLong(resultText)
+        } catch (e: Exception) {
+            BOT.logger.error("Error fetching pull request approvals", e)
+            reply("Error fetching pull requests: ${e.message}")
+        }
     }
 }
