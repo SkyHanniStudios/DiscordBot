@@ -17,6 +17,7 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import net.dv8tion.jda.api.entities.Invite
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.interactions.commands.OptionType
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicInteger
@@ -510,14 +511,19 @@ class PullRequestApprovalsCommand : BaseCommand() {
     override val name: String = "approvals"
     override val description: String = "Displays open SkyHanni pull requests with minimum approvals."
     override val aliases: List<String> = listOf("prapprovals", "prlist")
+    override val userCommand: Boolean = true
+    override val options: List<Option> = listOf(
+        Option("approvals", "Minimum amount of approvals needed", type = OptionType.INTEGER, required = false),
+    )
 
     private val github = GitHubClient("SkyHanniStudios", "SkyHanni", BOT.config.githubTokenOwn)
 
     override fun CommandEvent.execute(args: List<String>) {
         if (!hasContributorPermissions()) {
-            userError("No permissions $PLEADING_FACE")
+            reply("No permissions $PLEADING_FACE")
             return
         }
+
         val minApprovals = args.firstOrNull()?.toIntOrNull() ?: 2
         try {
             val prs = github.getPullRequestsWithApprovals().filter {
