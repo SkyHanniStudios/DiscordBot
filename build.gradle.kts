@@ -22,7 +22,7 @@ dependencies {
     implementation("org.slf4j:slf4j-api:2.0.16")
     // This could be replaced with another logging api to automatically generate log files
     runtimeOnly("org.slf4j:slf4j-simple:2.0.16")
-
+    implementation("net.sourceforge.tess4j:tess4j:5.19.0")
 
     runtimeOnly("com.squareup.okhttp3:okhttp:4.3.1") // Http Client
     runtimeOnly("com.google.code.gson:gson:2.11.0") // Json
