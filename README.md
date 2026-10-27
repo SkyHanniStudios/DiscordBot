@@ -18,10 +18,11 @@ While it is disabled, the bot cannot read the content of regular messages. Every
 rather than to an explicit command, is inactive:
 
 - Automatic pull request detection (`#1234` and pull request links)
-- The reminder to use `!server <keyword>` when a known server link is posted
+- The reminder to use `/server <keyword>` when a known server link is posted
 - Mod list detection
 - The pleading face reaction
 - Handling of the bot's own messages
+- Commands with the `!` prefix. `debugmods` has no slash variant and cannot be used at all
 
 All of that code is still in place and unchanged. Once the intent is enabled again in the developer portal and the
 `enableIntents` call in `DiscordBot.kt` is uncommented, these features work again without any further changes.
@@ -29,67 +30,58 @@ All of that code is still in place and unchanged. Once the intent is enabled aga
 
 ### Help
 
-`!help`  
-Lists all commands available to the user. The list varies for admins.
+`/help`  
+Lists all commands the user may use.
 
-`!help <command>`  
-Displays the usage, description, and parameters of a command.
-
-`!<command> -help`  
+`/help <command>`
 Displays the usage, description, and parameters of a command.
 
 ### Tag
 
 Used to display a longer text in response to a short command.
 
-`!<tag>`
-Displays the response associated with the tag.
-Supports replying to another message, which deletes the original message and posts the response as a reply.
-Supports the `-d` parameter to delete the user’s message.
-Supports the `-i` parameter to view the tag uses count.
-
 `/tag <tag> [user]`
 Displays the response associated with the tag.
 The optional `user` parameter pings that user in front of the response, for cases where replying to a message is not possible.
 
 
-`!tagadd <tag> <response>`  
+`/tagadd <tag> <response>`  
 Creates a tag.
 
-`!tagedit <tag> <response>`  
+`/tagedit <tag> <response>`  
 Edits an existing tag.
 
-`!tagdelete <tag>`  
+`/tagdelete <tag>`  
 Deletes a tag.
 
-`!taglist`/`!tags`  
+`/taglist`/`/tags`  
 Shows a list of all tags.
 Supports the `-i` parameter to include and sort by uses.
 
-`!undo`  
+`/undo`  
 Removes the last tag message sent by the user.
 
 ### Server
 
-Displays information about a Skyblock-related Discord server.  
+Displays information about a SkyBlock-related Discord server.  
 Excludes servers from streamers, YouTubers, and Hypixel/Skyblock guilds.  
 The list is saved as JSON in this repository under `data/discord_servers.json`.  
-When users send a server URL directly, they are reminded to use `!server <keyword>` instead, and unknown server links
+When users send a server URL directly, they are reminded to use `/server <keyword>` instead, and unknown server links
 are logged for future inclusion.  
 Checks on startup of the bot via Discord API if the server id has changed, indicating a fake server that stole the
 vanity url.
 
-`!server <server>`  
+`/server <server>`  
 Displays information about a server.  
 Supports the `-d` parameter to show debug info for the server.
 
-`!serverlist`/`!servers`  
+`/serverlist`/`/servers`  
 Lists all servers.
 
-`!updateservers`  
-Admin command to reload the server list JSON file from GitHub.
+`/updateservers`
+Moderator command to reload the server list JSON file from GitHub.
 
 ### Pull Request
 
-`!pr <number>`  
+`/pr <number>`  
 Displays information about the pull request with the given number, including a link to download the artifact.

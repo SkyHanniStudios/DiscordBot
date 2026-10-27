@@ -424,7 +424,7 @@ class ServerCommand : BaseCommand() {
         Option("keyword", "Keyword of the server you want to display.", autoComplete = true),
         Option("debug", "Display even more useful information (-d to use).", required = false),
     )
-    override val userCommand: Boolean = true
+    override val requiredRole: PermissionRole? = null
 
     override fun autoCompleteChoices(optionName: String, input: String): List<String> =
         ServerCommands.servers
@@ -460,6 +460,8 @@ class ServerUpdate : BaseCommand() {
         "updateservers", "updateserverlist", "serverlistupdate", "listupdateserver", "updateserver"
     )
 
+    override val requiredRole: PermissionRole = PermissionRole.DISCORD_MODERATOR
+
     init {
         Utils.runDelayed("init load servers", 1.seconds) {
             if (!ServerCommands.isLoading) {
@@ -485,6 +487,9 @@ class ServerList : BaseCommand() {
     override val name: String = "serverlist"
     override val description: String = "Displays all servers in the database."
     override val aliases: List<String> = listOf("servers")
+
+    override val requiredRole: PermissionRole = PermissionRole.COMMUNITY_HELPER
+    override val alternativeRoles: Set<PermissionRole> = setOf(PermissionRole.CONTRIBUTOR)
 
     override fun CommandEvent.execute(args: List<String>) {
         if (ServerCommands.servers.isEmpty()) {

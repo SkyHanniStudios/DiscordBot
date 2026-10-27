@@ -11,6 +11,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import kotlin.time.Duration.Companion.seconds
 
+@Suppress("unused")
 object AgeFeature {
 
     private val github = GitHubClient("SkyHanniStudios", "DiscordBot", BOT.config.githubTokenOwn)
@@ -70,7 +71,7 @@ object AgeFeature {
         override val options: List<Option> = listOf(
             Option("term", "The thing you want to know the age of.", autoComplete = true),
         )
-        override val userCommand = true
+        override val requiredRole: PermissionRole? = null
 
         override fun autoCompleteChoices(optionName: String, input: String): List<String> =
             releases.entries
@@ -97,6 +98,8 @@ object AgeFeature {
         override val name = "updateagelist"
         override val description = "Updates the age list."
         override val aliases = listOf("ageupdate", "updateage")
+
+        override val requiredRole: PermissionRole = PermissionRole.DISCORD_MODERATOR
 
         init {
             Utils.runDelayed("init load age", 1.seconds) {

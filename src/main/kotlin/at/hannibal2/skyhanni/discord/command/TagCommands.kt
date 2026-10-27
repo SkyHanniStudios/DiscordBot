@@ -95,7 +95,7 @@ class TagShow : BaseCommand() {
         Option("tag", "The tag you want to display.", autoComplete = true),
         Option("user", "The user to ping with the tag.", required = false, type = OptionType.USER),
     )
-    override val userCommand: Boolean = true
+    override val requiredRole: PermissionRole? = null
 
     override fun CommandEvent.execute(args: List<String>) {
         if (args.size !in 1..2) return wrongUsage("<tag> [user]")
@@ -126,7 +126,7 @@ class TagList : BaseCommand() {
         Option("info", "Include and sort by uses (-i to use).", required = false),
     )
     override val aliases = listOf("tags")
-    override val userCommand: Boolean = true
+    override val requiredRole: PermissionRole? = null
 
     override fun CommandEvent.execute(args: List<String>) {
         val list = Database.listTags()
@@ -155,6 +155,8 @@ class TagEdit : BaseCommand() {
         Option("response", "Response you want the tag to have."),
     )
     override val aliases = listOf("tagchange")
+
+    override val requiredRole: PermissionRole = PermissionRole.DISCORD_MODERATOR
 
     override fun autoCompleteChoices(optionName: String, input: String): List<String> = TagCommands.tagChoices(input)
 
@@ -188,6 +190,8 @@ class TagEditLast : BaseCommand() {
     override val name = "tageditlast"
     override val description = "Show info on how to edit the last tag used."
 
+    override val requiredRole: PermissionRole = PermissionRole.DISCORD_MODERATOR
+
     override fun CommandEvent.execute(args: List<String>) {
         val id = author.id
         val lastTag = lastTouchedTag[id] ?: run {
@@ -209,6 +213,8 @@ class TagAdd : BaseCommand() {
         Option("response", "Response you want the tag to have.")
     )
     override val aliases = listOf("tagcreate")
+
+    override val requiredRole: PermissionRole = PermissionRole.DISCORD_MODERATOR
 
     override fun CommandEvent.execute(args: List<String>) {
         if (args.size < 2) return wrongUsage("<keyword> <response>")
@@ -247,6 +253,8 @@ class TagDelete : BaseCommand() {
     )
     override val aliases: List<String> = listOf("tagremove")
 
+    override val requiredRole: PermissionRole = PermissionRole.DISCORD_MODERATOR
+
     override fun autoCompleteChoices(optionName: String, input: String): List<String> = TagCommands.tagChoices(input)
 
     override fun CommandEvent.execute(args: List<String>) {
@@ -269,8 +277,8 @@ class TagDelete : BaseCommand() {
 @Suppress("unused")
 object TagUndo : BaseCommand() {
     override val name: String = "tagundo"
-    override val description: String = "Undoes something not quite sure."
-    override val userCommand: Boolean = true
+    override val description: String = "Deletes the last sent tag from that user."
+    override val requiredRole: PermissionRole? = null
     override val aliases: List<String> = listOf("undo")
 
     override fun CommandEvent.execute(args: List<String>) {

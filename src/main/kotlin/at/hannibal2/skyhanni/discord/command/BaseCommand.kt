@@ -2,6 +2,7 @@ package at.hannibal2.skyhanni.discord.command
 
 import at.hannibal2.skyhanni.discord.CommandEvent
 import at.hannibal2.skyhanni.discord.Option
+import at.hannibal2.skyhanni.discord.PermissionRole
 import at.hannibal2.skyhanni.discord.Utils.userError
 
 abstract class BaseCommand {
@@ -12,7 +13,11 @@ abstract class BaseCommand {
 
     open val options: List<Option> = emptyList()
 
-    open val userCommand: Boolean = false
+    /** Members need this role or one of [alternativeRoles], or a role above them. Null lets everyone use the command. */
+    abstract val requiredRole: PermissionRole?
+
+    /** Roles that unlock the command as well, each together with the roles above it. */
+    open val alternativeRoles: Set<PermissionRole> = emptySet()
 
     /** False for commands that can not work without a message context, e.g. because they need a reply. */
     open val supportsSlash: Boolean = true
