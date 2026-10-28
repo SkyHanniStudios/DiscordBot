@@ -167,6 +167,7 @@ object ServerCommands {
         "${server.name}: ${storedSize.addSeparators()} -> ${realSize.addSeparators()}"
 
     private class ServerLoader {
+        val useClipboard = BOT.config.useClipboardFor == "serverlist"
         val servers: MutableSet<Server>
         var removedInvalidInvite = 0
         var removedWrongId = 0
@@ -177,14 +178,14 @@ object ServerCommands {
         val githubLink =
             "GitHub".linkTo("https://github.com/SkyHanniStudios/DiscordBot/blob/master/data/discord_servers.json")
 
-        val viaText = if (useClipboardInServerList) "dev clipboard" else githubLink
+        val viaText = if (useClipboard) "dev clipboard" else githubLink
         val log = LiveLog(Utils.getBotChannel(), "Server List Update (via $viaText)")
 
         init {
             log.startAutoUpdate()
             try {
                 log.status("Loading from GitHub...")
-                val json = if (useClipboardInServerList) {
+                val json = if (useClipboard) {
                     Utils.readStringFromClipboard() ?: error("error loading discord_servers json from clipboard")
                 } else {
                     github.getFileContent("data/discord_servers.json") ?: error("Error loading discord_servers data")
