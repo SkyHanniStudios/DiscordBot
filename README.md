@@ -32,7 +32,7 @@ All of that code is still in place and unchanged. Once the intent is enabled aga
 `/help`  
 Lists all commands the user may use.
 
-`/help <command>`
+`/help <command>`  
 Displays the usage, description, and parameters of a command.
 
 ### Tag
@@ -77,7 +77,7 @@ Supports the `-d` parameter to show debug info for the server.
 `/serverlist`/`/servers`  
 Lists all servers.
 
-`/updateservers`
+`/updateservers`  
 Moderator command to reload the server list JSON file from GitHub.
 
 ### Pull Request
@@ -87,7 +87,7 @@ Displays information about the pull request with the given number, including a l
 
 ### Changelog
 
-`/changelog [preview|announcement]`\
+`/changelog [preview|announcement]`  
 Code reviewers post the changelog of the next beta to the preview channel. A second run for the same version edits
 that message instead of posting a new one.
 With `announcement`, admins post the changelog of the latest released beta to the announcement channel.
