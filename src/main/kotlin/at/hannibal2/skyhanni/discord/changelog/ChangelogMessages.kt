@@ -14,9 +14,11 @@ object ChangelogMessages {
     private val file = File("changelog_messages.json")
     private val gson = GsonBuilder().setPrettyPrinting().create()
 
+    /** [threadMessageIds] maps a category name to its message in the thread. Null for entries from before threads. */
     data class Entry(
         @SerializedName("messageId") val messageId: String,
         @SerializedName("version") val version: String,
+        @SerializedName("threadMessageIds") val threadMessageIds: Map<String, String>? = null,
     )
 
     fun get(target: ChangelogTarget): Entry? = read()[target.label]

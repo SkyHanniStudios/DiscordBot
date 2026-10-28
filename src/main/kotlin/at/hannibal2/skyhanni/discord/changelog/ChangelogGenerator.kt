@@ -1,6 +1,7 @@
 package at.hannibal2.skyhanni.discord.changelog
 
 import at.hannibal2.changelog.ModVersion
+import at.hannibal2.changelog.PullRequestCategory
 import java.io.File
 import java.nio.file.Files
 import java.util.concurrent.TimeUnit
@@ -14,11 +15,13 @@ object ChangelogGenerator {
     private val blockingPrefixes = listOf("PR has incorrect name: ", "PR has errors: ")
 
     /**
+     * [internalSections] holds the DISCORD_INTERNAL text per category, each with its heading. The builder leaves out empty categories.
      * [messages] holds what the builder printed before its outputs, without its debug lines and the blank lines at both ends.
      * [hasBlockingErrors] is set when one of those lines starts with "PR has incorrect name: " or "PR has errors: ".
      */
     data class Result(
         val text: String,
+        val internalSections: Map<PullRequestCategory, String>,
         val messages: List<String>,
         val summary: List<String>,
         val hasBlockingErrors: Boolean,
@@ -94,14 +97,35 @@ object ChangelogGenerator {
         }
         val textStart = lines.indexOfBorder(after = publicOutput)
         val textEnd = lines.indexOfBorder(after = textStart)
+        val internalOutput = lines.indexOf("Output type: DISCORD_INTERNAL").takeIf { it != -1 }
+            ?: error("No DISCORD_INTERNAL output found in the changelog builder output")
+        val internalStart = lines.indexOfBorder(after = internalOutput)
+        val internalEnd = lines.indexOfBorder(after = internalStart)
 
         val messages = lines.subList(0, firstOutput).filter { it != DEBUG_LINE }.trimBlankLines()
         return Result(
             text = lines.subList(textStart + 1, textEnd).joinToString("\n"),
+            internalSections = parseInternalSections(lines.subList(internalStart + 1, internalEnd)),
             messages = messages,
             summary = lines.subList(textEnd + 1, lines.size).trimBlankLines(),
             hasBlockingErrors = messages.any { line -> blockingPrefixes.any { line.startsWith(it) } },
         )
+    }
+
+    // the title line in front of the first heading is dropped, the main message carries it
+    private fun parseInternalSections(lines: List<String>): Map<PullRequestCategory, String> {
+        val sections = mutableMapOf<PullRequestCategory, MutableList<String>>()
+        var current: MutableList<String>? = null
+        for (line in lines) {
+            if (line.startsWith("### ")) {
+                val name = line.removePrefix("### ")
+                val category = PullRequestCategory.fromChangelogName(name) ?: error("Unknown changelog category `$name`")
+                current = mutableListOf(line).also { sections[category] = it }
+            } else {
+                current?.add(line)
+            }
+        }
+        return sections.mapValues { it.value.joinToString("\n") }
     }
 
     private fun List<String>.indexOfBorder(after: Int): Int =

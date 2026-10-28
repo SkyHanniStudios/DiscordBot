@@ -1,6 +1,7 @@
 package at.hannibal2.skyhanni.discord.command
 
 import at.hannibal2.changelog.ModVersion
+import at.hannibal2.changelog.PullRequestCategory
 import at.hannibal2.skyhanni.discord.*
 import at.hannibal2.skyhanni.discord.Utils.format
 import at.hannibal2.skyhanni.discord.Utils.hasRoleOrAbove
@@ -43,8 +44,12 @@ object ChangelogCommand : BaseCommand() {
     @Volatile
     private var lastStart = SimpleTimeMark.farPast()
 
-    /** What [post] did: the status line for the reply, and the posted or edited message if there is one. */
-    private data class PostOutcome(val status: String, val message: ChangelogWebhook.PostedMessage? = null)
+    /** What [post] did: the status lines for the reply, and the posted or edited message if there is one. */
+    private data class PostOutcome(
+        val status: String,
+        val message: ChangelogWebhook.PostedMessage? = null,
+        val threadStatus: String? = null,
+    )
 
     override fun autoCompleteChoices(optionName: String, input: String): List<String> =
         ChangelogTarget.entries.map { it.label }.filter { it.contains(input, ignoreCase = true) }
@@ -125,7 +130,14 @@ object ChangelogCommand : BaseCommand() {
 
         val previous = ChangelogMessages.get(target)?.takeIf { it.version == version.toString() }
         val edited = previous?.let { ChangelogWebhook.edit(webhookUrl, it.messageId, text) }
-        if (edited != null) return PostOutcome("Edited", edited)
+        if (previous != null && edited != null) {
+            val threadStatus = when {
+                target != ChangelogTarget.PREVIEW -> null
+                previous.threadMessageIds == null -> "Thread: skipped, the message was posted before threads existed"
+                else -> postThread(version, webhookUrl, edited, previous.threadMessageIds, result)
+            }
+            return PostOutcome("Edited", edited, threadStatus)
+        }
 
         val posted = ChangelogWebhook.send(webhookUrl, text)
         try {
@@ -137,7 +149,9 @@ object ChangelogCommand : BaseCommand() {
             }
             return PostOutcome("Posted, but the message id could not be stored, the next run posts a new message", posted)
         }
-        if (previous == null) return PostOutcome("Posted", posted)
+        val threadStatus =
+            if (target == ChangelogTarget.PREVIEW) postThread(version, webhookUrl, posted, null, result) else null
+        if (previous == null) return PostOutcome("Posted", posted, threadStatus)
 
         val botChannelText = "The ${target.label} changelog message was deleted, posted a new one: ${link(posted)}"
         try {
@@ -146,7 +160,56 @@ object ChangelogCommand : BaseCommand() {
             // an unreachable bot channel must not turn the successful post into an error
             BOT.logger.warn("Could not report the repost of the ${target.label} changelog in the bot channel", e)
         }
-        return PostOutcome("The old message was deleted, posted a new one", posted)
+        return PostOutcome("The old message was deleted, posted a new one", posted, threadStatus)
+    }
+
+    /**
+     * Posts or edits one message per category in the thread of the preview message [main] and returns the status line.
+     * Null [threadMessageIds] starts that thread first.
+     */
+    private fun postThread(
+        version: ModVersion,
+        webhookUrl: String,
+        main: ChangelogWebhook.PostedMessage,
+        threadMessageIds: Map<String, String>?,
+        result: ChangelogGenerator.Result,
+    ): String = try {
+        if (threadMessageIds == null) {
+            val channel = BOT.jda.getTextChannelById(main.channelId) ?: error("Channel ${main.channelId} not found")
+            channel.createThreadChannel("SkyHanni ${version.asTitle}", main.messageId).complete()
+        }
+        // a thread has the id of the message it was started from
+        val threadUrl = ChangelogWebhook.buildUrl(webhookUrl, "", "thread_id=${main.messageId}")
+        val ids = threadMessageIds.orEmpty().toMutableMap()
+        var edited = 0
+        var posted = 0
+        val tooLong = mutableListOf<String>()
+        // empty categories get a placeholder, so a later run edits them in place
+        for (category in PullRequestCategory.entries) {
+            val text = result.internalSections[category] ?: "### ${category.changelogName}\n-# no changes"
+            if (text.length > MESSAGE_LIMIT) {
+                tooLong.add(category.changelogName)
+                continue
+            }
+            if (ids[category.name]?.let { ChangelogWebhook.edit(threadUrl, it, text) } != null) {
+                edited++
+                continue
+            }
+            ids[category.name] = ChangelogWebhook.send(threadUrl, text).messageId
+            posted++
+            // stored after every message, an error later in the loop keeps the ids posted so far
+            val entry = ChangelogMessages.Entry(main.messageId, version.toString(), ids.toMap())
+            ChangelogMessages.set(ChangelogTarget.PREVIEW, entry)
+        }
+        val parts = listOfNotNull(
+            "$edited edited".takeIf { edited > 0 },
+            "$posted posted".takeIf { posted > 0 },
+            "longer than $MESSAGE_LIMIT characters: ${tooLong.joinToString()}".takeIf { tooLong.isNotEmpty() },
+        )
+        "Thread: ${parts.joinToString(", ")}"
+    } catch (e: Exception) {
+        e.handleError("Discord command: `$name`", "Thread of the preview message")
+        "Thread: failed: ${e.message}"
     }
 
     private fun CommandEvent.link(message: ChangelogWebhook.PostedMessage): String =
@@ -163,10 +226,11 @@ object ChangelogCommand : BaseCommand() {
         val url = "(?<!<)https?://[^\\s)>`]*[^\\s)>`.,?!]".toRegex()
         appendLine("**SkyHanni ${version.asTitle}** (${target.label})")
         appendLine(outcome.status)
+        outcome.threadStatus?.let { appendLine(it) }
         appendLine("Length: ${target.postedText(result.text).length}/$MESSAGE_LIMIT")
         if (result.messages.isNotEmpty()) {
             appendLine()
-            result.messages.forEach { appendLine(it.replace(url, "<\$0>")) }
+            result.messages.forEach { appendLine(it.replace(url, "<$0>")) }
         }
         appendLine()
         result.summary.forEach { appendLine(it) }

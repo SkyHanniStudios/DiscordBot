@@ -1,5 +1,6 @@
 package at.hannibal2.skyhanni.discord.github
 
+import at.hannibal2.changelog.PullRequestCategory
 import at.hannibal2.skyhanni.discord.changelog.ChangelogGenerator
 import kotlin.test.*
 
@@ -19,13 +20,22 @@ class ChangelogGeneratorTest {
         "```",
     )
 
+    private val internalText = listOf(
+        "## SkyHanni Beta 9.5.0",
+        "### New Features",
+        "- Added something. - someone [PR](<https://github.com/SkyHanniStudios/SkyHanni/pull/3>)",
+        "### Fixes",
+        "- Fixed something. - someone [PR](<https://github.com/SkyHanniStudios/SkyHanni/pull/4>)",
+        "  -  Extra info.",
+    )
+
     // follows the println calls in SkyHanniChangelogBuilder.generateChangelog
     private fun output(messages: List<String>): List<String> = listOf("erroring on line", "") + messages + listOf(
         "",
         "Output type: DISCORD_INTERNAL",
         "40/2000 characters used",
         border,
-        "## SkyHanni Beta 9.5.0",
+    ) + internalText + listOf(
         border,
         "",
         "Output type: GITHUB",
@@ -47,6 +57,17 @@ class ChangelogGeneratorTest {
     fun `reads the public text between its borders`() {
         val result = ChangelogGenerator.parse(output(listOf(excluded)))
         assertEquals(publicText.joinToString("\n"), result.text)
+    }
+
+    @Test
+    fun `splits the internal text into its categories without the title`() {
+        assertEquals(
+            mapOf(
+                PullRequestCategory.FEATURE to internalText.subList(1, 3).joinToString("\n"),
+                PullRequestCategory.FIX to internalText.subList(3, 6).joinToString("\n"),
+            ),
+            ChangelogGenerator.parse(output(listOf(excluded))).internalSections,
+        )
     }
 
     @Test
