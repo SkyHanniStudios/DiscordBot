@@ -157,29 +157,18 @@ object ModChecker {
             val fileName = mod.fileName
             val version = mod.version
 
-            // hide minecraft/forge/mod loader stuff
-            if (fileName == "minecraft.jar") {
-                categories[ModCategory.IGNORED]!!.add(line)
-                continue
-            }
-
-            if (fileName.contains("forge-1.8.9-11.15.1.2318-1.8.9")) {
+            // minecraft and forge themselves, mods we never check and known version bugs
+            val ignored = fileName == "minecraft.jar" ||
+                    fileName.contains("forge-1.8.9-11.15.1.2318-1.8.9") ||
+                    name in ignoredMods ||
+                    versionBugs[name] == version
+            if (ignored) {
                 categories[ModCategory.IGNORED]!!.add(line)
                 continue
             }
 
             if (name == "Forge Mod Loader") {
                 categories[ModCategory.UNKNOWN_MOD]!!.add("unknown forge version: '$fileName'")
-                continue
-            }
-
-            if (name in ignoredMods) {
-                categories[ModCategory.IGNORED]!!.add(line)
-                continue
-            }
-
-            if (versionBugs[name] == version) {
-                categories[ModCategory.IGNORED]!!.add(line)
                 continue
             }
 
@@ -192,11 +181,10 @@ object ModChecker {
             }
 
             val reasonNotToUse = latestFullMod.reasonNotToUse ?: latestBetaMod.reasonNotToUse
-            reasonNotToUse?.let {
-                categories[ModCategory.TO_REMOVE]!!.add("- $name ($it)")
-                return@let
+            if (reasonNotToUse != null) {
+                categories[ModCategory.TO_REMOVE]!!.add("- $name ($reasonNotToUse)")
+                continue
             }
-            if (reasonNotToUse != null) continue
 
             if (latestFullMod.version == version || latestBetaMod.version == version) {
                 categories[ModCategory.UP_TO_DATE]!!.add(name)

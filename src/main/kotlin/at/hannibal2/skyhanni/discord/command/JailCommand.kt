@@ -8,6 +8,7 @@ import at.hannibal2.skyhanni.discord.Utils.userError
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import java.awt.Color
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -84,51 +85,12 @@ private fun CommandEvent.executeJail(args: List<String>, commandName: String, pu
     )
 
     val targetId = targetMember.id
-    val oneHourAgo = Instant.now().minus(1, ChronoUnit.HOURS)
     val textChannel = channel.asTextChannel()
     // slash commands have no invocation message, there we start from the newest message instead
     val startId = message?.id
 
     Utils.runAsync("jail-$targetId") {
-        val purgedCount: Int
-
-        if (purge) {
-            // Purge up to 30 of the target's messages from the last hour in this channel
-            val toDelete = mutableListOf<Message>()
-            var lastId = startId
-            var keepFetching = true
-
-            while (keepFetching) {
-                val batch = lastId?.let { textChannel.getHistoryBefore(it, 100).complete().retrievedHistory }
-                    ?: textChannel.history.retrievePast(100).complete()
-                if (batch.isEmpty()) break
-
-                for (msg in batch) {
-                    if (msg.timeCreated.toInstant().isBefore(oneHourAgo)) {
-                        keepFetching = false
-                        break
-                    }
-                    if (msg.author.id == targetId) toDelete.add(msg)
-                    if (toDelete.size >= 30) {
-                        keepFetching = false
-                        break
-                    }
-                }
-
-                lastId = batch.last().id
-            }
-
-            if (toDelete.isNotEmpty()) {
-                toDelete.chunked(100).forEach { chunk ->
-                    if (chunk.size == 1) chunk.first().delete().complete()
-                    else textChannel.deleteMessages(chunk).complete()
-                }
-            }
-
-            purgedCount = toDelete.size
-        } else {
-            purgedCount = 0
-        }
+        val purgedCount = if (purge) textChannel.purgeRecentMessages(targetId, startId) else 0
 
         val purgeMessage = if (purgedCount > 0) " · $purgedCount message(s) purged" else ""
         reply("🔒 Jailed ${targetMember.asMention}$purgeMessage. Reason: *$reason*")
@@ -147,6 +109,40 @@ private fun CommandEvent.executeJail(args: List<String>, commandName: String, pu
                 .build()
         )?.queue()
     }
+}
+
+/** Deletes up to 30 messages of [targetId] from the last hour, starting before [startId] or at the newest message. */
+private fun TextChannel.purgeRecentMessages(targetId: String, startId: String?): Int {
+    val oneHourAgo = Instant.now().minus(1, ChronoUnit.HOURS)
+    val toDelete = mutableListOf<Message>()
+    var lastId = startId
+    var keepFetching = true
+
+    while (keepFetching) {
+        val batch = lastId?.let { getHistoryBefore(it, 100).complete().retrievedHistory }
+            ?: history.retrievePast(100).complete()
+        if (batch.isEmpty()) break
+
+        for (msg in batch) {
+            if (msg.timeCreated.toInstant().isBefore(oneHourAgo)) {
+                keepFetching = false
+                break
+            }
+            if (msg.author.id == targetId) toDelete.add(msg)
+            if (toDelete.size >= 30) {
+                keepFetching = false
+                break
+            }
+        }
+
+        lastId = batch.last().id
+    }
+
+    toDelete.chunked(100).forEach { chunk ->
+        if (chunk.size == 1) chunk.first().delete().complete()
+        else deleteMessages(chunk).complete()
+    }
+    return toDelete.size
 }
 
 @Suppress("unused")

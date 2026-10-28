@@ -38,16 +38,11 @@ object TagCommands {
     fun handleTag(event: MessageReceivedEvent): Boolean {
         val message = event.message
         var keyword = message.contentRaw.substring(1).trimStart()
-        var deleting = false
-        if (keyword.endsWith(" -d")) {
-            keyword = keyword.dropLast(3)
-            deleting = true
-        }
-        var info = false
-        if (keyword.endsWith(" -i")) {
-            keyword = keyword.dropLast(3)
-            info = true
-        }
+        val deleting = keyword.endsWith(" -d")
+        if (deleting) keyword = keyword.dropLast(3)
+        val info = keyword.endsWith(" -i")
+        if (info) keyword = keyword.dropLast(3)
+
         val response = Database.getResponse(keyword, increment = !info) ?: run {
             event.reply("Unknown command $PLEADING_FACE Type `!help` for help.")
             return false
@@ -61,26 +56,26 @@ object TagCommands {
 
         val author = message.author.id
         lastTouchedTag[author] = keyword
-        message.referencedMessage?.let {
-            event.logAction("used tag '$keyword' (with reply)")
-            message.messageDelete()
-            it.replyWithConsumer(response) { sentMessage ->
-                addLastMessage(author, sentMessage)
+        val remember: (Message) -> Unit = { addLastMessage(author, it) }
+        val referenced = message.referencedMessage
+        when {
+            referenced != null -> {
+                event.logAction("used tag '$keyword' (with reply)")
+                message.messageDelete()
+                referenced.replyWithConsumer(response, remember)
             }
-        } ?: run {
-            if (deleting) {
+
+            deleting -> {
                 event.logAction("used tag '$keyword' (with delete)")
                 message.messageDeleteAndThen {
-                    event.channel.sendMessageWithConsumer(response) { sentMessage ->
-                        addLastMessage(author, sentMessage)
-                    }
+                    event.channel.sendMessageWithConsumer(response, remember)
                 }
-            } else {
+            }
+
+            else -> {
                 event.logAction("used tag '$keyword'")
                 addLastMessage(author, message)
-                message.replyWithConsumer(response) { sentMessage ->
-                    addLastMessage(author, sentMessage)
-                }
+                message.replyWithConsumer(response, remember)
             }
         }
         return true
