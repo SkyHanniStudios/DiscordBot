@@ -175,4 +175,8 @@ class GitHubClient(user: String, repo: String, private val token: String) {
         val url = "$base/releases"
         return readJson<List<Release>, List<Release>?>(url) { it }
     }
+
+    /** The first entry of the tag list, which the changelog builder treats as the newest tag as well. */
+    fun getLatestTag(): GitTag =
+        readJson<List<GitTag>, GitTag?>("$base/tags") { it.firstOrNull() } ?: error("No tags found at $base/tags")
 }
