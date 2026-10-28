@@ -16,6 +16,8 @@ data class BotConfig(
     val jailedLogChannelId: String,
     /** Null when config.json lacks the entry, [PermissionRole.validateConfig] reports that. */
     val permissionRoleIds: Map<String, String>?,
+    /** Local testing only. Null when config.json lacks the entry, which keeps the clipboard unused. */
+    val useClipboardFor: String?,
 )
 
 object ConfigLoader {
@@ -31,6 +33,7 @@ object ConfigLoader {
         "TODO: role id for the member group",
         "TODO: channel id for the jailed log channel",
         PermissionRole.entries.associate { it.name to "TODO: role id" },
+        "TODO: optional, serverlist, age or modchecker",
     )
 
     fun load(filePath: String): BotConfig {

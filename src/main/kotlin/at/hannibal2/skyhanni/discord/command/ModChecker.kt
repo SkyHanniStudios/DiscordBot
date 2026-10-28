@@ -80,16 +80,17 @@ object ModChecker {
     }
 
     fun loadModDataFromRepo() {
+        val useClipboard = BOT.config.useClipboardFor == "modchecker"
         isLoading = true
         Utils.runAsync("load mod data") {
             val log = LiveLog(
                 Utils.getBotChannel(),
-                "Mod List Update (via ${if (useClipboardInModChecker) "dev clipboard" else githubLink})"
+                "Mod List Update (via ${if (useClipboard) "dev clipboard" else githubLink})"
             )
             log.startAutoUpdate()
             try {
                 log.status("Loading from GitHub...")
-                val json = if (useClipboardInModChecker) {
+                val json = if (useClipboard) {
                     Utils.readStringFromClipboard() ?: error("error loading mods json from clipboard")
                 } else {
                     github.getFileContent("data/mods.json") ?: error("Error loading mods json data")

@@ -27,23 +27,22 @@ rather than to an explicit command, is inactive:
 All of that code is still in place and unchanged. Once the intent is enabled again in the developer portal and the
 `enableIntents` call in `DiscordBot.kt` is uncommented, these features work again without any further changes.
 
-
 ### Help
 
 `/help`  
 Lists all commands the user may use.
 
-`/help <command>`
+`/help <command>`  
 Displays the usage, description, and parameters of a command.
 
 ### Tag
 
 Used to display a longer text in response to a short command.
 
-`/tag <tag> [user]`
+`/tag <tag> [user]`  
 Displays the response associated with the tag.
-The optional `user` parameter pings that user in front of the response, for cases where replying to a message is not possible.
-
+The optional `user` parameter pings that user in front of the response, for cases where replying to a message is not
+possible.
 
 `/tagadd <tag> <response>`  
 Creates a tag.
@@ -78,7 +77,7 @@ Supports the `-d` parameter to show debug info for the server.
 `/serverlist`/`/servers`  
 Lists all servers.
 
-`/updateservers`
+`/updateservers`  
 Moderator command to reload the server list JSON file from GitHub.
 
 ### Pull Request

@@ -37,16 +37,6 @@ const val BIG_X = "❌"
 const val CHECK_MARK = "✅"
 const val PING_HANNIBAL = "<@239858538959077376>"
 
-
-const val useClipboardFor = ""
-
-@Suppress("SimplifyBooleanWithConstants", "KotlinConstantConditions")
-val useClipboardInServerList get() = useClipboardFor == "serverlist"
-@Suppress("SimplifyBooleanWithConstants", "KotlinConstantConditions")
-val useClipboardInAge get() = useClipboardFor == "age"
-@Suppress("SimplifyBooleanWithConstants", "KotlinConstantConditions")
-val useClipboardInModChecker get() = useClipboardFor == "modchecker"
-
 fun main() {
     val bot = startBot()
 

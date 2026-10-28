@@ -26,14 +26,15 @@ object AgeFeature {
     data class TimeSinceJson(val releases: Map<String, ReleaseInfo>)
 
     fun loadFromRepo() {
+        val useClipboard = BOT.config.useClipboardFor == "age"
         isLoading = true
         Utils.runAsync("load age") {
-            val viaText = if (useClipboardInAge) "dev clipboard" else githubLink
+            val viaText = if (useClipboard) "dev clipboard" else githubLink
             val log = LiveLog(Utils.getBotChannel(), "Age List Update (via $viaText)")
             log.startAutoUpdate()
             try {
                 log.status("Loading from GitHub...")
-                val json = if (useClipboardInAge) {
+                val json = if (useClipboard) {
                     Utils.readStringFromClipboard() ?: error("error loading age json from clipboard")
                 } else {
                     github.getFileContent("data/age.json") ?: error("Error loading age json from github")
