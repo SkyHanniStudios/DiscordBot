@@ -149,9 +149,8 @@ object ChangelogCommand : BaseCommand() {
         return PostOutcome("The old message was deleted, posted a new one", posted)
     }
 
-    // <> keeps Discord from adding a preview of the message
     private fun CommandEvent.link(message: ChangelogWebhook.PostedMessage): String =
-        "<https://discord.com/channels/${guild.id}/${message.channelId}/${message.messageId}>"
+        "https://discord.com/channels/${guild.id}/${message.channelId}/${message.messageId}"
 
     // built as one string so a single replyLong keeps the order, its first part replaces the deferred placeholder
     private fun CommandEvent.buildReply(
