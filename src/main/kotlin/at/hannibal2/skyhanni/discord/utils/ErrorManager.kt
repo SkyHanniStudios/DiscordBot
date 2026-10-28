@@ -1,19 +1,16 @@
 package at.hannibal2.skyhanni.discord.utils
 
-import at.hannibal2.skyhanni.discord.CommandEvent
-import at.hannibal2.skyhanni.discord.PING_HANNIBAL
-import at.hannibal2.skyhanni.discord.PLEADING_FACE
-import at.hannibal2.skyhanni.discord.Utils
+import at.hannibal2.skyhanni.discord.*
 import at.hannibal2.skyhanni.discord.command.BaseCommand
 
 object ErrorManager {
 
     @Suppress("unused")
-    class AgeCommand3 : BaseCommand() {
+    class TestErrorCommand : BaseCommand() {
         override val name: String = "testerror"
         override val description: String = "this is a test error"
 
-        override val userCommand: Boolean = false
+        override val requiredRole: PermissionRole = PermissionRole.DISCORD_MODERATOR
 
         override fun CommandEvent.execute(args: List<String>) {
             error("test error")
@@ -72,7 +69,7 @@ object ErrorManager {
                     visualText = visualText.replace(from, to)
                 }
             }
-            if (!fullStackTrace && breakAfter.any<String> { text.contains(it) }) {
+            if (!fullStackTrace && breakAfter.any { text.contains(it) }) {
                 this.add(visualText)
                 break
             }
@@ -85,7 +82,7 @@ object ErrorManager {
             return@buildList
         }
 
-        cause?.let<Throwable, Unit> {
+        cause?.let {
             addAll(it.getCustomStackTrace(fullStackTrace, this))
         }
     }

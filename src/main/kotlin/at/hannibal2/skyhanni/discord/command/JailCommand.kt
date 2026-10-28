@@ -1,7 +1,7 @@
 package at.hannibal2.skyhanni.discord.command
 
 import at.hannibal2.skyhanni.discord.*
-import at.hannibal2.skyhanni.discord.Utils.hasStaffRole
+import at.hannibal2.skyhanni.discord.Utils.hasAnyPermissionRole
 import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.Utils.userError
@@ -33,15 +33,9 @@ private fun CommandEvent.resolveTarget(query: String): Member? {
     return null
 }
 
-private fun Member.hasJailPermissions() = hasStaffRole("community helper")
-
 private fun CommandEvent.executeJail(args: List<String>, commandName: String, purge: Boolean) {
     val executor = member ?: run {
         userError("you are null")
-        return
-    }
-    if (!executor.hasJailPermissions()) {
-        reply("No permissions $PLEADING_FACE")
         return
     }
 
@@ -57,8 +51,8 @@ private fun CommandEvent.executeJail(args: List<String>, commandName: String, pu
         return
     }
 
-    if (targetMember.hasJailPermissions()) {
-        userError("You cannot jail a staff member.")
+    if (targetMember.hasAnyPermissionRole()) {
+        userError("You cannot jail a team member.")
         return
     }
 
@@ -163,7 +157,7 @@ class JailCommand : BaseCommand() {
         Option("user", "User mention or exact userID."),
         Option("reason", "Reason for jailing.")
     )
-    override val userCommand: Boolean = true
+    override val requiredRole: PermissionRole = PermissionRole.COMMUNITY_HELPER
 
     override fun CommandEvent.execute(args: List<String>) = executeJail(args, "${prefix}djail", purge = true)
 }
@@ -176,7 +170,7 @@ class DJailCommand : BaseCommand() {
         Option("user", "User mention or exact userID."),
         Option("reason", "Reason for jailing.")
     )
-    override val userCommand: Boolean = true
+    override val requiredRole: PermissionRole = PermissionRole.COMMUNITY_HELPER
 
     override fun CommandEvent.execute(args: List<String>) = executeJail(args, "!djail", purge = true)
 }

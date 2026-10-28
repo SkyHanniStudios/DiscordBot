@@ -11,6 +11,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import kotlin.time.Duration.Companion.seconds
 
+@Suppress("unused")
 object AgeFeature {
 
     private val github = GitHubClient("SkyHanniStudios", "DiscordBot", BOT.config.githubTokenOwn)
@@ -25,14 +26,15 @@ object AgeFeature {
     data class TimeSinceJson(val releases: Map<String, ReleaseInfo>)
 
     fun loadFromRepo() {
+        val useClipboard = BOT.config.useClipboardFor == "age"
         isLoading = true
         Utils.runAsync("load age") {
-            val viaText = if (useClipboardInAge) "dev clipboard" else githubLink
+            val viaText = if (useClipboard) "dev clipboard" else githubLink
             val log = LiveLog(Utils.getBotChannel(), "Age List Update (via $viaText)")
             log.startAutoUpdate()
             try {
                 log.status("Loading from GitHub...")
-                val json = if (useClipboardInAge) {
+                val json = if (useClipboard) {
                     Utils.readStringFromClipboard() ?: error("error loading age json from clipboard")
                 } else {
                     github.getFileContent("data/age.json") ?: error("Error loading age json from github")
@@ -70,7 +72,7 @@ object AgeFeature {
         override val options: List<Option> = listOf(
             Option("term", "The thing you want to know the age of.", autoComplete = true),
         )
-        override val userCommand = true
+        override val requiredRole: PermissionRole? = null
 
         override fun autoCompleteChoices(optionName: String, input: String): List<String> =
             releases.entries
@@ -97,6 +99,8 @@ object AgeFeature {
         override val name = "updateagelist"
         override val description = "Updates the age list."
         override val aliases = listOf("ageupdate", "updateage")
+
+        override val requiredRole: PermissionRole = PermissionRole.DISCORD_MODERATOR
 
         init {
             Utils.runDelayed("init load age", 1.seconds) {

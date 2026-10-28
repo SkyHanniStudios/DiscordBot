@@ -41,7 +41,7 @@ object PullRequestCommand : BaseCommand() {
         Option("user", "The user to ping with the pull request.", required = false, type = OptionType.USER),
     )
 
-    override val userCommand: Boolean = true
+    override val requiredRole: PermissionRole? = null
 
     private const val USER = "SkyHanniStudios"
     private const val REPO = "SkyHanni"
@@ -233,7 +233,7 @@ object PullRequestCommand : BaseCommand() {
             append("> From $artifactLine (requires a GitHub account)\n")
             append("> From Meowdding: ")
             append(
-                versionedArtifacts.map { it.minecraftVersion.linkTo(meowddingLink(it.artifactId)) }.joinToString(" · ")
+                versionedArtifacts.joinToString(" · ") { it.minecraftVersion.linkTo(meowddingLink(it.artifactId)) }
             )
             append("\n")
             append("> (updated ${passedSince(job.completedAt ?: "")})")

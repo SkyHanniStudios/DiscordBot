@@ -167,6 +167,7 @@ object ServerCommands {
         "${server.name}: ${storedSize.addSeparators()} -> ${realSize.addSeparators()}"
 
     private class ServerLoader {
+        val useClipboard = BOT.config.useClipboardFor == "serverlist"
         val servers: MutableSet<Server>
         var removedInvalidInvite = 0
         var removedWrongId = 0
@@ -177,14 +178,14 @@ object ServerCommands {
         val githubLink =
             "GitHub".linkTo("https://github.com/SkyHanniStudios/DiscordBot/blob/master/data/discord_servers.json")
 
-        val viaText = if (useClipboardInServerList) "dev clipboard" else githubLink
+        val viaText = if (useClipboard) "dev clipboard" else githubLink
         val log = LiveLog(Utils.getBotChannel(), "Server List Update (via $viaText)")
 
         init {
             log.startAutoUpdate()
             try {
                 log.status("Loading from GitHub...")
-                val json = if (useClipboardInServerList) {
+                val json = if (useClipboard) {
                     Utils.readStringFromClipboard() ?: error("error loading discord_servers json from clipboard")
                 } else {
                     github.getFileContent("data/discord_servers.json") ?: error("Error loading discord_servers data")
@@ -424,7 +425,7 @@ class ServerCommand : BaseCommand() {
         Option("keyword", "Keyword of the server you want to display.", autoComplete = true),
         Option("debug", "Display even more useful information (-d to use).", required = false),
     )
-    override val userCommand: Boolean = true
+    override val requiredRole: PermissionRole? = null
 
     override fun autoCompleteChoices(optionName: String, input: String): List<String> =
         ServerCommands.servers
@@ -460,6 +461,8 @@ class ServerUpdate : BaseCommand() {
         "updateservers", "updateserverlist", "serverlistupdate", "listupdateserver", "updateserver"
     )
 
+    override val requiredRole: PermissionRole = PermissionRole.DISCORD_MODERATOR
+
     init {
         Utils.runDelayed("init load servers", 1.seconds) {
             if (!ServerCommands.isLoading) {
@@ -485,6 +488,9 @@ class ServerList : BaseCommand() {
     override val name: String = "serverlist"
     override val description: String = "Displays all servers in the database."
     override val aliases: List<String> = listOf("servers")
+
+    override val requiredRole: PermissionRole = PermissionRole.COMMUNITY_HELPER
+    override val alternativeRoles: Set<PermissionRole> = setOf(PermissionRole.CONTRIBUTOR)
 
     override fun CommandEvent.execute(args: List<String>) {
         if (ServerCommands.servers.isEmpty()) {

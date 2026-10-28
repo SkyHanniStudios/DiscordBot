@@ -80,16 +80,17 @@ object ModChecker {
     }
 
     fun loadModDataFromRepo() {
+        val useClipboard = BOT.config.useClipboardFor == "modchecker"
         isLoading = true
         Utils.runAsync("load mod data") {
             val log = LiveLog(
                 Utils.getBotChannel(),
-                "Mod List Update (via ${if (useClipboardInModChecker) "dev clipboard" else githubLink})"
+                "Mod List Update (via ${if (useClipboard) "dev clipboard" else githubLink})"
             )
             log.startAutoUpdate()
             try {
                 log.status("Loading from GitHub...")
-                val json = if (useClipboardInModChecker) {
+                val json = if (useClipboard) {
                     Utils.readStringFromClipboard() ?: error("error loading mods json from clipboard")
                 } else {
                     github.getFileContent("data/mods.json") ?: error("Error loading mods json data")
@@ -344,6 +345,8 @@ object ModChecker {
         // needs a replied to message, which slash commands can not provide
         override val supportsSlash: Boolean = false
 
+        override val requiredRole: PermissionRole = PermissionRole.DISCORD_MODERATOR
+
         override fun CommandEvent.execute(args: List<String>) {
             val replyTarget = referencedMessage ?: run {
                 reply("reply to a message to see debug infos from that message!")
@@ -364,6 +367,8 @@ object ModChecker {
         override val name = "modlistupdate"
         override val description = "Updates the mod list."
         override val aliases = listOf("updatemodlist", "updatemods")
+
+        override val requiredRole: PermissionRole = PermissionRole.DISCORD_MODERATOR
 
         init {
             Utils.runDelayed("init load mods", 1.seconds) {
