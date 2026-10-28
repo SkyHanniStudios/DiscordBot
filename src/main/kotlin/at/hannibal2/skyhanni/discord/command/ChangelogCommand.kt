@@ -9,6 +9,10 @@ import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.Utils.replyLong
 import at.hannibal2.skyhanni.discord.Utils.userError
 import at.hannibal2.skyhanni.discord.changelog.ChangelogGenerator
+import at.hannibal2.skyhanni.discord.changelog.ChangelogMessages
+import at.hannibal2.skyhanni.discord.changelog.ChangelogTarget
+import at.hannibal2.skyhanni.discord.changelog.ChangelogWebhook
+import at.hannibal2.skyhanni.discord.command.ChangelogCommand.post
 import at.hannibal2.skyhanni.discord.github.GitHubClient
 import at.hannibal2.skyhanni.discord.utils.ErrorManager.handleError
 import java.util.concurrent.atomic.AtomicBoolean
@@ -18,18 +22,19 @@ import kotlin.time.Duration.Companion.minutes
 object ChangelogCommand : BaseCommand() {
 
     override val name: String = "changelog"
-    override val description: String = "Generates the changelog of the next beta, or of the latest one for the announcement."
+    override val description: String =
+        "Posts the next beta changelog as preview, or the latest beta changelog as announcement."
     override val options: List<Option> = listOf(
         Option("target", "preview (default) or announcement.", required = false, autoComplete = true),
     )
 
     override val requiredRole: PermissionRole = PermissionRole.CODE_REVIEWER
 
-    /** Shown next to the text length, the text limit Discord sets for a message with components. */
+    /** Discord's text limit for a message with components, a longer changelog is not posted. */
     private const val MESSAGE_LIMIT = 4000
 
     private val github = GitHubClient("SkyHanniStudios", "SkyHanni", BOT.config.githubTokenPullRequests)
-    private val cooldown = 2.minutes
+    private val cooldown = 1.minutes
     private val tagPattern = "\\d+\\.\\d+\\.\\d+".toPattern()
 
     private val running = AtomicBoolean(false)
@@ -38,21 +43,19 @@ object ChangelogCommand : BaseCommand() {
     @Volatile
     private var lastStart = SimpleTimeMark.farPast()
 
-    private enum class Target(val label: String) {
-        PREVIEW("preview"),
-        ANNOUNCEMENT("announcement"),
-    }
+    /** What [post] did: the status line for the reply, and the posted or edited message if there is one. */
+    private data class PostOutcome(val status: String, val message: ChangelogWebhook.PostedMessage? = null)
 
     override fun autoCompleteChoices(optionName: String, input: String): List<String> =
-        Target.entries.map { it.label }.filter { it.contains(input, ignoreCase = true) }
+        ChangelogTarget.entries.map { it.label }.filter { it.contains(input, ignoreCase = true) }
 
     override fun CommandEvent.execute(args: List<String>) {
         if (args.size > 1) return wrongUsage("[preview|announcement]")
-        val input = args.firstOrNull()?.lowercase() ?: Target.PREVIEW.label
-        val target = Target.entries.find { it.label == input } ?: return wrongUsage("[preview|announcement]")
+        val input = args.firstOrNull()?.lowercase() ?: ChangelogTarget.PREVIEW.label
+        val target = ChangelogTarget.entries.find { it.label == input } ?: return wrongUsage("[preview|announcement]")
 
-        if (target == Target.ANNOUNCEMENT && member?.hasRoleOrAbove(PermissionRole.ADMIN) != true) {
-            return userError("Only admins can generate the announcement.")
+        if (target == ChangelogTarget.ANNOUNCEMENT && member?.hasRoleOrAbove(PermissionRole.ADMIN) != true) {
+            return userError("Only admins can post the announcement.")
         }
 
         if (!running.compareAndSet(false, true)) return reply("A changelog is already being generated $PLEADING_FACE")
@@ -79,14 +82,14 @@ object ChangelogCommand : BaseCommand() {
         }
     }
 
-    private fun CommandEvent.generate(target: Target) {
+    private fun CommandEvent.generate(target: ChangelogTarget) {
         val tag = github.getLatestTag().name
         if (!tagPattern.matcher(tag).matches()) error("Unexpected tag name `$tag`")
         val latest = ModVersion.fromString(tag)
 
         val (version, previousVersion) = when (target) {
-            Target.PREVIEW -> ModVersion(latest.stable, latest.beta + 1, bugfix = 0) to null
-            Target.ANNOUNCEMENT -> {
+            ChangelogTarget.PREVIEW -> ModVersion(latest.stable, latest.beta + 1, bugfix = 0) to null
+            ChangelogTarget.ANNOUNCEMENT -> {
                 if (!latest.isBeta || latest.bugfix != 0) {
                     return userError("The latest tag `$tag` is no x.y.0 beta release, there is nothing to announce.")
                 }
@@ -95,21 +98,82 @@ object ChangelogCommand : BaseCommand() {
         }
 
         val result = ChangelogGenerator.generate(version, previousVersion) { lastStart = SimpleTimeMark.now() }
-        replyLong(buildReply(version, target, result))
+        val outcome = try {
+            post(target, version, result)
+        } catch (e: Exception) {
+            e.handleError("Discord command: `$name`", "Posting to ${target.label}")
+            PostOutcome("Error while posting: ${e.message}")
+        }
+        replyLong(buildReply(version, target, result, outcome))
     }
 
-    // built as one string so a single replyLong keeps the order, its first part replaces the deferred placeholder
-    private fun buildReply(version: ModVersion, target: Target, result: ChangelogGenerator.Result): String =
-        buildString {
-            appendLine("**SkyHanni ${version.asTitle}** (${target.label})")
-            appendLine("Length: ${result.text.length}/$MESSAGE_LIMIT")
-            if (result.messages.isNotEmpty()) {
-                appendLine()
-                result.messages.forEach { appendLine(it) }
-            }
-            appendLine()
-            result.summary.forEach { appendLine(it) }
-            appendLine()
-            append(result.text)
+    /** Posts or edits the message of [target] and says what happened. */
+    private fun CommandEvent.post(
+        target: ChangelogTarget,
+        version: ModVersion,
+        result: ChangelogGenerator.Result
+    ): PostOutcome {
+        val text = target.postedText(result.text)
+        if (text.length > MESSAGE_LIMIT) {
+            return PostOutcome("Not posted: the text is longer than $MESSAGE_LIMIT characters.")
         }
+        if (target == ChangelogTarget.ANNOUNCEMENT && result.hasBlockingErrors) {
+            return PostOutcome("Not posted: a pull request has a wrong title or a broken description, see below.")
+        }
+        val webhookUrl = target.webhookUrl
+            ?: return PostOutcome("Not posted: `${target.configKey}` in config.json is missing or no https url.")
+
+        val previous = ChangelogMessages.get(target)?.takeIf { it.version == version.toString() }
+        val edited = previous?.let { ChangelogWebhook.edit(webhookUrl, it.messageId, text) }
+        if (edited != null) return PostOutcome("Edited", edited)
+
+        val posted = ChangelogWebhook.send(webhookUrl, text)
+        try {
+            ChangelogMessages.set(target, ChangelogMessages.Entry(posted.messageId, version.toString()))
+        } catch (e: Exception) {
+            // the message exists, so the reply still links it, even when the bot channel is unreachable as well
+            runCatching {
+                e.handleError("Discord command: `$name`", "Storing the ${target.label} message id", "Posted: ${link(posted)}")
+            }
+            return PostOutcome("Posted, but the message id could not be stored, the next run posts a new message", posted)
+        }
+        if (previous == null) return PostOutcome("Posted", posted)
+
+        val botChannelText = "The ${target.label} changelog message was deleted, posted a new one: ${link(posted)}"
+        try {
+            Utils.sendMessageToBotChannel(botChannelText)
+        } catch (e: Exception) {
+            // an unreachable bot channel must not turn the successful post into an error
+            BOT.logger.warn("Could not report the repost of the ${target.label} changelog in the bot channel", e)
+        }
+        return PostOutcome("The old message was deleted, posted a new one", posted)
+    }
+
+    // <> keeps Discord from adding a preview of the message
+    private fun CommandEvent.link(message: ChangelogWebhook.PostedMessage): String =
+        "<https://discord.com/channels/${guild.id}/${message.channelId}/${message.messageId}>"
+
+    // built as one string so a single replyLong keeps the order, its first part replaces the deferred placeholder
+    private fun CommandEvent.buildReply(
+        version: ModVersion,
+        target: ChangelogTarget,
+        result: ChangelogGenerator.Result,
+        outcome: PostOutcome,
+    ): String = buildString {
+        // the builder messages carry pull request urls, <> keeps Discord from adding a preview for each
+        val url = "(?<!<)https?://[^\\s)>`]*[^\\s)>`.,?!]".toRegex()
+        appendLine("**SkyHanni ${version.asTitle}** (${target.label})")
+        appendLine(outcome.status)
+        appendLine("Length: ${target.postedText(result.text).length}/$MESSAGE_LIMIT")
+        if (result.messages.isNotEmpty()) {
+            appendLine()
+            result.messages.forEach { appendLine(it.replace(url, "<\$0>")) }
+        }
+        appendLine()
+        result.summary.forEach { appendLine(it) }
+        outcome.message?.let {
+            appendLine()
+            append(link(it))
+        }
+    }
 }

@@ -16,6 +16,9 @@ data class BotConfig(
     val jailedLogChannelId: String,
     /** Null when config.json lacks the entry, [PermissionRole.validateConfig] reports that. */
     val permissionRoleIds: Map<String, String>?,
+    // null when config.json lacks the entry, /changelog then names the missing key
+    val changelogWebhookPreview: String?,
+    val changelogWebhookAnnouncement: String?,
 )
 
 object ConfigLoader {
@@ -31,6 +34,8 @@ object ConfigLoader {
         "TODO: role id for the member group",
         "TODO: channel id for the jailed log channel",
         PermissionRole.entries.associate { it.name to "TODO: role id" },
+        "TODO: webhook url of the changelog preview channel",
+        "TODO: webhook url of the beta announcement channel",
     )
 
     fun load(filePath: String): BotConfig {
