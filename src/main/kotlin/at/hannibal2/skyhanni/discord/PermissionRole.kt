@@ -4,12 +4,12 @@ package at.hannibal2.skyhanni.discord
  * Roles that unlock bot commands. The [name] of an entry is its key in [BotConfig.permissionRoleIds].
  * A role passes every check for the roles below it.
  */
-enum class PermissionRole {
-    ADMIN,
-    DISCORD_MODERATOR,
-    COMMUNITY_HELPER,
-    CODE_REVIEWER,
-    CONTRIBUTOR,
+enum class PermissionRole(val displayName: String) {
+    ADMIN("Admin"),
+    DISCORD_MODERATOR("Discord Moderator"),
+    COMMUNITY_HELPER("Community Helper"),
+    CODE_REVIEWER("Code Reviewer"),
+    CONTRIBUTOR("Contributor"),
     ;
 
     val parent: PermissionRole?
