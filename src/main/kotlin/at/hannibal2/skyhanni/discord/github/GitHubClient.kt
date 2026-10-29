@@ -176,6 +176,63 @@ class GitHubClient(user: String, repo: String, private val token: String) {
         return readJson<List<Release>, List<Release>?>(url) { it }
     }
 
+    data class PullRequestApprovalInfo(
+        val number: Int,
+        val title: String,
+        val url: String,
+        val approvals: Int
+    )
+
+    fun getPullRequestsWithApprovals(): List<PullRequestApprovalInfo> {
+        val pulls = readAllPages<List<PullRequestJson>, PullRequestJson>(
+            "$base/pulls?state=open",
+            totalCount = { if (it.size < PAGE_SIZE) 0L else Long.MAX_VALUE },
+            items = { it }
+        )
+
+        return pulls.mapNotNull { pr ->
+            val number = pr.number
+            val url = pr.htmlUrl
+            val title = pr.title
+
+            val reviewsUrl = "$base/pulls/$number/reviews"
+            val reviews = readJson<List<Map<String, Any>>, List<Map<String, Any>>?>(reviewsUrl) { it } ?: emptyList()
+
+            val approvalsCount = calculateApprovals(reviews)
+
+            if (approvalsCount == 0) return@mapNotNull null
+            PullRequestApprovalInfo(
+                number = number.toInt(),
+                url = url,
+                title = title,
+                approvals = approvalsCount
+            )
+        }.sortedWith(
+            compareByDescending<PullRequestApprovalInfo> { it.approvals }
+                .thenByDescending { it.number }
+        )
+    }
+
+    internal fun calculateApprovals(reviews: List<Map<String, Any>>): Int {
+        val userReviewsMap = mutableMapOf<String, MutableList<Map<String, Any>>>()
+        for (review in reviews) {
+            val user = review["user"] as? Map<String, Any>
+            val login = user?.get("login") as? String ?: continue
+            userReviewsMap.getOrPut(login) { mutableListOf() }.add(review)
+        }
+
+        var approvalsCount = 0
+        for ((_, userReviews) in userReviewsMap) {
+            val latestReview = userReviews.maxByOrNull {
+                (it["submitted_at"] as? String) ?: ""
+            }
+            if (latestReview?.get("state") == "APPROVED") {
+                approvalsCount++
+            }
+        }
+        return approvalsCount
+    }
+
     /** The first entry of the tag list, which the changelog builder treats as the newest tag as well. */
     fun getLatestTag(): GitTag =
         readJson<List<GitTag>, GitTag?>("$base/tags") { it.firstOrNull() } ?: error("No tags found at $base/tags")

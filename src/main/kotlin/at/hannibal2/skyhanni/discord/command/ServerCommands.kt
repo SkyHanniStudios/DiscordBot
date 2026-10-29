@@ -16,6 +16,7 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import net.dv8tion.jda.api.entities.Invite
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.interactions.commands.OptionType
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicInteger
@@ -507,5 +508,40 @@ class ServerList : BaseCommand() {
             else server.keyword
         }
         replyLong("Server list:\n$list")
+    }
+}
+
+@Suppress("unused")
+class PullRequestApprovalsCommand : BaseCommand() {
+    override val name: String = "approvals"
+    override val description: String = "Displays open SkyHanni pull requests with minimum approvals."
+    override val aliases: List<String> = listOf("prapprovals", "prlist")
+    override val userCommand: Boolean = true
+    override val options: List<Option> = listOf(
+        Option("approvals", "Minimum amount of approvals needed", type = OptionType.INTEGER, required = false),
+    )
+
+    override val requiredRole: PermissionRole = PermissionRole.CODE_REVIEWER
+
+    private val github = GitHubClient("SkyHanniStudios", "SkyHanni", BOT.config.githubTokenOwn)
+
+    override fun CommandEvent.execute(args: List<String>) {
+        val minApprovals = args.firstOrNull()?.toIntOrNull() ?: 2
+        try {
+            val prs = github.getPullRequestsWithApprovals().filter {
+                it.approvals >= minApprovals
+            }
+            if (prs.isEmpty()) {
+                reply("No open pull requests found with at least $minApprovals approvals.")
+                return
+            }
+            val resultText = prs.joinToString("\n") {
+"${it.approvals} 👍 · **[#${it.number}](<${it.url}>)** [${it.title}]"
+            }
+            replyLong(resultText)
+        } catch (e: Exception) {
+            BOT.logger.error("Error fetching pull request approvals", e)
+            reply("Error fetching pull requests: ${e.message}")
+        }
     }
 }

@@ -159,4 +159,54 @@ class GitHubClientTest {
             conclusion = conclusion,
         )
     }
+
+    @Test
+    fun `counts approvals correctly with latest review overriding previous`() {
+        val approvals = github.calculateApprovals(
+            listOf(
+                mapOf(
+                    "user" to mapOf("login" to "user1"),
+                    "state" to "APPROVED",
+                    "submitted_at" to "2026-06-01T10:00:00Z"
+                ),
+                mapOf(
+                    "user" to mapOf("login" to "user1"),
+                    "state" to "CHANGES_REQUESTED",
+                    "submitted_at" to "2026-06-01T11:00:00Z"
+                ), // user1 latest is CHANGES_REQUESTED -> not approved
+                mapOf(
+                    "user" to mapOf("login" to "user2"),
+                    "state" to "CHANGES_REQUESTED",
+                    "submitted_at" to "2026-06-01T10:00:00Z"
+                ),
+                mapOf(
+                    "user" to mapOf("login" to "user2"),
+                    "state" to "APPROVED",
+                    "submitted_at" to "2026-06-01T12:00:00Z"
+                ), // user2 latest is APPROVED -> counts as 1 approval
+                mapOf(
+                    "user" to mapOf("login" to "user3"),
+                    "state" to "APPROVED",
+                    "submitted_at" to "2026-06-01T09:00:00Z"
+                ) // user3 latest is APPROVED -> counts as 1 approval
+            )
+        )
+
+        assertEquals(2, approvals)
+    }
+
+    @Test
+    fun `returns zero approvals when no reviews are approved`() {
+        val approvals = github.calculateApprovals(
+            listOf(
+                mapOf(
+                    "user" to mapOf("login" to "user1"),
+                    "state" to "COMMENTED",
+                    "submitted_at" to "2026-06-01T10:00:00Z"
+                )
+            )
+        )
+
+        assertEquals(0, approvals)
+    }
 }
