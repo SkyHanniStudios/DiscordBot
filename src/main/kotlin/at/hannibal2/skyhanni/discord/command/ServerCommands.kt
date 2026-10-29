@@ -536,7 +536,7 @@ class PullRequestApprovalsCommand : BaseCommand() {
                 return
             }
             val resultText = prs.joinToString("\n") {
-                "[${it.number}](<${it.url}>) (${it.approvals}) - ${it.title}"
+                "**[#${it.number}](<${it.url}>)** [${it.title}](<${it.url}>) · ${it.approvals} 👍"
             }
             replyLong(resultText)
         } catch (e: Exception) {
