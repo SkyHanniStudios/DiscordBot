@@ -1,6 +1,7 @@
 package at.hannibal2.skyhanni.discord
 
 import at.hannibal2.skyhanni.discord.Utils.getLink
+import at.hannibal2.skyhanni.discord.Utils.hasAnyPermissionRole
 import at.hannibal2.skyhanni.discord.Utils.hasPermissionFor
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.command.*
@@ -98,17 +99,17 @@ object CommandListener {
 
     private fun runCommand(command: BaseCommand, event: CommandEvent, literal: String, args: List<String>) {
         if (!event.hasPermissionFor(command)) {
-            event.reply("No permissions $PLEADING_FACE")
+            noPerms(command, event, literal)
             return
         }
 
-        // allows to use `!<command> -help` instead of `!help -<command>`
         if (args.size == 1 && args.first() == "-help") {
             with(HelpCommand) {
                 event.sendUsageReply(literal)
             }
             return
         }
+
         try {
             with(command) {
                 event.execute(args)
@@ -120,6 +121,39 @@ object CommandListener {
                 "Started at: ${event.message?.getLink() ?: "slash command"}",
             )
         }
+    }
+
+    private fun noPerms(
+        command: BaseCommand,
+        event: CommandEvent,
+        literal: String
+    ) {
+        val requiredRole = command.requiredRole
+        if (event.member?.hasAnyPermissionRole() == true && requiredRole != null) {
+            event.sendReplyWithConsumer("No permissions $PLEADING_FACE") {
+                explainMissingRoles(requiredRole, command, event, literal)
+            }
+        } else {
+            event.reply("No permissions $PLEADING_FACE")
+        }
+    }
+
+    private fun explainMissingRoles(
+        requiredRole: PermissionRole,
+        command: BaseCommand,
+        event: CommandEvent,
+        literal: String
+    ) {
+        val roles = listOf(requiredRole.displayName) + command.alternativeRoles.map { it.displayName }
+
+        val roleString = if (roles.size == 1) {
+            "the `${roles.first()}` role"
+        } else {
+            val joinedRoles = roles.joinToString(", ") { "`$it`" }
+            "one of these roles: $joinedRoles"
+        }
+
+        event.sendPrivateReply("To use the `/$literal` command, you additionally need $roleString (or a higher role).")
     }
 
     fun registerSlashCommands(jda: JDA) {
