@@ -84,3 +84,19 @@ Moderator command to reload the server list JSON file from GitHub.
 
 `/pr <number>`  
 Displays information about the pull request with the given number, including a link to download the artifact.
+
+### Changelog
+
+`/changelog [preview|announcement]`  
+Code reviewers post the changelog of the next beta to the preview channel. The bot starts a thread under that message,
+and the webhook posts the internal changelog into it, one message per category. A second run for the same version
+edits all of these messages instead of posting new ones.
+With `announcement`, admins post the changelog of the latest released beta to the announcement channel.
+The posted messages are remembered in `changelog_messages.json`, next to `config.json`.
+
+Setup:
+
+- In the settings of the preview channel and of the announcement channel, create a webhook under Integrations and
+  copy its url.
+- Put the URLs into `changelogWebhookPreview` and `changelogWebhookAnnouncement` in `config.json`.
+- Give the bot the permission to create public threads in the preview channel.

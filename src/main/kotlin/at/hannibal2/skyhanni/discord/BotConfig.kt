@@ -18,6 +18,10 @@ data class BotConfig(
     val permissionRoleIds: Map<String, String>?,
     /** Local testing only. Null when config.json lacks the entry, which keeps the clipboard unused. */
     val useClipboardFor: String?,
+    /** Null when config.json lacks the entry, /changelog then names the missing key. */
+    val changelogWebhookPreview: String?,
+    /** Null when config.json lacks the entry, /changelog then names the missing key. */
+    val changelogWebhookAnnouncement: String?,
 )
 
 object ConfigLoader {
@@ -34,6 +38,8 @@ object ConfigLoader {
         "TODO: channel id for the jailed log channel",
         PermissionRole.entries.associate { it.name to "TODO: role id" },
         "TODO: optional, serverlist, age or modchecker",
+        "TODO: webhook url of the changelog preview channel",
+        "TODO: webhook url of the beta announcement channel",
     )
 
     fun load(filePath: String): BotConfig {
