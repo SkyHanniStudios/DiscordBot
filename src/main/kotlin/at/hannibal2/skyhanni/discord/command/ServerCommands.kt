@@ -3,7 +3,6 @@ package at.hannibal2.skyhanni.discord.command
 import at.hannibal2.skyhanni.discord.*
 import at.hannibal2.skyhanni.discord.Utils.addSeparators
 import at.hannibal2.skyhanni.discord.Utils.getLinkName
-import at.hannibal2.skyhanni.discord.Utils.hasContributorPermissions
 import at.hannibal2.skyhanni.discord.Utils.linkTo
 import at.hannibal2.skyhanni.discord.Utils.logAction
 import at.hannibal2.skyhanni.discord.Utils.pluralize
@@ -522,14 +521,11 @@ class PullRequestApprovalsCommand : BaseCommand() {
         Option("approvals", "Minimum amount of approvals needed", type = OptionType.INTEGER, required = false),
     )
 
+    override val requiredRole: PermissionRole = PermissionRole.CONTRIBUTOR
+
     private val github = GitHubClient("SkyHanniStudios", "SkyHanni", BOT.config.githubTokenOwn)
 
     override fun CommandEvent.execute(args: List<String>) {
-        if (!hasContributorPermissions()) {
-            reply("No permissions $PLEADING_FACE")
-            return
-        }
-
         val minApprovals = args.firstOrNull()?.toIntOrNull() ?: 2
         try {
             val prs = github.getPullRequestsWithApprovals().filter {
