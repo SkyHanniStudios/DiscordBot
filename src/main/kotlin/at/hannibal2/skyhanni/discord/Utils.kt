@@ -1,5 +1,6 @@
 package at.hannibal2.skyhanni.discord
 
+import at.hannibal2.skyhanni.discord.command.BaseCommand
 import at.hannibal2.skyhanni.discord.utils.ErrorManager.handleError
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.Member
@@ -169,39 +170,22 @@ object Utils {
         logger.info("$id/$name$nickString $action in channel '${channel.name}'")
     }
 
-    fun CommandEvent.hasContributorPermissions(): Boolean {
+    fun CommandEvent.hasPermissionFor(command: BaseCommand): Boolean {
+        val role = command.requiredRole ?: return true
         val member = member ?: return false
-        return member.hasContributorPermissions()
+        return (command.alternativeRoles + role).any { member.hasRoleOrAbove(it) }
     }
 
-    fun CommandEvent.hasAdminPermissions(): Boolean {
-        val member = member ?: return false
-        return member.hasAdminPermissions()
+    fun Member.hasRoleOrAbove(role: PermissionRole): Boolean {
+        val roleIds = BOT.config.permissionRoleIds ?: return false
+        val allowedIds = role.withHigherRoles().mapNotNull { roleIds[it.name] }.toSet()
+        return roles.any { it.id in allowedIds }
     }
 
-    fun CommandEvent.hasCommunityHelperPermissions(): Boolean {
-        val member = member ?: return false
-        return member.hasCommunityHelperPermissions()
+    fun Member.hasAnyPermissionRole(): Boolean {
+        val roleIds = BOT.config.permissionRoleIds ?: return false
+        return roles.any { it.id in roleIds.values }
     }
-
-    fun Member.hasContributorPermissions(): Boolean = hasRole("contributor")
-
-    fun Member.hasAdminPermissions(): Boolean = hasRole("moderator")
-
-    fun Member.hasCommunityHelperPermissions(): Boolean = hasRole("community helper")
-
-    private fun Member.hasRole(name: String): Boolean {
-        val staffRoles: Map<String, String> = BOT.config.editPermissionRoleIds
-        val requiredIndex = staffRoles.keys.indexOf(name.lowercase())
-        if (requiredIndex == -1) return false
-
-        val memberRoleIds = roles.map { it.id }.toSet()
-        return staffRoles.values
-            .take(requiredIndex + 1)
-            .any { it in memberRoleIds }
-    }
-
-    fun CommandEvent.inBotCommandChannel() = channel.id == BOT.config.botCommandChannelId
 
     fun runDelayed(taskName: String, duration: Duration, consumer: () -> Unit) {
         runAsync("$taskName (delayed by $duration)") {

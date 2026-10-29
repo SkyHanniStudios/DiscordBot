@@ -80,16 +80,17 @@ object ModChecker {
     }
 
     fun loadModDataFromRepo() {
+        val useClipboard = BOT.config.useClipboardFor == "modchecker"
         isLoading = true
         Utils.runAsync("load mod data") {
             val log = LiveLog(
                 Utils.getBotChannel(),
-                "Mod List Update (via ${if (useClipboardInModChecker) "dev clipboard" else githubLink})"
+                "Mod List Update (via ${if (useClipboard) "dev clipboard" else githubLink})"
             )
             log.startAutoUpdate()
             try {
                 log.status("Loading from GitHub...")
-                val json = if (useClipboardInModChecker) {
+                val json = if (useClipboard) {
                     Utils.readStringFromClipboard() ?: error("error loading mods json from clipboard")
                 } else {
                     github.getFileContent("data/mods.json") ?: error("Error loading mods json data")
@@ -156,29 +157,18 @@ object ModChecker {
             val fileName = mod.fileName
             val version = mod.version
 
-            // hide minecraft/forge/mod loader stuff
-            if (fileName == "minecraft.jar") {
-                categories[ModCategory.IGNORED]!!.add(line)
-                continue
-            }
-
-            if (fileName.contains("forge-1.8.9-11.15.1.2318-1.8.9")) {
+            // minecraft and forge themselves, mods we never check and known version bugs
+            val ignored = fileName == "minecraft.jar" ||
+                    fileName.contains("forge-1.8.9-11.15.1.2318-1.8.9") ||
+                    name in ignoredMods ||
+                    versionBugs[name] == version
+            if (ignored) {
                 categories[ModCategory.IGNORED]!!.add(line)
                 continue
             }
 
             if (name == "Forge Mod Loader") {
                 categories[ModCategory.UNKNOWN_MOD]!!.add("unknown forge version: '$fileName'")
-                continue
-            }
-
-            if (name in ignoredMods) {
-                categories[ModCategory.IGNORED]!!.add(line)
-                continue
-            }
-
-            if (versionBugs[name] == version) {
-                categories[ModCategory.IGNORED]!!.add(line)
                 continue
             }
 
@@ -191,11 +181,10 @@ object ModChecker {
             }
 
             val reasonNotToUse = latestFullMod.reasonNotToUse ?: latestBetaMod.reasonNotToUse
-            reasonNotToUse?.let {
-                categories[ModCategory.TO_REMOVE]!!.add("- $name ($it)")
-                return@let
+            if (reasonNotToUse != null) {
+                categories[ModCategory.TO_REMOVE]!!.add("- $name ($reasonNotToUse)")
+                continue
             }
-            if (reasonNotToUse != null) continue
 
             if (latestFullMod.version == version || latestBetaMod.version == version) {
                 categories[ModCategory.UP_TO_DATE]!!.add(name)
@@ -344,6 +333,8 @@ object ModChecker {
         // needs a replied to message, which slash commands can not provide
         override val supportsSlash: Boolean = false
 
+        override val requiredRole: PermissionRole = PermissionRole.DISCORD_MODERATOR
+
         override fun CommandEvent.execute(args: List<String>) {
             val replyTarget = referencedMessage ?: run {
                 reply("reply to a message to see debug infos from that message!")
@@ -364,6 +355,8 @@ object ModChecker {
         override val name = "modlistupdate"
         override val description = "Updates the mod list."
         override val aliases = listOf("updatemodlist", "updatemods")
+
+        override val requiredRole: PermissionRole = PermissionRole.DISCORD_MODERATOR
 
         init {
             Utils.runDelayed("init load mods", 1.seconds) {

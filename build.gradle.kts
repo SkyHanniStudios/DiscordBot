@@ -10,6 +10,11 @@ version = "1.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
+    maven("https://jitpack.io") {
+        content {
+            includeGroup("com.github.SkyHanniStudios")
+        }
+    }
 }
 
 dependencies {
@@ -23,11 +28,11 @@ dependencies {
     // This could be replaced with another logging api to automatically generate log files
     runtimeOnly("org.slf4j:slf4j-simple:2.0.16")
 
-
     runtimeOnly("com.squareup.okhttp3:okhttp:4.3.1") // Http Client
     runtimeOnly("com.google.code.gson:gson:2.11.0") // Json
     implementation("org.reflections:reflections:0.10.2") // Reflections
     implementation("org.jetbrains.kotlin:kotlin-reflect") // Kotlin Reflection
+    implementation("com.github.SkyHanniStudios:SkyHanniChangelogBuilder:1.1.9") // Changelog Builder
 }
 
 tasks.test {

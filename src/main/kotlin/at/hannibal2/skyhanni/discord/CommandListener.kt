@@ -1,8 +1,7 @@
 package at.hannibal2.skyhanni.discord
 
 import at.hannibal2.skyhanni.discord.Utils.getLink
-import at.hannibal2.skyhanni.discord.Utils.hasAdminPermissions
-import at.hannibal2.skyhanni.discord.Utils.inBotCommandChannel
+import at.hannibal2.skyhanni.discord.Utils.hasPermissionFor
 import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.command.*
 import at.hannibal2.skyhanni.discord.utils.ErrorManager.handleError
@@ -98,16 +97,9 @@ object CommandListener {
     }
 
     private fun runCommand(command: BaseCommand, event: CommandEvent, literal: String, args: List<String>) {
-        if (!command.userCommand) {
-            if (!event.hasAdminPermissions()) {
-                event.reply("No permissions $PLEADING_FACE")
-                return
-            }
-
-            if (!event.inBotCommandChannel()) {
-                event.reply("Wrong channel $PLEADING_FACE")
-                return
-            }
+        if (!event.hasPermissionFor(command)) {
+            event.reply("No permissions $PLEADING_FACE")
+            return
         }
 
         // allows to use `!<command> -help` instead of `!help -<command>`

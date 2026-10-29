@@ -43,3 +43,4 @@ bin/
 /config.json
 /bot.db
 .idea/*
+/changelog_messages.json

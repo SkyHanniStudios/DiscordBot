@@ -38,16 +38,11 @@ object TagCommands {
     fun handleTag(event: MessageReceivedEvent): Boolean {
         val message = event.message
         var keyword = message.contentRaw.substring(1).trimStart()
-        var deleting = false
-        if (keyword.endsWith(" -d")) {
-            keyword = keyword.dropLast(3)
-            deleting = true
-        }
-        var info = false
-        if (keyword.endsWith(" -i")) {
-            keyword = keyword.dropLast(3)
-            info = true
-        }
+        val deleting = keyword.endsWith(" -d")
+        if (deleting) keyword = keyword.dropLast(3)
+        val info = keyword.endsWith(" -i")
+        if (info) keyword = keyword.dropLast(3)
+
         val response = Database.getResponse(keyword, increment = !info) ?: run {
             event.reply("Unknown command $PLEADING_FACE Type `!help` for help.")
             return false
@@ -61,26 +56,26 @@ object TagCommands {
 
         val author = message.author.id
         lastTouchedTag[author] = keyword
-        message.referencedMessage?.let {
-            event.logAction("used tag '$keyword' (with reply)")
-            message.messageDelete()
-            it.replyWithConsumer(response) { sentMessage ->
-                addLastMessage(author, sentMessage)
+        val remember: (Message) -> Unit = { addLastMessage(author, it) }
+        val referenced = message.referencedMessage
+        when {
+            referenced != null -> {
+                event.logAction("used tag '$keyword' (with reply)")
+                message.messageDelete()
+                referenced.replyWithConsumer(response, remember)
             }
-        } ?: run {
-            if (deleting) {
+
+            deleting -> {
                 event.logAction("used tag '$keyword' (with delete)")
                 message.messageDeleteAndThen {
-                    event.channel.sendMessageWithConsumer(response) { sentMessage ->
-                        addLastMessage(author, sentMessage)
-                    }
+                    event.channel.sendMessageWithConsumer(response, remember)
                 }
-            } else {
+            }
+
+            else -> {
                 event.logAction("used tag '$keyword'")
                 addLastMessage(author, message)
-                message.replyWithConsumer(response) { sentMessage ->
-                    addLastMessage(author, sentMessage)
-                }
+                message.replyWithConsumer(response, remember)
             }
         }
         return true
@@ -95,7 +90,7 @@ class TagShow : BaseCommand() {
         Option("tag", "The tag you want to display.", autoComplete = true),
         Option("user", "The user to ping with the tag.", required = false, type = OptionType.USER),
     )
-    override val userCommand: Boolean = true
+    override val requiredRole: PermissionRole? = null
 
     override fun CommandEvent.execute(args: List<String>) {
         if (args.size !in 1..2) return wrongUsage("<tag> [user]")
@@ -126,7 +121,7 @@ class TagList : BaseCommand() {
         Option("info", "Include and sort by uses (-i to use).", required = false),
     )
     override val aliases = listOf("tags")
-    override val userCommand: Boolean = true
+    override val requiredRole: PermissionRole? = null
 
     override fun CommandEvent.execute(args: List<String>) {
         val list = Database.listTags()
@@ -155,6 +150,8 @@ class TagEdit : BaseCommand() {
         Option("response", "Response you want the tag to have."),
     )
     override val aliases = listOf("tagchange")
+
+    override val requiredRole: PermissionRole = PermissionRole.DISCORD_MODERATOR
 
     override fun autoCompleteChoices(optionName: String, input: String): List<String> = TagCommands.tagChoices(input)
 
@@ -188,6 +185,8 @@ class TagEditLast : BaseCommand() {
     override val name = "tageditlast"
     override val description = "Show info on how to edit the last tag used."
 
+    override val requiredRole: PermissionRole = PermissionRole.DISCORD_MODERATOR
+
     override fun CommandEvent.execute(args: List<String>) {
         val id = author.id
         val lastTag = lastTouchedTag[id] ?: run {
@@ -209,6 +208,8 @@ class TagAdd : BaseCommand() {
         Option("response", "Response you want the tag to have.")
     )
     override val aliases = listOf("tagcreate")
+
+    override val requiredRole: PermissionRole = PermissionRole.DISCORD_MODERATOR
 
     override fun CommandEvent.execute(args: List<String>) {
         if (args.size < 2) return wrongUsage("<keyword> <response>")
@@ -247,6 +248,8 @@ class TagDelete : BaseCommand() {
     )
     override val aliases: List<String> = listOf("tagremove")
 
+    override val requiredRole: PermissionRole = PermissionRole.DISCORD_MODERATOR
+
     override fun autoCompleteChoices(optionName: String, input: String): List<String> = TagCommands.tagChoices(input)
 
     override fun CommandEvent.execute(args: List<String>) {
@@ -269,8 +272,8 @@ class TagDelete : BaseCommand() {
 @Suppress("unused")
 object TagUndo : BaseCommand() {
     override val name: String = "tagundo"
-    override val description: String = "Undoes something not quite sure."
-    override val userCommand: Boolean = true
+    override val description: String = "Deletes the last sent tag from that user."
+    override val requiredRole: PermissionRole? = null
     override val aliases: List<String> = listOf("undo")
 
     override fun CommandEvent.execute(args: List<String>) {

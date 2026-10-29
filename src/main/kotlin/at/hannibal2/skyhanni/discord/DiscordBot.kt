@@ -1,6 +1,5 @@
 package at.hannibal2.skyhanni.discord
 
-import at.hannibal2.skyhanni.discord.Utils.sendMessageToBotChannel
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
@@ -26,7 +25,7 @@ class DiscordBot(val jda: JDA, val config: BotConfig) {
     var manualShutdown = false
 
     fun shutdown() {
-        sendMessageToBotChannel("Manually shutting down \uD83D\uDC4B")
+        Utils.sendMessageToBotChannel("Manually shutting down \uD83D\uDC4B")
         manualShutdown = true
         jda.shutdown()
     }
@@ -38,25 +37,20 @@ const val BIG_X = "❌"
 const val CHECK_MARK = "✅"
 const val PING_HANNIBAL = "<@239858538959077376>"
 
-
-val useClipboardFor = ""
-
-val useClipboardInServerList get() = useClipboardFor == "serverlist"
-val useClipboardInAge get() = useClipboardFor == "age"
-val useClipboardInModChecker get() = useClipboardFor == "modchecker"
-
 fun main() {
     val bot = startBot()
 
-    sendMessageToBotChannel("I'm awake \uD83D\uDE42")
+    Utils.sendMessageToBotChannel("I'm awake \uD83D\uDE42")
+    PermissionRole.validateConfig()
 
     Utils.runAsync("local command listener") {
         val scanner = Scanner(System.`in`)
         while (scanner.hasNextLine()) {
             when (scanner.nextLine().trim().lowercase()) {
                 "close", "stop", "exit", "end" -> {
+                    println("found shutdown call..")
                     bot.shutdown()
-                    break
+                    kotlin.system.exitProcess(0)
                 }
             }
         }
@@ -64,7 +58,7 @@ fun main() {
 
     Runtime.getRuntime().addShutdownHook(Thread {
         if (!bot.manualShutdown) {
-            sendMessageToBotChannel("I am the shutdown hook and I say bye 👋", instantly = true)
+            Utils.sendMessageToBotChannel("I am the shutdown hook and I say bye 👋", instantly = true)
             // since we disable the JDA shutdown hook we need to call shutdown manually to make everything clean
             bot.shutdown()
         }
