@@ -17,10 +17,7 @@ import at.hannibal2.skyhanni.discord.Utils.uploadFile
 import at.hannibal2.skyhanni.discord.Utils.userError
 import at.hannibal2.skyhanni.discord.github.ArtifactNames
 import at.hannibal2.skyhanni.discord.github.GitHubClient
-import at.hannibal2.skyhanni.discord.json.discord.Artifact
-import at.hannibal2.skyhanni.discord.json.discord.Conclusion
-import at.hannibal2.skyhanni.discord.json.discord.PullRequestJson
-import at.hannibal2.skyhanni.discord.json.discord.RunStatus
+import at.hannibal2.skyhanni.discord.json.discord.*
 import at.hannibal2.skyhanni.discord.utils.ErrorManager.handleError
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.interactions.commands.OptionType
@@ -76,29 +73,7 @@ object PullRequestCommand : BaseCommand() {
         logAction("loads pr infos for #$prNumber")
 
         val prLink = "$BASE/pull/$prNumber"
-
-        val pr = try {
-            github.findPullRequest(prNumber) ?: run {
-                if (showError) {
-                    reply("pr is null!")
-                }
-                return
-            }
-        } catch (e: IllegalStateException) {
-            if (e.message?.contains(" code:404 ") == true) {
-                val issueUrl = "$BASE/issues/$prNumber"
-                val issue = "issue".linkTo(issueUrl)
-                val text = "#$prNumber does not yet exist or is an $issue"
-                if (showError) {
-                    reply(embed("Not found $PLEADING_FACE", text, Color.red))
-                }
-                return
-            }
-            if (showError) {
-                reply("Could not load pull request infos for #$prNumber: ${e.message}")
-            }
-            return
-        }
+        val pr = findPullRequestOrReply(prNumber, showError) ?: return
 
         val head = pr.head
         val userName = head.user.login
@@ -111,7 +86,7 @@ object PullRequestCommand : BaseCommand() {
             append("\n")
         }
 
-        var inBeta = false
+        val inBeta = pr.merged && isInLatestBeta(pr, prNumber)
 
         val labels = pr.labels.map { it.name }.toSet()
 
@@ -130,33 +105,21 @@ object PullRequestCommand : BaseCommand() {
                 val merged = passedSince(pr.mergedAt ?: "")
                 append("> Merged: $merged")
                 append("\n")
-
-                val releases = try {
-                    github.getReleases()
-                } catch (e: Exception) {
-                    e.handleError(
-                        "In load pr infos!",
-                        "PR number: $prNumber",
-                    )
-                    null
-                }
-
-                val lastRelease = releases?.firstOrNull()
-
-                if (releaseSinceMerge(pr.mergedAt ?: "", lastRelease?.publishedAt ?: "")) {
+                if (inBeta) {
                     append("> This PR is in the latest beta $CHECK_MARK")
-                    append("\n")
-                    inBeta = true
                 } else {
                     append("> This PR is not in the latest beta $BIG_X")
-                    append("\n")
                 }
+                append("\n")
             }
         }
 
         fun result(text: String, color: Color = readColor(pr)) {
             reply(embed(embedTitle, text, color, prLink), mention)
         }
+
+        // a pull request in the latest beta needs no build info
+        fun resultWithBuildInfo(buildInfo: String) = result(if (inBeta) "$title$time" else "$title$time$buildInfo")
 
         if (toTimeMark(pr.updatedAt).passedSince() > 400.days && !inBeta) {
             result("${title}${time} \nBuild download has expired $PLEADING_FACE")
@@ -171,15 +134,7 @@ object PullRequestCommand : BaseCommand() {
             } else {
                 "No build available"
             }
-
-            result(buildString {
-                append(title)
-                append(time)
-                if (!inBeta) {
-                    append("\n")
-                    append("$buildUnavailableMessage $PLEADING_FACE")
-                }
-            })
+            resultWithBuildInfo("\n$buildUnavailableMessage $PLEADING_FACE")
             return
         }
 
@@ -197,15 +152,7 @@ object PullRequestCommand : BaseCommand() {
                 RunStatus.PENDING -> "Build is pending $PLEADING_FACE"
                 else -> ""
             }
-
-            result(buildString {
-                append(title)
-                append(time)
-                if (!inBeta) {
-                    append("\n")
-                    append(text)
-                }
-            })
+            resultWithBuildInfo("\n$text")
             return
         }
 
@@ -214,6 +161,51 @@ object PullRequestCommand : BaseCommand() {
             return
         }
 
+        resultWithBuildInfo(buildArtifactDisplay(job, prNumber))
+    }
+
+    /** Null when the pull request could not be loaded, after a reply that says why unless [showError] is false. */
+    private fun CommandEvent.findPullRequestOrReply(prNumber: Int, showError: Boolean): PullRequestJson? {
+        try {
+            return github.findPullRequest(prNumber) ?: run {
+                if (showError) {
+                    reply("pr is null!")
+                }
+                null
+            }
+        } catch (e: IllegalStateException) {
+            if (e.message?.contains(" code:404 ") == true) {
+                val issueUrl = "$BASE/issues/$prNumber"
+                val issue = "issue".linkTo(issueUrl)
+                val text = "#$prNumber does not yet exist or is an $issue"
+                if (showError) {
+                    reply(embed("Not found $PLEADING_FACE", text, Color.red))
+                }
+                return null
+            }
+            if (showError) {
+                reply("Could not load pull request infos for #$prNumber: ${e.message}")
+            }
+            return null
+        }
+    }
+
+    private fun isInLatestBeta(pr: PullRequestJson, prNumber: Int): Boolean {
+        val releases = try {
+            github.getReleases()
+        } catch (e: Exception) {
+            e.handleError(
+                "In load pr infos!",
+                "PR number: $prNumber",
+            )
+            null
+        }
+
+        val lastRelease = releases?.firstOrNull()
+        return releaseSinceMerge(pr.mergedAt ?: "", lastRelease?.publishedAt ?: "")
+    }
+
+    private fun buildArtifactDisplay(job: CheckRun, prNumber: Int): String {
         val match = job.htmlUrl?.let { runIdRegex.matchEntire(it) }
         val runId = match?.groups?.get("RunId")?.value
 
@@ -227,7 +219,7 @@ object PullRequestCommand : BaseCommand() {
                 compareMinecraftVersions(first.minecraftVersion, second.minecraftVersion)
             }
 
-        val artifactDisplay = buildString {
+        return buildString {
             append(" \n")
             append("Download the latest development build of this PR!\n")
             append("> From $artifactLine (requires a GitHub account)\n")
@@ -238,14 +230,6 @@ object PullRequestCommand : BaseCommand() {
             append("\n")
             append("> (updated ${passedSince(job.completedAt ?: "")})")
         }
-
-        result(buildString {
-            append(title)
-            append(time)
-            if (!inBeta) {
-                append(artifactDisplay)
-            }
-        })
     }
 
     private val labelTypes: Map<String, Set<String>> = mapOf(
