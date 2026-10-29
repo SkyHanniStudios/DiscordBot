@@ -18,8 +18,9 @@ data class BotConfig(
     val permissionRoleIds: Map<String, String>?,
     /** Local testing only. Null when config.json lacks the entry, which keeps the clipboard unused. */
     val useClipboardFor: String?,
-    // null when config.json lacks the entry, /changelog then names the missing key
+    /** Null when config.json lacks the entry, /changelog then names the missing key. */
     val changelogWebhookPreview: String?,
+    /** Null when config.json lacks the entry, /changelog then names the missing key. */
     val changelogWebhookAnnouncement: String?,
 )
 

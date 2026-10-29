@@ -131,11 +131,9 @@ object ChangelogCommand : BaseCommand() {
         val previous = ChangelogMessages.get(target)?.takeIf { it.version == version.toString() }
         val edited = previous?.let { ChangelogWebhook.edit(webhookUrl, it.messageId, text) }
         if (previous != null && edited != null) {
-            val threadStatus = when {
-                target != ChangelogTarget.PREVIEW -> null
-                previous.threadMessageIds == null -> "Thread: skipped, the message was posted before threads existed"
-                else -> postThread(version, webhookUrl, edited, previous.threadMessageIds, result)
-            }
+            val threadStatus = if (target == ChangelogTarget.PREVIEW) {
+                postThread(version, webhookUrl, edited, previous.threadMessageIds, result)
+            } else null
             return PostOutcome("Edited", edited, threadStatus)
         }
 
@@ -177,6 +175,9 @@ object ChangelogCommand : BaseCommand() {
         if (threadMessageIds == null) {
             val channel = BOT.jda.getTextChannelById(main.channelId) ?: error("Channel ${main.channelId} not found")
             channel.createThreadChannel("SkyHanni ${version.asTitle}", main.messageId).complete()
+            // stored before the first post, so a rerun after a failed post does not start the thread again
+            val entry = ChangelogMessages.Entry(main.messageId, version.toString(), emptyMap())
+            ChangelogMessages.set(ChangelogTarget.PREVIEW, entry)
         }
         // a thread has the id of the message it was started from
         val threadUrl = ChangelogWebhook.buildUrl(webhookUrl, "", "thread_id=${main.messageId}")

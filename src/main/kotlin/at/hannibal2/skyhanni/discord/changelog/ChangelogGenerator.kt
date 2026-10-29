@@ -15,9 +15,11 @@ object ChangelogGenerator {
     private val blockingPrefixes = listOf("PR has incorrect name: ", "PR has errors: ")
 
     /**
+     * [text] is the DISCORD_PUBLIC text without its border lines.
      * [internalSections] holds the DISCORD_INTERNAL text per category, each with its heading. The builder leaves out empty categories.
      * [messages] holds what the builder printed before its outputs, without its debug lines and the blank lines at both ends.
      * [hasBlockingErrors] is set when one of those lines starts with "PR has incorrect name: " or "PR has errors: ".
+     * [summary] holds what the builder printed after the DISCORD_PUBLIC text, without the blank lines at both ends.
      */
     data class Result(
         val text: String,

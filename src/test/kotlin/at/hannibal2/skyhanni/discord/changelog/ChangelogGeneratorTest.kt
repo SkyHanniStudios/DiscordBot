@@ -1,7 +1,6 @@
-package at.hannibal2.skyhanni.discord.github
+package at.hannibal2.skyhanni.discord.changelog
 
 import at.hannibal2.changelog.PullRequestCategory
-import at.hannibal2.skyhanni.discord.changelog.ChangelogGenerator
 import kotlin.test.*
 
 class ChangelogGeneratorTest {

@@ -17,7 +17,8 @@ enum class ChangelogTarget(val label: String, val configKey: String) {
 
     /**
      * Null when config.json lacks the entry or holds no https url, for example the TODO text of the example config.
-     * A "/" at the end of the path is removed, the paths and the token extraction expect the url without it.
+     * A "/" in front of the query or at the end is removed, because buildUrl appends paths to the part before the query
+     * and redact reads the token as the last segment of that part.
      */
     val webhookUrl: String?
         get() = when (this) {
