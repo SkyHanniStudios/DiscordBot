@@ -90,8 +90,13 @@ Displays information about the pull request with the given number, including a l
 `/changelog [preview|announcement]`  
 Code reviewers post the changelog of the next beta to the preview channel. The bot starts a thread under that message,
 and the webhook posts the internal changelog into it, one message per category. A second run for the same version
-edits all of these messages instead of posting new ones. In the preview channel the bot needs the permission to create
-public threads.
+edits all of these messages instead of posting new ones.
 With `announcement`, admins post the changelog of the latest released beta to the announcement channel.
-The webhook urls are `changelogWebhookPreview` and `changelogWebhookAnnouncement` in `config.json`, the posted
-messages are remembered in `changelog_messages.json`.
+The posted messages are remembered in `changelog_messages.json`, next to `config.json`.
+
+Setup:
+
+- In the settings of the preview channel and of the announcement channel, create a webhook under Integrations and
+  copy its url.
+- Put the URLs into `changelogWebhookPreview` and `changelogWebhookAnnouncement` in `config.json`.
+- Give the bot the permission to create public threads in the preview channel.
