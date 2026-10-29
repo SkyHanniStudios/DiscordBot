@@ -521,7 +521,7 @@ class PullRequestApprovalsCommand : BaseCommand() {
         Option("approvals", "Minimum amount of approvals needed", type = OptionType.INTEGER, required = false),
     )
 
-    override val requiredRole: PermissionRole = PermissionRole.CONTRIBUTOR
+    override val requiredRole: PermissionRole = PermissionRole.CODE_REVIEWER
 
     private val github = GitHubClient("SkyHanniStudios", "SkyHanni", BOT.config.githubTokenOwn)
 
