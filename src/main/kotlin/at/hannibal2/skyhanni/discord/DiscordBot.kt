@@ -48,8 +48,9 @@ fun main() {
         while (scanner.hasNextLine()) {
             when (scanner.nextLine().trim().lowercase()) {
                 "close", "stop", "exit", "end" -> {
+                    println("found shutdown call..")
                     bot.shutdown()
-                    break
+                    kotlin.system.exitProcess(0)
                 }
             }
         }
