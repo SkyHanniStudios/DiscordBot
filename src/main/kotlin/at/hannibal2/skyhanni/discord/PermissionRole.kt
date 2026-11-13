@@ -1,5 +1,7 @@
 package at.hannibal2.skyhanni.discord
 
+import at.hannibal2.skyhanni.discord.Utils.getAllowedGuild
+
 /**
  * Roles that unlock bot commands. The [name] of an entry is its key in [BotConfig.permissionRoleIds].
  * A role passes every check for the roles below it.
@@ -36,7 +38,7 @@ enum class PermissionRole {
         private fun findConfigProblems(): List<String> {
             val roleIds = BOT.config.permissionRoleIds
                 ?: return listOf("The entry is missing, nobody can use role restricted commands.")
-            val guild = BOT.jda.getGuildById(BOT.config.allowedServerId)
+            val guild = BOT.jda.getAllowedGuild()
             val problems = mutableListOf<String>()
 
             for (key in roleIds.keys - entries.map { it.name }.toSet()) {

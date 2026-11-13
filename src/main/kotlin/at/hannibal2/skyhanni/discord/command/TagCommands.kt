@@ -14,6 +14,7 @@ import at.hannibal2.skyhanni.discord.Utils.userError
 import at.hannibal2.skyhanni.discord.command.TagCommands.addLastMessage
 import at.hannibal2.skyhanni.discord.command.TagCommands.lastMessages
 import at.hannibal2.skyhanni.discord.command.TagCommands.lastTouchedTag
+import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.interactions.commands.OptionType
@@ -110,7 +111,8 @@ class TagShow : BaseCommand() {
         }
     }
 
-    override fun autoCompleteChoices(optionName: String, input: String): List<String> = TagCommands.tagChoices(input)
+    override fun autoCompleteChoices(member: Member, optionName: String, input: String): List<String> =
+        TagCommands.tagChoices(input)
 }
 
 @Suppress("unused")
@@ -153,7 +155,8 @@ class TagEdit : BaseCommand() {
 
     override val requiredRole: PermissionRole = PermissionRole.DISCORD_MODERATOR
 
-    override fun autoCompleteChoices(optionName: String, input: String): List<String> = TagCommands.tagChoices(input)
+    override fun autoCompleteChoices(member: Member, optionName: String, input: String): List<String> =
+        TagCommands.tagChoices(input)
 
     override fun CommandEvent.execute(args: List<String>) {
         if (args.size < 2) return wrongUsage("<tag> <response>")
@@ -250,7 +253,8 @@ class TagDelete : BaseCommand() {
 
     override val requiredRole: PermissionRole = PermissionRole.DISCORD_MODERATOR
 
-    override fun autoCompleteChoices(optionName: String, input: String): List<String> = TagCommands.tagChoices(input)
+    override fun autoCompleteChoices(member: Member, optionName: String, input: String): List<String> =
+        TagCommands.tagChoices(input)
 
     override fun CommandEvent.execute(args: List<String>) {
         if (args.size != 1) return wrongUsage("<keyword>")

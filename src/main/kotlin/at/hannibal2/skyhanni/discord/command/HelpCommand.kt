@@ -2,8 +2,10 @@ package at.hannibal2.skyhanni.discord.command
 
 import at.hannibal2.skyhanni.discord.*
 import at.hannibal2.skyhanni.discord.Utils.hasPermissionFor
+import at.hannibal2.skyhanni.discord.Utils.hasRoleOrAbove
 import at.hannibal2.skyhanni.discord.Utils.reply
 import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.MessageEmbed
 import java.awt.Color
 
@@ -11,9 +13,18 @@ object HelpCommand : BaseCommand() {
     override val name: String = "help"
     override val description: String = "Get help for all OR one specific command."
     override val options: List<Option> =
-        listOf(Option("command", "Command you want to get help for.", required = false))
+        listOf(Option("command", "Command you want to get help for.", required = false, autoComplete = true))
 
     override val requiredRole: PermissionRole? = null
+
+    override fun autoCompleteChoices(member: Member, optionName: String, input: String): List<String> =
+        CommandListener.commands
+            .filter { cmd ->
+                val role = cmd.requiredRole
+                role == null || (cmd.alternativeRoles + role).any { member.hasRoleOrAbove(it) }
+            }
+            .map { it.name }
+            .filter { it.startsWith(input, ignoreCase = true) }
 
     override fun CommandEvent.execute(args: List<String>) {
         if (args.size > 1) return reply("Usage: ${prefix}help <command>")
@@ -38,16 +49,25 @@ object HelpCommand : BaseCommand() {
             return
         }
 
-        this.reply(command.createHelpEmbed(commandName))
+        this.reply(command.createHelpEmbed(commandName, prefix))
     }
 
-
-    private fun BaseCommand.createHelpEmbed(commandName: String): MessageEmbed {
+    private fun BaseCommand.createHelpEmbed(commandName: String, prefix: String): MessageEmbed {
         val em = EmbedBuilder()
 
-        em.setTitle("Usage: /$commandName <" + this.options.joinToString("> <") { it.name } + ">")
+        val opts = if (this.options.isNotEmpty()) {
+            val mapped = this.options.joinToString(" ") { if (it.required) "<${it.name}>" else "[${it.name}]" }
+            " $mapped"
+        } else ""
+        em.setTitle("Usage: $prefix$commandName$opts")
         em.setDescription("📋 **${this.description}**")
         em.setColor(Color.GREEN)
+
+        val roles = listOfNotNull(this.requiredRole) + this.alternativeRoles
+        if (roles.isNotEmpty()) {
+            val rolesStr = roles.sortedByDescending { it.ordinal }.joinToString(", ") { it.displayName }
+            em.addField("Required Roles", rolesStr, false)
+        }
 
         for (option in this.options) {
             em.addField(option.name, option.description, true)

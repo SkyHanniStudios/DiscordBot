@@ -16,6 +16,7 @@ import at.hannibal2.skyhanni.discord.changelog.ChangelogWebhook
 import at.hannibal2.skyhanni.discord.command.ChangelogCommand.post
 import at.hannibal2.skyhanni.discord.github.GitHubClient
 import at.hannibal2.skyhanni.discord.utils.ErrorManager.handleError
+import net.dv8tion.jda.api.entities.Member
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration.Companion.minutes
 
@@ -51,7 +52,7 @@ object ChangelogCommand : BaseCommand() {
         val threadStatus: String? = null,
     )
 
-    override fun autoCompleteChoices(optionName: String, input: String): List<String> =
+    override fun autoCompleteChoices(member: Member, optionName: String, input: String): List<String> =
         ChangelogTarget.entries.map { it.label }.filter { it.contains(input, ignoreCase = true) }
 
     override fun CommandEvent.execute(args: List<String>) {

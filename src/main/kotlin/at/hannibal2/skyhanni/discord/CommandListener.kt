@@ -1,5 +1,6 @@
 package at.hannibal2.skyhanni.discord
 
+import at.hannibal2.skyhanni.discord.Utils.getAllowedGuild
 import at.hannibal2.skyhanni.discord.Utils.getLink
 import at.hannibal2.skyhanni.discord.Utils.hasPermissionFor
 import at.hannibal2.skyhanni.discord.Utils.reply
@@ -28,15 +29,11 @@ object CommandListener {
         loadCommands()
     }
 
-    fun onMessage(bot: DiscordBot, event: MessageReceivedEvent) {
-        event.onMessage(bot)
+    fun onMessage(event: MessageReceivedEvent) {
+        event.onMessage()
     }
 
-    private fun MessageReceivedEvent.onMessage(bot: DiscordBot) {
-        // blocking a private dm
-        if (!isFromGuild) return
-        if (guild.id != bot.config.allowedServerId) return
-
+    private fun MessageReceivedEvent.onMessage() {
         if (this.author.isBot) return
 
         val message = message.contentRaw.trim()
@@ -73,9 +70,6 @@ object CommandListener {
     }
 
     fun onSlashCommand(event: SlashCommandInteractionEvent) {
-        val guild = event.guild ?: return
-        if (guild.id != BOT.config.allowedServerId) return
-
         val command = getCommand(event.name) ?: run {
             event.reply("Unknown command $PLEADING_FACE").setEphemeral(true).queue()
             return
@@ -89,11 +83,26 @@ object CommandListener {
     }
 
     fun onAutoComplete(event: CommandAutoCompleteInteractionEvent) {
-        val command = getCommand(event.name) ?: return
+        val command = getCommand(event.name)
+        val member = event.member
+
+        // We do not support auto complete in DMs
+        if (command == null || member == null) {
+            event.replyChoiceStrings(emptyList()).queue(
+                {},
+                { it.handleError("Autocomplete response failed: ${it.message}") }
+            )
+            return
+        }
+
         val focused = event.focusedOption
+
         // discord rejects the reply when it holds more than 25 choices
-        val choices = command.autoCompleteChoices(focused.name, focused.value).take(25)
-        event.replyChoiceStrings(choices).queue()
+        val choices = command.autoCompleteChoices(member, focused.name, focused.value).take(25)
+        event.replyChoiceStrings(choices).queue(
+            {},
+            { it.handleError("Autocomplete response failed: ${it.message}") }
+        )
     }
 
     private fun runCommand(command: BaseCommand, event: CommandEvent, literal: String, args: List<String>) {
@@ -123,7 +132,7 @@ object CommandListener {
     }
 
     fun registerSlashCommands(jda: JDA) {
-        val guild = jda.getGuildById(BOT.config.allowedServerId) ?: run {
+        val guild = jda.getAllowedGuild() ?: run {
             logger.error("Could not register slash commands, guild ${BOT.config.allowedServerId} not found")
             return
         }

@@ -3,13 +3,13 @@ package at.hannibal2.skyhanni.discord
 import at.hannibal2.skyhanni.discord.command.BaseCommand
 import at.hannibal2.skyhanni.discord.utils.ErrorManager.handleError
 import net.dv8tion.jda.api.EmbedBuilder
-import net.dv8tion.jda.api.entities.Member
-import net.dv8tion.jda.api.entities.Message
-import net.dv8tion.jda.api.entities.MessageEmbed
-import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.entities.*
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion
+import net.dv8tion.jda.api.events.interaction.GenericInteractionCreateEvent
+import net.dv8tion.jda.api.events.message.GenericMessageEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.utils.FileUpload
@@ -366,4 +366,10 @@ object Utils {
             }
         }.start()
     }
+
+    private fun isAllowedGuild(guild: Guild?): Boolean = guild?.id == BOT.config.allowedServerId
+
+    fun GenericInteractionCreateEvent.isAllowedGuild(): Boolean = isAllowedGuild(guild)
+    fun GenericMessageEvent.isAllowedGuild(): Boolean = isAllowedGuild(guild)
+    fun JDA.getAllowedGuild() = getGuildById(BOT.config.allowedServerId)
 }

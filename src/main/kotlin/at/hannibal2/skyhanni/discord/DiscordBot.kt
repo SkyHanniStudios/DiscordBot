@@ -1,5 +1,6 @@
 package at.hannibal2.skyhanni.discord
 
+import at.hannibal2.skyhanni.discord.Utils.isAllowedGuild
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
@@ -85,16 +86,23 @@ private fun startBot(): DiscordBot {
     jda.awaitReady()
 
     jda.addEventListener(object : ListenerAdapter() {
+
         override fun onMessageReceived(event: MessageReceivedEvent) {
-            CommandListener.onMessage(bot, event)
+            if (event.isFromGuild && event.isAllowedGuild()) {
+                CommandListener.onMessage(event)
+            }
         }
 
         override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) {
-            CommandListener.onSlashCommand(event)
+            if (event.isFromGuild && event.isAllowedGuild()) {
+                CommandListener.onSlashCommand(event)
+            }
         }
 
         override fun onCommandAutoCompleteInteraction(event: CommandAutoCompleteInteractionEvent) {
-            CommandListener.onAutoComplete(event)
+            if (event.isFromGuild && event.isAllowedGuild()) {
+                CommandListener.onAutoComplete(event)
+            }
         }
     })
 

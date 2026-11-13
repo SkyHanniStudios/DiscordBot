@@ -15,6 +15,7 @@ import at.hannibal2.skyhanni.discord.utils.LiveLog
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import net.dv8tion.jda.api.entities.Invite
+import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
@@ -427,7 +428,7 @@ class ServerCommand : BaseCommand() {
     )
     override val requiredRole: PermissionRole? = null
 
-    override fun autoCompleteChoices(optionName: String, input: String): List<String> =
+    override fun autoCompleteChoices(member: Member, optionName: String, input: String): List<String> =
         ServerCommands.servers
             .filter { server -> server.allKeys.any { it.contains(input, ignoreCase = true) } }
             .sortedByDescending { it.size }

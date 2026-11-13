@@ -4,6 +4,7 @@ import at.hannibal2.skyhanni.discord.CommandEvent
 import at.hannibal2.skyhanni.discord.Option
 import at.hannibal2.skyhanni.discord.PermissionRole
 import at.hannibal2.skyhanni.discord.Utils.userError
+import net.dv8tion.jda.api.entities.Member
 
 abstract class BaseCommand {
 
@@ -33,7 +34,7 @@ abstract class BaseCommand {
      * Commands with more than one autocompleting option have to branch on [optionName], otherwise
      * all of them receive the same choices.
      */
-    open fun autoCompleteChoices(optionName: String, input: String): List<String> = emptyList()
+    open fun autoCompleteChoices(member: Member, optionName: String, input: String): List<String> = emptyList()
 
     protected fun CommandEvent.wrongUsage(args: String) {
         userError("Usage: `$prefix$name $args`")

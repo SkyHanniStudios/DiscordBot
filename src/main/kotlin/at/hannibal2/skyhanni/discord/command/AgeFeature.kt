@@ -6,6 +6,7 @@ import at.hannibal2.skyhanni.discord.Utils.reply
 import at.hannibal2.skyhanni.discord.github.GitHubClient
 import at.hannibal2.skyhanni.discord.utils.LiveLog
 import com.google.gson.Gson
+import net.dv8tion.jda.api.entities.Member
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -74,7 +75,7 @@ object AgeFeature {
         )
         override val requiredRole: PermissionRole? = null
 
-        override fun autoCompleteChoices(optionName: String, input: String): List<String> =
+        override fun autoCompleteChoices(member: Member, optionName: String, input: String): List<String> =
             releases.entries
                 .filter { it.key.contains(input, ignoreCase = true) }
                 .sortedByDescending { it.value.date }
