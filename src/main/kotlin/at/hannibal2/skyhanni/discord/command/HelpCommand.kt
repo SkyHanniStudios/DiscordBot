@@ -1,6 +1,10 @@
 package at.hannibal2.skyhanni.discord.command
 
-import at.hannibal2.skyhanni.discord.*
+import at.hannibal2.skyhanni.discord.CommandEvent
+import at.hannibal2.skyhanni.discord.CommandListener
+import at.hannibal2.skyhanni.discord.Option
+import at.hannibal2.skyhanni.discord.PLEADING_FACE
+import at.hannibal2.skyhanni.discord.PermissionRole
 import at.hannibal2.skyhanni.discord.Utils.hasPermissionFor
 import at.hannibal2.skyhanni.discord.Utils.hasRoleOrAbove
 import at.hannibal2.skyhanni.discord.Utils.reply
@@ -65,13 +69,13 @@ object HelpCommand : BaseCommand() {
 
         val roles = listOfNotNull(this.requiredRole) + this.alternativeRoles
         if (roles.isNotEmpty()) {
-            val rolesStr = roles.sortedByDescending { it.ordinal }.joinToString(", ") { it.displayName }
+            val rolesStr = roles.sortedByDescending { it.ordinal }.joinToString(", ") { it.name }
             em.addField("Required Roles", rolesStr, false)
         }
 
-        for (option in this.options) {
-            em.addField(option.name, option.description, true)
-            em.addField("Required", if (option.required) "✅" else "❌", true)
+        for ((paramName, paramDesc, required) in this.options) {
+            em.addField(paramName, paramDesc, true)
+            em.addField("Required", if (required) "✅" else "❌", true)
             em.addBlankField(true)
         }
 

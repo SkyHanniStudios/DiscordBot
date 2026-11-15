@@ -2,7 +2,7 @@ import java.util.zip.ZipFile
 
 plugins {
     application
-    kotlin("jvm") version "2.1.0"
+    kotlin("jvm") version "2.4.21"
 }
 
 group = "at.hannibal.skyhannibot"
@@ -40,13 +40,7 @@ tasks.test {
 }
 
 kotlin {
-    jvmToolchain(21)
-
-    // hides this error:
-    // The feature "break continue in inline lambdas" is experimental and should be enabled explicitly
-    compilerOptions {
-        freeCompilerArgs.add("-Xnon-local-break-continue")
-    }
+    jvmToolchain(25)
 }
 
 application {
@@ -64,6 +58,7 @@ tasks.named("build").configure {
 }
 
 tasks.register("extractBotJar") {
+    dependsOn("distZip")
     val archiveFile = file("build/distributions/SHDiscordBot-1.0-SNAPSHOT.zip")
     val outputDir = layout.buildDirectory.dir("extractedBotJar").get().asFile
     doLast {

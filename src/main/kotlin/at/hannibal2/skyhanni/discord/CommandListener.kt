@@ -4,7 +4,14 @@ import at.hannibal2.skyhanni.discord.Utils.getAllowedGuild
 import at.hannibal2.skyhanni.discord.Utils.getLink
 import at.hannibal2.skyhanni.discord.Utils.hasPermissionFor
 import at.hannibal2.skyhanni.discord.Utils.reply
-import at.hannibal2.skyhanni.discord.command.*
+import at.hannibal2.skyhanni.discord.command.BaseCommand
+import at.hannibal2.skyhanni.discord.command.HelpCommand
+import at.hannibal2.skyhanni.discord.command.ModChecker
+import at.hannibal2.skyhanni.discord.command.PleadReactor
+import at.hannibal2.skyhanni.discord.command.PullRequestCommand
+import at.hannibal2.skyhanni.discord.command.ServerCommands
+import at.hannibal2.skyhanni.discord.command.TagCommands
+import at.hannibal2.skyhanni.discord.command.TagUndo
 import at.hannibal2.skyhanni.discord.utils.ErrorManager.handleError
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
@@ -29,24 +36,21 @@ object CommandListener {
         loadCommands()
     }
 
-    fun onMessage(event: MessageReceivedEvent) {
-        event.onMessage()
-    }
-
-    private fun MessageReceivedEvent.onMessage() {
-        if (this.author.isBot) return
-
-        val message = message.contentRaw.trim()
+    fun onMessage(event: MessageReceivedEvent) = with(event) {
         // empty without the message content intent, and an empty message is never a command
-        if (message.isEmpty()) return
+        val message = message.contentRaw.trim()
+        if (this.author.isBot || message.isEmpty()) return@with
 
         if (TagUndo.getAllNames().none { "!$it" == message }) {
             TagCommands.lastMessages.remove(this.author.id)
         }
 
-        if (ServerCommands.isKnownServerUrl(this, message)) return
-        if (PullRequestCommand.isPullRequest(this, message)) return
-        if (ModChecker.isModList(this, message)) return
+        if (
+            ServerCommands.isKnownServerUrl(this, message) ||
+            PullRequestCommand.isPullRequest(this, message) ||
+            ModChecker.isModList(this, message)
+        ) return@with
+
         PleadReactor.doPleadReact(this, message)
 
         var commandMessage = message
@@ -55,7 +59,7 @@ object CommandListener {
             commandMessage = commandMessage.replaceFirst("! ", "!")
         }
 
-        if (!isCommand(commandMessage)) return
+        if (!isCommand(commandMessage)) return@with
 
         val split = commandMessage.substring(1).split(" ")
         val literal = split.first().lowercase()
@@ -63,7 +67,7 @@ object CommandListener {
 
         val command = getCommand(literal) ?: run {
             TagCommands.handleTag(this)
-            return
+            return@with
         }
 
         runCommand(command, MessageCommandEvent(this), literal, args)
