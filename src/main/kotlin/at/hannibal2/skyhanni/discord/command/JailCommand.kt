@@ -146,29 +146,27 @@ private fun TextChannel.purgeRecentMessages(targetId: String, startId: String?):
 }
 
 @Suppress("unused")
-@SkyHanniSlashCommand(
-    name = "jail",
-    description = "Jails a user: assigns the Jailed role and logs the action.",
-    parameters = [
-        SkyHanniSlashCommandParameter("user", "User mention or exact userID."),
-        SkyHanniSlashCommandParameter("reason", "Reason for jailing."),
-    ],
-    allowedRoles = [PermissionRole.COMMUNITY_HELPER],
-)
 class JailCommand : BaseCommand() {
+    override val name: String = "jail"
+    override val description: String = "Jails a user: assigns the Jailed role and logs the action."
+    override val options: List<Option> = listOf(
+        Option("user", "User mention or exact userID."),
+        Option("reason", "Reason for jailing.")
+    )
+    override val requiredRole: PermissionRole = PermissionRole.COMMUNITY_HELPER
+
     override fun CommandEvent.execute(args: List<String>) = executeJail(args, "${prefix}djail", purge = true)
 }
 
 @Suppress("unused")
-@SkyHanniSlashCommand(
-    name = "djail",
-    description = "Jails a user and purges up to 30 of their recent messages from this channel.",
-    parameters = [
-        SkyHanniSlashCommandParameter("user", "User mention or exact userID."),
-        SkyHanniSlashCommandParameter("reason", "Reason for jailing."),
-    ],
-    allowedRoles = [PermissionRole.COMMUNITY_HELPER],
-)
 class DJailCommand : BaseCommand() {
+    override val name: String = "djail"
+    override val description: String = "Jails a user and purges up to 30 of their recent messages from this channel."
+    override val options: List<Option> = listOf(
+        Option("user", "User mention or exact userID."),
+        Option("reason", "Reason for jailing.")
+    )
+    override val requiredRole: PermissionRole = PermissionRole.COMMUNITY_HELPER
+
     override fun CommandEvent.execute(args: List<String>) = executeJail(args, "!djail", purge = true)
 }

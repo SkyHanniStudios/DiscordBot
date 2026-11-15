@@ -67,12 +67,14 @@ object AgeFeature {
     }
 
     @Suppress("unused")
-    @SkyHanniSlashCommand(
-        name = "age",
-        description = "Show the age of something.",
-        parameters = [SkyHanniSlashCommandParameter("term", "The thing you want to know the age of.", autoComplete = true)],
-    )
     class AgeCommand : BaseCommand() {
+        override val name = "age"
+        override val description = "Show the age of something."
+        override val options: List<Option> = listOf(
+            Option("term", "The thing you want to know the age of.", autoComplete = true),
+        )
+        override val requiredRole: PermissionRole? = null
+
         override fun autoCompleteChoices(member: Member, optionName: String, input: String): List<String> =
             releases.entries
                 .filter { it.key.contains(input, ignoreCase = true) }
@@ -94,13 +96,13 @@ object AgeFeature {
     }
 
     @Suppress("unused")
-    @SkyHanniSlashCommand(
-        name = "updateagelist",
-        description = "Updates the age list.",
-        aliases = ["ageupdate", "updateage"],
-        allowedRoles = [PermissionRole.DISCORD_MODERATOR],
-    )
     class UpdateAgeListCommand : BaseCommand() {
+        override val name = "updateagelist"
+        override val description = "Updates the age list."
+        override val aliases = listOf("ageupdate", "updateage")
+
+        override val requiredRole: PermissionRole = PermissionRole.DISCORD_MODERATOR
+
         init {
             Utils.runDelayed("init load age", 1.seconds) {
                 if (!isLoading) {

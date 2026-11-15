@@ -84,15 +84,15 @@ object TagCommands {
 }
 
 @Suppress("unused")
-@SkyHanniSlashCommand(
-    name = "tag",
-    description = "Displays the response of a tag.",
-    parameters = [
-        SkyHanniSlashCommandParameter("tag", "The tag you want to display.", autoComplete = true),
-        SkyHanniSlashCommandParameter("user", "The user to ping with the tag.", required = false, type = OptionType.USER),
-    ],
-)
 class TagShow : BaseCommand() {
+    override val name: String = "tag"
+    override val description: String = "Displays the response of a tag."
+    override val options: List<Option> = listOf(
+        Option("tag", "The tag you want to display.", autoComplete = true),
+        Option("user", "The user to ping with the tag.", required = false, type = OptionType.USER),
+    )
+    override val requiredRole: PermissionRole? = null
+
     override fun CommandEvent.execute(args: List<String>) {
         if (args.size !in 1..2) return wrongUsage("<tag> [user]")
         val keyword = args.first()
@@ -116,13 +116,15 @@ class TagShow : BaseCommand() {
 }
 
 @Suppress("unused")
-@SkyHanniSlashCommand(
-    name = "taglist",
-    description = "Lists all available tags.",
-    aliases = ["tags"],
-    parameters = [SkyHanniSlashCommandParameter("info", "Include and sort by uses (-i to use).", required = false)],
-)
 class TagList : BaseCommand() {
+    override val name = "taglist"
+    override val description = "Lists all available tags."
+    override val options: List<Option> = listOf(
+        Option("info", "Include and sort by uses (-i to use).", required = false),
+    )
+    override val aliases = listOf("tags")
+    override val requiredRole: PermissionRole? = null
+
     override fun CommandEvent.execute(args: List<String>) {
         val list = Database.listTags()
         if (list.isEmpty()) {
@@ -142,17 +144,17 @@ class TagList : BaseCommand() {
 }
 
 @Suppress("unused")
-@SkyHanniSlashCommand(
-    name = "tagedit",
-    description = "Edits a tag in the database.",
-    aliases = ["tagchange"],
-    parameters = [
-        SkyHanniSlashCommandParameter("tag", "The tag you want to edit.", autoComplete = true),
-        SkyHanniSlashCommandParameter("response", "Response you want the tag to have."),
-    ],
-    allowedRoles = [PermissionRole.DISCORD_MODERATOR],
-)
 class TagEdit : BaseCommand() {
+    override val name = "tagedit"
+    override val description = "Edits a tag in the database."
+    override val options: List<Option> = listOf(
+        Option("tag", "The tag you want to edit.", autoComplete = true),
+        Option("response", "Response you want the tag to have."),
+    )
+    override val aliases = listOf("tagchange")
+
+    override val requiredRole: PermissionRole = PermissionRole.DISCORD_MODERATOR
+
     override fun autoCompleteChoices(member: Member, optionName: String, input: String): List<String> =
         TagCommands.tagChoices(input)
 
@@ -182,12 +184,12 @@ class TagEdit : BaseCommand() {
 }
 
 @Suppress("unused")
-@SkyHanniSlashCommand(
-    name = "tageditlast",
-    description = "Show info on how to edit the last tag used.",
-    allowedRoles = [PermissionRole.DISCORD_MODERATOR],
-)
 class TagEditLast : BaseCommand() {
+    override val name = "tageditlast"
+    override val description = "Show info on how to edit the last tag used."
+
+    override val requiredRole: PermissionRole = PermissionRole.DISCORD_MODERATOR
+
     override fun CommandEvent.execute(args: List<String>) {
         val id = author.id
         val lastTag = lastTouchedTag[id] ?: run {
@@ -201,17 +203,17 @@ class TagEditLast : BaseCommand() {
 }
 
 @Suppress("unused")
-@SkyHanniSlashCommand(
-    name = "tagadd",
-    description = "Adds a tag to the database.",
-    aliases = ["tagcreate"],
-    parameters = [
-        SkyHanniSlashCommandParameter("keyword", "Keyword you want the tag to have."),
-        SkyHanniSlashCommandParameter("response", "Response you want the tag to have."),
-    ],
-    allowedRoles = [PermissionRole.DISCORD_MODERATOR],
-)
 class TagAdd : BaseCommand() {
+    override val name = "tagadd"
+    override val description = "Adds a tag to the database."
+    override val options: List<Option> = listOf(
+        Option("keyword", "Keyword you want the tag to have."),
+        Option("response", "Response you want the tag to have.")
+    )
+    override val aliases = listOf("tagcreate")
+
+    override val requiredRole: PermissionRole = PermissionRole.DISCORD_MODERATOR
+
     override fun CommandEvent.execute(args: List<String>) {
         if (args.size < 2) return wrongUsage("<keyword> <response>")
 
@@ -241,14 +243,16 @@ class TagAdd : BaseCommand() {
 }
 
 @Suppress("unused")
-@SkyHanniSlashCommand(
-    name = "tagdelete",
-    description = "Deletes a tag from the database.",
-    aliases = ["tagremove"],
-    parameters = [SkyHanniSlashCommandParameter("keyword", "Keyword of the tag you want to delete.", autoComplete = true)],
-    allowedRoles = [PermissionRole.DISCORD_MODERATOR],
-)
 class TagDelete : BaseCommand() {
+    override val name: String = "tagdelete"
+    override val description: String = "Deletes a tag from the database."
+    override val options: List<Option> = listOf(
+        Option("keyword", "Keyword of the tag you want to delete.", autoComplete = true),
+    )
+    override val aliases: List<String> = listOf("tagremove")
+
+    override val requiredRole: PermissionRole = PermissionRole.DISCORD_MODERATOR
+
     override fun autoCompleteChoices(member: Member, optionName: String, input: String): List<String> =
         TagCommands.tagChoices(input)
 
@@ -270,12 +274,12 @@ class TagDelete : BaseCommand() {
 }
 
 @Suppress("unused")
-@SkyHanniSlashCommand(
-    name = "tagundo",
-    description = "Deletes the last sent tag from that user.",
-    aliases = ["undo"],
-)
 object TagUndo : BaseCommand() {
+    override val name: String = "tagundo"
+    override val description: String = "Deletes the last sent tag from that user."
+    override val requiredRole: PermissionRole? = null
+    override val aliases: List<String> = listOf("undo")
+
     override fun CommandEvent.execute(args: List<String>) {
         val author = author.id
         if (undo(author)) {

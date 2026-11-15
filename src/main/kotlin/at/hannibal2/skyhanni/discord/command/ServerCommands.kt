@@ -419,15 +419,15 @@ object ServerCommands {
 }
 
 @Suppress("unused")
-@SkyHanniSlashCommand(
-    name = "server",
-    description = "Displays information about a server from our 'useful server list'.",
-    parameters = [
-        SkyHanniSlashCommandParameter("keyword", "Keyword of the server you want to display.", autoComplete = true),
-        SkyHanniSlashCommandParameter("debug", "Display even more useful information (-d to use).", required = false),
-    ],
-)
 class ServerCommand : BaseCommand() {
+    override val name: String = "server"
+    override val description: String = "Displays information about a server from our 'useful server list'."
+    override val options: List<Option> = listOf(
+        Option("keyword", "Keyword of the server you want to display.", autoComplete = true),
+        Option("debug", "Display even more useful information (-d to use).", required = false),
+    )
+    override val requiredRole: PermissionRole? = null
+
     override fun autoCompleteChoices(member: Member, optionName: String, input: String): List<String> =
         ServerCommands.servers
             .filter { server -> server.allKeys.any { it.contains(input, ignoreCase = true) } }
@@ -455,13 +455,15 @@ class ServerCommand : BaseCommand() {
 }
 
 @Suppress("unused")
-@SkyHanniSlashCommand(
-    name = "serverupdate",
-    description = "Updates the server list.",
-    aliases = ["updateservers", "updateserverlist", "serverlistupdate", "listupdateserver", "updateserver"],
-    allowedRoles = [PermissionRole.DISCORD_MODERATOR],
-)
 class ServerUpdate : BaseCommand() {
+    override val name: String = "serverupdate"
+    override val description: String = "Updates the server list."
+    override val aliases: List<String> = listOf(
+        "updateservers", "updateserverlist", "serverlistupdate", "listupdateserver", "updateserver"
+    )
+
+    override val requiredRole: PermissionRole = PermissionRole.DISCORD_MODERATOR
+
     init {
         Utils.runDelayed("init load servers", 1.seconds) {
             if (!ServerCommands.isLoading) {
@@ -483,13 +485,14 @@ class ServerUpdate : BaseCommand() {
 }
 
 @Suppress("unused")
-@SkyHanniSlashCommand(
-    name = "serverlist",
-    description = "Displays all servers in the database.",
-    aliases = ["servers"],
-    allowedRoles = [PermissionRole.COMMUNITY_HELPER, PermissionRole.CONTRIBUTOR],
-)
 class ServerList : BaseCommand() {
+    override val name: String = "serverlist"
+    override val description: String = "Displays all servers in the database."
+    override val aliases: List<String> = listOf("servers")
+
+    override val requiredRole: PermissionRole = PermissionRole.COMMUNITY_HELPER
+    override val alternativeRoles: Set<PermissionRole> = setOf(PermissionRole.CONTRIBUTOR)
+
     override fun CommandEvent.execute(args: List<String>) {
         if (ServerCommands.servers.isEmpty()) {
             if (ServerCommands.outage) {

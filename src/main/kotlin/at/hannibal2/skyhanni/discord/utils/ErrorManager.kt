@@ -2,17 +2,16 @@ package at.hannibal2.skyhanni.discord.utils
 
 import at.hannibal2.skyhanni.discord.*
 import at.hannibal2.skyhanni.discord.command.BaseCommand
-import at.hannibal2.skyhanni.discord.command.SkyHanniSlashCommand
 
 object ErrorManager {
 
     @Suppress("unused")
-    @SkyHanniSlashCommand(
-        name = "testerror",
-        description = "this is a test error",
-        allowedRoles = [PermissionRole.DISCORD_MODERATOR],
-    )
     class TestErrorCommand : BaseCommand() {
+        override val name: String = "testerror"
+        override val description: String = "this is a test error"
+
+        override val requiredRole: PermissionRole = PermissionRole.DISCORD_MODERATOR
+
         override fun CommandEvent.execute(args: List<String>) {
             error("test error")
         }

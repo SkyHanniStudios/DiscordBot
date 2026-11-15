@@ -171,9 +171,9 @@ object Utils {
     }
 
     fun CommandEvent.hasPermissionFor(command: BaseCommand): Boolean {
-        if (command.allowedRoles.isEmpty()) return true
+        val role = command.requiredRole ?: return true
         val member = member ?: return false
-        return command.allowedRoles.any { member.hasRoleOrAbove(it) }
+        return (command.alternativeRoles + role).any { member.hasRoleOrAbove(it) }
     }
 
     fun Member.hasRoleOrAbove(role: PermissionRole): Boolean {

@@ -3,7 +3,6 @@ import java.util.zip.ZipFile
 plugins {
     application
     kotlin("jvm") version "2.4.21"
-    id("com.google.devtools.ksp") version "2.3.13"
 }
 
 group = "at.hannibal.skyhannibot"
@@ -19,7 +18,6 @@ repositories {
 }
 
 dependencies {
-    ksp(files("buildSrc/build/libs/buildSrc.jar"))
     testImplementation(kotlin("test"))
     implementation("net.dv8tion:JDA:6.7.0") // JDA Library
     implementation("org.xerial:sqlite-jdbc:3.54.1.0") // SQLite Driver

@@ -21,13 +21,16 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration.Companion.minutes
 
 @Suppress("unused")
-@SkyHanniSlashCommand(
-    name = "changelog",
-    description = "Posts the next beta changelog as preview, or the latest beta changelog as announcement.",
-    parameters = [SkyHanniSlashCommandParameter("target", "preview (default) or announcement.", required = false, autoComplete = true)],
-    allowedRoles = [PermissionRole.CODE_REVIEWER],
-)
 object ChangelogCommand : BaseCommand() {
+
+    override val name: String = "changelog"
+    override val description: String =
+        "Posts the next beta changelog as preview, or the latest beta changelog as announcement."
+    override val options: List<Option> = listOf(
+        Option("target", "preview (default) or announcement.", required = false, autoComplete = true),
+    )
+
+    override val requiredRole: PermissionRole = PermissionRole.CODE_REVIEWER
 
     /** Discord's text limit for a message with components, a longer changelog is not posted. */
     private const val MESSAGE_LIMIT = 4000

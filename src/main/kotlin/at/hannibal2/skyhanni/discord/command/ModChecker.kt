@@ -326,14 +326,15 @@ object ModChecker {
         knownMods.find { it.name == name && it.latest && it.beta == beta }
 
     @Suppress("unused")
-    @SkyHanniSlashCommand(
-        name = "debugmods",
-        description = "Debug infos about the mod list in neu stats format",
-        allowedRoles = [PermissionRole.DISCORD_MODERATOR],
-        // needs a replied to message, which slash commands can not provide
-        supportsSlash = false,
-    )
     class DebugModsCommand : BaseCommand() {
+        override val name = "debugmods"
+        override val description = "Debug infos about the mod list in neu stats format"
+
+        // needs a replied to message, which slash commands can not provide
+        override val supportsSlash: Boolean = false
+
+        override val requiredRole: PermissionRole = PermissionRole.DISCORD_MODERATOR
+
         override fun CommandEvent.execute(args: List<String>) {
             val replyTarget = referencedMessage ?: run {
                 reply("reply to a message to see debug infos from that message!")
@@ -350,13 +351,13 @@ object ModChecker {
     }
 
     @Suppress("unused")
-    @SkyHanniSlashCommand(
-        name = "modlistupdate",
-        description = "Updates the mod list.",
-        aliases = ["updatemodlist", "updatemods"],
-        allowedRoles = [PermissionRole.DISCORD_MODERATOR],
-    )
     class UpdateModListCommand : BaseCommand() {
+        override val name = "modlistupdate"
+        override val description = "Updates the mod list."
+        override val aliases = listOf("updatemodlist", "updatemods")
+
+        override val requiredRole: PermissionRole = PermissionRole.DISCORD_MODERATOR
+
         init {
             Utils.runDelayed("init load mods", 1.seconds) {
                 if (!isLoading) {
