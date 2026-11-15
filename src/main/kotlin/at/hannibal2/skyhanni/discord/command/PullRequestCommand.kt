@@ -28,17 +28,15 @@ import java.time.format.DateTimeFormatter
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
 
+@SkyHanniSlashCommand(
+    name = "pr",
+    description = "Displays useful information about a pull request on Github.",
+    parameters = [
+        SkyHanniSlashCommandParameter("number", "Number of the pull request you want to display."),
+        SkyHanniSlashCommandParameter("user", "The user to ping with the pull request.", required = false, type = OptionType.USER),
+    ],
+)
 object PullRequestCommand : BaseCommand() {
-
-    override val name: String = "pr"
-
-    override val description: String = "Displays useful information about a pull request on Github."
-    override val options: List<Option> = listOf(
-        Option("number", "Number of the pull request you want to display."),
-        Option("user", "The user to ping with the pull request.", required = false, type = OptionType.USER),
-    )
-
-    override val requiredRole: PermissionRole? = null
 
     private const val USER = "SkyHanniStudios"
     private const val REPO = "SkyHanni"
@@ -150,7 +148,6 @@ object PullRequestCommand : BaseCommand() {
                 RunStatus.IN_PROGRESS -> "Build is in progress $PLEADING_FACE"
                 RunStatus.WAITING -> "Build is waiting $PLEADING_FACE"
                 RunStatus.PENDING -> "Build is pending $PLEADING_FACE"
-                else -> ""
             }
             resultWithBuildInfo("\n$text")
             return

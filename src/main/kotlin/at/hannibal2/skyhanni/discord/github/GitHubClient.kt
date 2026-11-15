@@ -2,17 +2,23 @@ package at.hannibal2.skyhanni.discord.github
 
 import at.hannibal2.skyhanni.discord.json.discord.*
 import com.google.gson.Gson
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
-import okhttp3.ResponseBody
 import java.io.File
+import java.net.URI
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
+import java.time.Duration
 import java.util.*
 
 private const val PAGE_SIZE = 100
+private const val MAX_REDIRECTS = 5
+private const val API_HOST = "api.github.com"
 
 class GitHubClient(user: String, repo: String, private val token: String) {
-    private val client = OkHttpClient()
+    private val client = HttpClient.newBuilder()
+        .followRedirects(HttpClient.Redirect.NEVER)
+        .connectTimeout(Duration.ofSeconds(10))
+        .build()
     private val gson = Gson()
     private val base = "https://api.github.com/repos/$user/$repo"
     private val actionsRunUrlPattern = Regex("""/actions/runs/(?<runId>\d+)""")
@@ -39,7 +45,7 @@ class GitHubClient(user: String, repo: String, private val token: String) {
 
     fun downloadArtifact(artifactId: Long, outputFile: File) {
         readBody("$base/actions/artifacts/$artifactId/zip") { body ->
-            outputFile.writeBytes(body.bytes())
+            outputFile.writeBytes(body)
         }
     }
 
@@ -153,22 +159,29 @@ class GitHubClient(user: String, repo: String, private val token: String) {
     private inline fun <reified T : Any, R> readJson(url: String, crossinline block: (T) -> R): R? =
         readBody(url) { body ->
             val type = object : com.google.gson.reflect.TypeToken<T>() {}.type
-            block(gson.fromJson(body.string(), type))
+            block(gson.fromJson(body.toString(Charsets.UTF_8), type))
         }
 
-    inline fun <T> readBody(url: String, block: (ResponseBody) -> T): T? {
-        response(url).use {
-            if (!it.isSuccessful) {
-                error("Error fetching $url - code:${it.code} - message:'${it.message}' '${it.body?.string()}'")
-            }
-            val body = it.body ?: error("Error loading '$url' - empty response'")
-            return block(body)
+    inline fun <T> readBody(url: String, block: (ByteArray) -> T): T? {
+        val response = response(url)
+        val code = response.statusCode()
+        if (code !in 200..299) {
+            error("Error fetching $url - code:$code - '${response.body().toString(Charsets.UTF_8)}'")
         }
+        return block(response.body())
     }
 
-    fun response(url: String): Response {
-        val request = Request.Builder().url(url).header("Authorization", "token $token").build()
-        return client.newCall(request).execute()
+    fun response(url: String): HttpResponse<ByteArray> {
+        var uri = URI.create(url)
+        repeat(MAX_REDIRECTS + 1) {
+            val builder = HttpRequest.newBuilder(uri).timeout(Duration.ofSeconds(60))
+            if (uri.host == API_HOST) builder.header("Authorization", "token $token")
+            val response = client.send(builder.build(), HttpResponse.BodyHandlers.ofByteArray())
+            val location = response.headers().firstValue("Location").orElse(null)
+            if (response.statusCode() !in 300..399 || location == null) return response
+            uri = uri.resolve(location)
+        }
+        error("Too many redirects fetching $url")
     }
 
     fun getReleases(): List<Release>? {

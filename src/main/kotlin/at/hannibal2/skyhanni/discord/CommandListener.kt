@@ -4,19 +4,24 @@ import at.hannibal2.skyhanni.discord.Utils.getAllowedGuild
 import at.hannibal2.skyhanni.discord.Utils.getLink
 import at.hannibal2.skyhanni.discord.Utils.hasPermissionFor
 import at.hannibal2.skyhanni.discord.Utils.reply
-import at.hannibal2.skyhanni.discord.command.*
+import at.hannibal2.skyhanni.discord.command.BaseCommand
+import at.hannibal2.skyhanni.discord.command.HelpCommand
+import at.hannibal2.skyhanni.discord.command.LoadedCommands
+import at.hannibal2.skyhanni.discord.command.ModChecker
+import at.hannibal2.skyhanni.discord.command.PleadReactor
+import at.hannibal2.skyhanni.discord.command.PullRequestCommand
+import at.hannibal2.skyhanni.discord.command.ServerCommands
+import at.hannibal2.skyhanni.discord.command.TagCommands
+import at.hannibal2.skyhanni.discord.command.TagUndo
 import at.hannibal2.skyhanni.discord.utils.ErrorManager.handleError
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
-import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.interactions.commands.build.OptionData
-import org.reflections.Reflections
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.lang.reflect.Modifier
 
 object CommandListener {
     private val logger: Logger = LoggerFactory.getLogger(this::class.java)
@@ -29,24 +34,21 @@ object CommandListener {
         loadCommands()
     }
 
-    fun onMessage(event: MessageReceivedEvent) {
-        event.onMessage()
-    }
-
-    private fun MessageReceivedEvent.onMessage() {
-        if (this.author.isBot) return
-
-        val message = message.contentRaw.trim()
+    fun onMessage(event: MessageReceivedEvent) = with(event) {
         // empty without the message content intent, and an empty message is never a command
-        if (message.isEmpty()) return
+        val message = message.contentRaw.trim()
+        if (this.author.isBot || message.isEmpty()) return@with
 
         if (TagUndo.getAllNames().none { "!$it" == message }) {
             TagCommands.lastMessages.remove(this.author.id)
         }
 
-        if (ServerCommands.isKnownServerUrl(this, message)) return
-        if (PullRequestCommand.isPullRequest(this, message)) return
-        if (ModChecker.isModList(this, message)) return
+        if (
+            ServerCommands.isKnownServerUrl(this, message) ||
+            PullRequestCommand.isPullRequest(this, message) ||
+            ModChecker.isModList(this, message)
+        ) return@with
+
         PleadReactor.doPleadReact(this, message)
 
         var commandMessage = message
@@ -55,7 +57,7 @@ object CommandListener {
             commandMessage = commandMessage.replaceFirst("! ", "!")
         }
 
-        if (!isCommand(commandMessage)) return
+        if (!isCommand(commandMessage)) return@with
 
         val split = commandMessage.substring(1).split(" ")
         val literal = split.first().lowercase()
@@ -63,7 +65,7 @@ object CommandListener {
 
         val command = getCommand(literal) ?: run {
             TagCommands.handleTag(this)
-            return
+            return@with
         }
 
         runCommand(command, MessageCommandEvent(this), literal, args)
@@ -171,25 +173,18 @@ object CommandListener {
     fun existsCommand(name: String): Boolean = name in commandsMap
 
     private fun loadCommands() {
-        val reflections = Reflections("at.hannibal2")
-        val classes: Set<Class<out BaseCommand>> = reflections.getSubTypesOf(BaseCommand::class.java)
         val commands = mutableListOf<BaseCommand>()
         val commandsMap = mutableMapOf<String, BaseCommand>()
-        for (clazz in classes) {
+        for (factory in LoadedCommands.factories) {
             try {
-                if (Modifier.isAbstract(clazz.modifiers)) continue
-                val command = clazz.kotlin.objectInstance ?: clazz.getConstructor().newInstance()
-
+                val command = factory()
                 for (name in command.getAllNames()) {
                     require(name !in commandsMap) { "Duplicate command name/alias: $name" }
                     commandsMap[name] = command
                 }
                 commands.add(command)
             } catch (e: Exception) {
-                e.handleError(
-                    "in loadCommands!",
-                    "class name: ${clazz.name}",
-                )
+                e.handleError("in loadCommands!")
             }
         }
         this.commands = commands
@@ -202,11 +197,3 @@ object CommandListener {
         )
     }
 }
-
-data class Option(
-    val name: String,
-    val description: String,
-    val required: Boolean = true,
-    val autoComplete: Boolean = false,
-    val type: OptionType = OptionType.STRING,
-)
