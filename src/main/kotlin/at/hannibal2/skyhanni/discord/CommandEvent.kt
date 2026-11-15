@@ -1,5 +1,6 @@
 package at.hannibal2.skyhanni.discord
 
+import at.hannibal2.skyhanni.discord.Utils.logAction
 import net.dv8tion.jda.api.entities.*
 import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
@@ -34,6 +35,8 @@ sealed class CommandEvent {
 
     abstract fun sendReplyWithConsumer(text: String, consumer: (Message) -> Unit)
 
+    abstract fun sendPrivateReply(text: String)
+
     /**
      * Deletes the message that invoked the command and runs [then] afterwards.
      * Slash commands have no invocation message, so [then] runs right away.
@@ -61,6 +64,10 @@ class MessageCommandEvent(val event: MessageReceivedEvent) : CommandEvent() {
 
     override fun sendReplyWithConsumer(text: String, consumer: (Message) -> Unit) {
         event.message.reply(text).queue { consumer(it) }
+    }
+
+    override fun sendPrivateReply(text: String) {
+        logAction("Error: sendPrivateReply not supported for non-slash commands")
     }
 
     override fun deleteInvocation(then: () -> Unit) {
@@ -104,6 +111,10 @@ class SlashCommandEvent(val event: SlashCommandInteractionEvent) : CommandEvent(
         } else {
             event.hook.sendMessage(text).queue { consumer(it) }
         }
+    }
+
+    override fun sendPrivateReply(text: String) {
+        event.hook.sendMessage(text).setEphemeral(true).queue()
     }
 
     override fun deleteInvocation(then: () -> Unit) {
