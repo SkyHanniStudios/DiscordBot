@@ -19,19 +19,15 @@ repositories {
 
 dependencies {
     testImplementation(kotlin("test"))
-    implementation("net.dv8tion:JDA:5.3.0") // JDA Library
-    implementation("org.xerial:sqlite-jdbc:3.49.1.0") // SQLite Driver
-    implementation("com.google.code.gson:gson:2.12.1") // Gson
+    implementation("net.dv8tion:JDA:6.7.0") // JDA Library
+    implementation("org.xerial:sqlite-jdbc:3.54.1.0") // SQLite Driver
+    implementation("com.google.code.gson:gson:2.15.0") // Gson
 
     // Logging
-    implementation("org.slf4j:slf4j-api:2.0.16")
+    implementation("org.slf4j:slf4j-api:2.0.20")
     // This could be replaced with another logging api to automatically generate log files
-    runtimeOnly("org.slf4j:slf4j-simple:2.0.16")
+    runtimeOnly("org.slf4j:slf4j-simple:2.0.20")
 
-    runtimeOnly("com.squareup.okhttp3:okhttp:4.3.1") // Http Client
-    runtimeOnly("com.google.code.gson:gson:2.11.0") // Json
-    implementation("org.reflections:reflections:0.10.2") // Reflections
-    implementation("org.jetbrains.kotlin:kotlin-reflect") // Kotlin Reflection
     implementation("com.github.SkyHanniStudios:SkyHanniChangelogBuilder:1.1.9") // Changelog Builder
 }
 

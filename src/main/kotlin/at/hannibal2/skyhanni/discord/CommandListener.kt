@@ -4,14 +4,28 @@ import at.hannibal2.skyhanni.discord.Utils.getAllowedGuild
 import at.hannibal2.skyhanni.discord.Utils.getLink
 import at.hannibal2.skyhanni.discord.Utils.hasPermissionFor
 import at.hannibal2.skyhanni.discord.Utils.reply
+import at.hannibal2.skyhanni.discord.command.AgeFeature
 import at.hannibal2.skyhanni.discord.command.BaseCommand
+import at.hannibal2.skyhanni.discord.command.ChangelogCommand
+import at.hannibal2.skyhanni.discord.command.DJailCommand
 import at.hannibal2.skyhanni.discord.command.HelpCommand
+import at.hannibal2.skyhanni.discord.command.JailCommand
 import at.hannibal2.skyhanni.discord.command.ModChecker
 import at.hannibal2.skyhanni.discord.command.PleadReactor
 import at.hannibal2.skyhanni.discord.command.PullRequestCommand
+import at.hannibal2.skyhanni.discord.command.ServerCommand
 import at.hannibal2.skyhanni.discord.command.ServerCommands
+import at.hannibal2.skyhanni.discord.command.ServerList
+import at.hannibal2.skyhanni.discord.command.ServerUpdate
+import at.hannibal2.skyhanni.discord.command.TagAdd
 import at.hannibal2.skyhanni.discord.command.TagCommands
+import at.hannibal2.skyhanni.discord.command.TagDelete
+import at.hannibal2.skyhanni.discord.command.TagEdit
+import at.hannibal2.skyhanni.discord.command.TagEditLast
+import at.hannibal2.skyhanni.discord.command.TagList
+import at.hannibal2.skyhanni.discord.command.TagShow
 import at.hannibal2.skyhanni.discord.command.TagUndo
+import at.hannibal2.skyhanni.discord.utils.ErrorManager
 import at.hannibal2.skyhanni.discord.utils.ErrorManager.handleError
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
@@ -20,10 +34,8 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.interactions.commands.build.OptionData
-import org.reflections.Reflections
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.lang.reflect.Modifier
 
 object CommandListener {
     private val logger: Logger = LoggerFactory.getLogger(this::class.java)
@@ -31,6 +43,29 @@ object CommandListener {
     var commands = listOf<BaseCommand>()
         private set
     private var commandsMap = mapOf<String, BaseCommand>()
+
+    private fun createCommands(): List<BaseCommand> = listOf(
+        HelpCommand,
+        PullRequestCommand,
+        ChangelogCommand,
+        TagUndo,
+        TagShow(),
+        TagList(),
+        TagEdit(),
+        TagEditLast(),
+        TagAdd(),
+        TagDelete(),
+        ServerCommand(),
+        ServerUpdate(),
+        ServerList(),
+        JailCommand(),
+        DJailCommand(),
+        AgeFeature.AgeCommand(),
+        AgeFeature.UpdateAgeListCommand(),
+        ModChecker.DebugModsCommand(),
+        ModChecker.UpdateModListCommand(),
+        ErrorManager.TestErrorCommand(),
+    )
 
     fun init() {
         loadCommands()
@@ -175,15 +210,10 @@ object CommandListener {
     fun existsCommand(name: String): Boolean = name in commandsMap
 
     private fun loadCommands() {
-        val reflections = Reflections("at.hannibal2")
-        val classes: Set<Class<out BaseCommand>> = reflections.getSubTypesOf(BaseCommand::class.java)
         val commands = mutableListOf<BaseCommand>()
         val commandsMap = mutableMapOf<String, BaseCommand>()
-        for (clazz in classes) {
+        for (command in createCommands()) {
             try {
-                if (Modifier.isAbstract(clazz.modifiers)) continue
-                val command = clazz.kotlin.objectInstance ?: clazz.getConstructor().newInstance()
-
                 for (name in command.getAllNames()) {
                     require(name !in commandsMap) { "Duplicate command name/alias: $name" }
                     commandsMap[name] = command
@@ -192,7 +222,7 @@ object CommandListener {
             } catch (e: Exception) {
                 e.handleError(
                     "in loadCommands!",
-                    "class name: ${clazz.name}",
+                    "class name: ${command.javaClass.name}",
                 )
             }
         }

@@ -150,7 +150,6 @@ object PullRequestCommand : BaseCommand() {
                 RunStatus.IN_PROGRESS -> "Build is in progress $PLEADING_FACE"
                 RunStatus.WAITING -> "Build is waiting $PLEADING_FACE"
                 RunStatus.PENDING -> "Build is pending $PLEADING_FACE"
-                else -> ""
             }
             resultWithBuildInfo("\n$text")
             return
