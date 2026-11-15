@@ -1,34 +1,29 @@
 package at.hannibal2.skyhanni.discord.command
 
 import at.hannibal2.skyhanni.discord.CommandEvent
-import at.hannibal2.skyhanni.discord.Option
 import at.hannibal2.skyhanni.discord.PermissionRole
 import at.hannibal2.skyhanni.discord.Utils.userError
 import net.dv8tion.jda.api.entities.Member
 
 abstract class BaseCommand {
 
-    abstract val name: String
+    private val definition: SkyHanniSlashCommand = javaClass.getAnnotation(SkyHanniSlashCommand::class.java)
+        ?: error("${javaClass.name} is missing @SkyHanniSlashCommand")
 
-    abstract val description: String
+    val name: String get() = definition.name
 
-    open val options: List<Option> = emptyList()
+    val description: String get() = definition.description
 
-    /** Members need this role or one of [alternativeRoles], or a role above them. Null lets everyone use the command. */
-    abstract val requiredRole: PermissionRole?
+    val options: List<SkyHanniSlashCommandParameter> = definition.parameters.toList()
 
-    /** Roles that unlock the command as well, each together with the roles above it. */
-    open val alternativeRoles: Set<PermissionRole> = emptySet()
+    val allowedRoles: Set<PermissionRole> = definition.allowedRoles.toSet()
 
-    /** False for commands that can not work without a message context, e.g. because they need a reply. */
-    open val supportsSlash: Boolean = true
-
-    protected open val aliases: List<String> = emptyList()
+    val supportsSlash: Boolean get() = definition.supportsSlash
 
     abstract fun CommandEvent.execute(args: List<String>)
 
     /**
-     * Choices offered while the user types into an option that has [Option.autoComplete] set.
+     * Choices offered while the user types into an option that has [SkyHanniSlashCommandParameter.autoComplete] set.
      * Discord displays at most 25 of them.
      *
      * Commands with more than one autocompleting option have to branch on [optionName], otherwise
@@ -40,5 +35,5 @@ abstract class BaseCommand {
         userError("Usage: `$prefix$name $args`")
     }
 
-    fun getAllNames(): List<String> = aliases + name
+    fun getAllNames(): List<String> = definition.aliases.toList() + name
 }

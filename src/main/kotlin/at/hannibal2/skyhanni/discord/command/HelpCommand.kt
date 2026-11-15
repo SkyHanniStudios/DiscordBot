@@ -2,9 +2,7 @@ package at.hannibal2.skyhanni.discord.command
 
 import at.hannibal2.skyhanni.discord.CommandEvent
 import at.hannibal2.skyhanni.discord.CommandListener
-import at.hannibal2.skyhanni.discord.Option
 import at.hannibal2.skyhanni.discord.PLEADING_FACE
-import at.hannibal2.skyhanni.discord.PermissionRole
 import at.hannibal2.skyhanni.discord.Utils.hasPermissionFor
 import at.hannibal2.skyhanni.discord.Utils.hasRoleOrAbove
 import at.hannibal2.skyhanni.discord.Utils.reply
@@ -13,20 +11,22 @@ import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.MessageEmbed
 import java.awt.Color
 
+@SkyHanniSlashCommand(
+    name = "help",
+    description = "Get help for all OR one specific command.",
+    parameters = [
+        SkyHanniSlashCommandParameter(
+            "command",
+            "Command you want to get help for.",
+            required = false,
+            autoComplete = true
+        )
+    ],
+)
 object HelpCommand : BaseCommand() {
-    override val name: String = "help"
-    override val description: String = "Get help for all OR one specific command."
-    override val options: List<Option> =
-        listOf(Option("command", "Command you want to get help for.", required = false, autoComplete = true))
-
-    override val requiredRole: PermissionRole? = null
-
     override fun autoCompleteChoices(member: Member, optionName: String, input: String): List<String> =
         CommandListener.commands
-            .filter { cmd ->
-                val role = cmd.requiredRole
-                role == null || (cmd.alternativeRoles + role).any { member.hasRoleOrAbove(it) }
-            }
+            .filter { cmd -> cmd.allowedRoles.isEmpty() || cmd.allowedRoles.any { member.hasRoleOrAbove(it) } }
             .map { it.name }
             .filter { it.startsWith(input, ignoreCase = true) }
 
@@ -67,15 +67,14 @@ object HelpCommand : BaseCommand() {
         em.setDescription("📋 **${this.description}**")
         em.setColor(Color.GREEN)
 
-        val roles = listOfNotNull(this.requiredRole) + this.alternativeRoles
-        if (roles.isNotEmpty()) {
-            val rolesStr = roles.sortedByDescending { it.ordinal }.joinToString(", ") { it.name }
+        if (allowedRoles.isNotEmpty()) {
+            val rolesStr = allowedRoles.sortedByDescending { it.ordinal }.joinToString(", ") { it.name }
             em.addField("Required Roles", rolesStr, false)
         }
 
-        for ((paramName, paramDesc, required) in this.options) {
-            em.addField(paramName, paramDesc, true)
-            em.addField("Required", if (required) "✅" else "❌", true)
+        for (option in this.options) {
+            em.addField(option.name, option.description, true)
+            em.addField("Required", if (option.required) "✅" else "❌", true)
             em.addBlankField(true)
         }
 
