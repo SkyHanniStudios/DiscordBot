@@ -372,4 +372,6 @@ object Utils {
     fun GenericInteractionCreateEvent.isAllowedGuild(): Boolean = isAllowedGuild(guild)
     fun GenericMessageEvent.isAllowedGuild(): Boolean = isAllowedGuild(guild)
     fun JDA.getAllowedGuild() = getGuildById(BOT.config.allowedServerId)
+
+    fun String.firstUpperCase() = replaceFirstChar { it.uppercase() }
 }

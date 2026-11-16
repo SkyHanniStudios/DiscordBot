@@ -71,7 +71,14 @@ object CommandListener {
         loadCommands()
     }
 
-    fun onMessage(event: MessageReceivedEvent) = with(event) {
+    fun onMessage(event: MessageReceivedEvent) {
+        event.handleMessage()
+    }
+
+    private fun MessageReceivedEvent.handleMessage() {
+        if (this.author.isBot) return
+
+        val message = message.contentRaw.trim()
         // empty without the message content intent, and an empty message is never a command
         val message = message.contentRaw.trim()
         if (this.author.isBot || message.isEmpty()) return@with
