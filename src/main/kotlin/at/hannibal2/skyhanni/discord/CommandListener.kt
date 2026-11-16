@@ -4,27 +4,7 @@ import at.hannibal2.skyhanni.discord.Utils.getAllowedGuild
 import at.hannibal2.skyhanni.discord.Utils.getLink
 import at.hannibal2.skyhanni.discord.Utils.hasPermissionFor
 import at.hannibal2.skyhanni.discord.Utils.reply
-import at.hannibal2.skyhanni.discord.command.AgeFeature
-import at.hannibal2.skyhanni.discord.command.BaseCommand
-import at.hannibal2.skyhanni.discord.command.ChangelogCommand
-import at.hannibal2.skyhanni.discord.command.DJailCommand
-import at.hannibal2.skyhanni.discord.command.HelpCommand
-import at.hannibal2.skyhanni.discord.command.JailCommand
-import at.hannibal2.skyhanni.discord.command.ModChecker
-import at.hannibal2.skyhanni.discord.command.PleadReactor
-import at.hannibal2.skyhanni.discord.command.PullRequestCommand
-import at.hannibal2.skyhanni.discord.command.ServerCommand
-import at.hannibal2.skyhanni.discord.command.ServerCommands
-import at.hannibal2.skyhanni.discord.command.ServerList
-import at.hannibal2.skyhanni.discord.command.ServerUpdate
-import at.hannibal2.skyhanni.discord.command.TagAdd
-import at.hannibal2.skyhanni.discord.command.TagCommands
-import at.hannibal2.skyhanni.discord.command.TagDelete
-import at.hannibal2.skyhanni.discord.command.TagEdit
-import at.hannibal2.skyhanni.discord.command.TagEditLast
-import at.hannibal2.skyhanni.discord.command.TagList
-import at.hannibal2.skyhanni.discord.command.TagShow
-import at.hannibal2.skyhanni.discord.command.TagUndo
+import at.hannibal2.skyhanni.discord.command.*
 import at.hannibal2.skyhanni.discord.utils.ErrorManager
 import at.hannibal2.skyhanni.discord.utils.ErrorManager.handleError
 import net.dv8tion.jda.api.JDA
@@ -80,19 +60,15 @@ object CommandListener {
 
         val message = message.contentRaw.trim()
         // empty without the message content intent, and an empty message is never a command
-        val message = message.contentRaw.trim()
-        if (this.author.isBot || message.isEmpty()) return@with
+        if (message.isEmpty()) return
 
         if (TagUndo.getAllNames().none { "!$it" == message }) {
             TagCommands.lastMessages.remove(this.author.id)
         }
 
-        if (
-            ServerCommands.isKnownServerUrl(this, message) ||
-            PullRequestCommand.isPullRequest(this, message) ||
-            ModChecker.isModList(this, message)
-        ) return@with
-
+        if (ServerCommands.isKnownServerUrl(this, message)) return
+        if (PullRequestCommand.isPullRequest(this, message)) return
+        if (ModChecker.isModList(this, message)) return
         PleadReactor.doPleadReact(this, message)
 
         var commandMessage = message
@@ -101,7 +77,7 @@ object CommandListener {
             commandMessage = commandMessage.replaceFirst("! ", "!")
         }
 
-        if (!isCommand(commandMessage)) return@with
+        if (!isCommand(commandMessage)) return
 
         val split = commandMessage.substring(1).split(" ")
         val literal = split.first().lowercase()
@@ -109,7 +85,7 @@ object CommandListener {
 
         val command = getCommand(literal) ?: run {
             TagCommands.handleTag(this)
-            return@with
+            return
         }
 
         runCommand(command, MessageCommandEvent(this), literal, args)
