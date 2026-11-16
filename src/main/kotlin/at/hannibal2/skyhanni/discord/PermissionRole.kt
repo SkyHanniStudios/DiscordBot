@@ -1,5 +1,6 @@
 package at.hannibal2.skyhanni.discord
 
+import at.hannibal2.skyhanni.discord.Utils.firstUpperCase
 import at.hannibal2.skyhanni.discord.Utils.getAllowedGuild
 
 /**
@@ -13,6 +14,8 @@ enum class PermissionRole {
     CODE_REVIEWER,
     CONTRIBUTOR,
     ;
+
+    val displayName = name.split("_").joinToString(" ") { it.lowercase().firstUpperCase() }
 
     val parent: PermissionRole?
         get() = when (this) {

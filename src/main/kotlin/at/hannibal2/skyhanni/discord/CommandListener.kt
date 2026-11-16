@@ -30,10 +30,10 @@ object CommandListener {
     }
 
     fun onMessage(event: MessageReceivedEvent) {
-        event.onMessage()
+        event.handleMessage()
     }
 
-    private fun MessageReceivedEvent.onMessage() {
+    private fun MessageReceivedEvent.handleMessage() {
         if (this.author.isBot) return
 
         val message = message.contentRaw.trim()
