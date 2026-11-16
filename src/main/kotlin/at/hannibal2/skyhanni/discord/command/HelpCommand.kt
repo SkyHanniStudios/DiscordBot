@@ -69,9 +69,9 @@ object HelpCommand : BaseCommand() {
             em.addField("Required Roles", rolesStr, false)
         }
 
-        for (option in this.options) {
-            em.addField(option.name, option.description, true)
-            em.addField("Required", if (option.required) "✅" else "❌", true)
+        for ((paramName, paramDesc, required) in this.options) {
+            em.addField(paramName, paramDesc, true)
+            em.addField("Required", if (required) "✅" else "❌", true)
             em.addBlankField(true)
         }
 
