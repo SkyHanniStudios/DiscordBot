@@ -11,6 +11,9 @@ import net.dv8tion.jda.api.requests.GatewayIntent
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.*
+import kotlin.system.exitProcess
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.toJavaDuration
 
 lateinit var BOT: DiscordBot
     private set
@@ -51,7 +54,8 @@ fun main() {
                 "close", "stop", "exit", "end" -> {
                     println("found shutdown call..")
                     bot.shutdown()
-                    kotlin.system.exitProcess(0)
+                    bot.jda.awaitShutdown(10.seconds.toJavaDuration())
+                    exitProcess(0)
                 }
             }
         }
